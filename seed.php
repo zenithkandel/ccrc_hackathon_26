@@ -7,7 +7,7 @@
  * micro-bus, tempo and mini-bus services operating in the valley.
  *
  * Run from CLI:  php seed.php
- * Or via browser: http://localhost/test_sawari/seed.php
+ * Or via browser: http://localhost/CCRC/seed.php  (auto-detected from project directory)
  * 
  * Default Accounts:
  *   Admin:  admin@sawari.com  / Admin@123
