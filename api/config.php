@@ -58,7 +58,8 @@ define('MAX_PAGE_SIZE', 100);
  * 
  * @return PDO
  */
-function getDB(): PDO {
+function getDB(): PDO
+{
     static $pdo = null;
 
     if ($pdo === null) {
@@ -66,9 +67,9 @@ function getDB(): PDO {
 
         try {
             $pdo = new PDO($dsn, DB_USER, DB_PASS, [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false,
+                PDO::ATTR_EMULATE_PREPARES => false,
             ]);
         } catch (PDOException $e) {
             http_response_code(500);
@@ -92,7 +93,8 @@ function getDB(): PDO {
  * @param array $data  Data to encode as JSON
  * @param int   $code  HTTP status code
  */
-function jsonResponse(array $data, int $code = 200): void {
+function jsonResponse(array $data, int $code = 200): void
+{
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
@@ -102,14 +104,16 @@ function jsonResponse(array $data, int $code = 200): void {
 /**
  * Send a success JSON response.
  */
-function jsonSuccess(string $message = 'Success', array $extra = []): void {
+function jsonSuccess(string $message = 'Success', array $extra = []): void
+{
     jsonResponse(array_merge(['success' => true, 'message' => $message], $extra));
 }
 
 /**
  * Send an error JSON response.
  */
-function jsonError(string $message = 'An error occurred', int $code = 400): void {
+function jsonError(string $message = 'An error occurred', int $code = 400): void
+{
     jsonResponse(['success' => false, 'message' => $message], $code);
 }
 
@@ -121,35 +125,40 @@ function jsonError(string $message = 'An error occurred', int $code = 400): void
 /**
  * Check if an admin is logged in.
  */
-function isAdminLoggedIn(): bool {
+function isAdminLoggedIn(): bool
+{
     return isset($_SESSION['admin_id']) && !empty($_SESSION['admin_id']);
 }
 
 /**
  * Check if an agent is logged in.
  */
-function isAgentLoggedIn(): bool {
+function isAgentLoggedIn(): bool
+{
     return isset($_SESSION['agent_id']) && !empty($_SESSION['agent_id']);
 }
 
 /**
  * Get the currently logged-in admin's ID.
  */
-function getAdminId(): ?int {
+function getAdminId(): ?int
+{
     return $_SESSION['admin_id'] ?? null;
 }
 
 /**
  * Get the currently logged-in admin's role.
  */
-function getAdminRole(): ?string {
+function getAdminRole(): ?string
+{
     return $_SESSION['admin_role'] ?? null;
 }
 
 /**
  * Get the currently logged-in agent's ID.
  */
-function getAgentId(): ?int {
+function getAgentId(): ?int
+{
     return $_SESSION['agent_id'] ?? null;
 }
 
@@ -157,7 +166,8 @@ function getAgentId(): ?int {
  * Require admin authentication for API endpoints.
  * Sends 401 JSON response if not authenticated.
  */
-function requireAdminAPI(): void {
+function requireAdminAPI(): void
+{
     if (!isAdminLoggedIn()) {
         jsonError('Authentication required', 401);
     }
@@ -166,7 +176,8 @@ function requireAdminAPI(): void {
 /**
  * Require agent authentication for API endpoints.
  */
-function requireAgentAPI(): void {
+function requireAgentAPI(): void
+{
     if (!isAgentLoggedIn()) {
         jsonError('Authentication required', 401);
     }
@@ -180,35 +191,40 @@ function requireAgentAPI(): void {
 /**
  * Get a sanitized string from POST data.
  */
-function postString(string $key, string $default = ''): string {
+function postString(string $key, string $default = ''): string
+{
     return isset($_POST[$key]) ? trim($_POST[$key]) : $default;
 }
 
 /**
  * Get an integer from POST data.
  */
-function postInt(string $key, int $default = 0): int {
-    return isset($_POST[$key]) ? (int)$_POST[$key] : $default;
+function postInt(string $key, int $default = 0): int
+{
+    return isset($_POST[$key]) ? (int) $_POST[$key] : $default;
 }
 
 /**
  * Get a sanitized string from GET data.
  */
-function getString(string $key, string $default = ''): string {
+function getString(string $key, string $default = ''): string
+{
     return isset($_GET[$key]) ? trim($_GET[$key]) : $default;
 }
 
 /**
  * Get an integer from GET data.
  */
-function getInt(string $key, int $default = 0): int {
-    return isset($_GET[$key]) ? (int)$_GET[$key] : $default;
+function getInt(string $key, int $default = 0): int
+{
+    return isset($_GET[$key]) ? (int) $_GET[$key] : $default;
 }
 
 /**
  * Get the requested action from GET parameters.
  */
-function getAction(): string {
+function getAction(): string
+{
     return getString('action');
 }
 
@@ -221,7 +237,8 @@ function getAction(): string {
  * Calculate pagination offset from page number.
  * Returns [offset, limit].
  */
-function paginate(int $page = 1, int $perPage = DEFAULT_PAGE_SIZE): array {
+function paginate(int $page = 1, int $perPage = DEFAULT_PAGE_SIZE): array
+{
     $page = max(1, $page);
     $perPage = min(max(1, $perPage), MAX_PAGE_SIZE);
     $offset = ($page - 1) * $perPage;
@@ -236,34 +253,45 @@ function paginate(int $page = 1, int $perPage = DEFAULT_PAGE_SIZE): array {
 /**
  * Format a datetime string for display.
  */
-function formatDateTime(?string $datetime): string {
-    if (!$datetime) return '—';
+function formatDateTime(?string $datetime): string
+{
+    if (!$datetime)
+        return '—';
     return date('M j, Y g:i A', strtotime($datetime));
 }
 
 /**
  * Format a date string for display (no time).
  */
-function formatDate(?string $datetime): string {
-    if (!$datetime) return '—';
+function formatDate(?string $datetime): string
+{
+    if (!$datetime)
+        return '—';
     return date('M j, Y', strtotime($datetime));
 }
 
 /**
  * Get relative time string (e.g., "2 hours ago").
  */
-function timeAgo(?string $datetime): string {
-    if (!$datetime) return '—';
-    
+function timeAgo(?string $datetime): string
+{
+    if (!$datetime)
+        return '—';
+
     $now = time();
     $time = strtotime($datetime);
     $diff = $now - $time;
 
-    if ($diff < 60)         return 'just now';
-    if ($diff < 3600)       return floor($diff / 60) . 'm ago';
-    if ($diff < 86400)      return floor($diff / 3600) . 'h ago';
-    if ($diff < 604800)     return floor($diff / 86400) . 'd ago';
-    if ($diff < 2592000)    return floor($diff / 604800) . 'w ago';
+    if ($diff < 60)
+        return 'just now';
+    if ($diff < 3600)
+        return floor($diff / 60) . 'm ago';
+    if ($diff < 86400)
+        return floor($diff / 3600) . 'h ago';
+    if ($diff < 604800)
+        return floor($diff / 86400) . 'd ago';
+    if ($diff < 2592000)
+        return floor($diff / 604800) . 'w ago';
 
     return formatDate($datetime);
 }
@@ -271,15 +299,18 @@ function timeAgo(?string $datetime): string {
 /**
  * Escape HTML output to prevent XSS.
  */
-function e(?string $value): string {
-    if ($value === null) return '';
+function e(?string $value): string
+{
+    if ($value === null)
+        return '';
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 
 /**
  * Generate a CSRF token and store in session.
  */
-function csrfToken(): string {
+function csrfToken(): string
+{
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
@@ -289,7 +320,8 @@ function csrfToken(): string {
 /**
  * Validate CSRF token from POST data.
  */
-function validateCsrf(): bool {
+function validateCsrf(): bool
+{
     $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     return hash_equals($_SESSION['csrf_token'] ?? '', $token);
 }
@@ -297,6 +329,7 @@ function validateCsrf(): bool {
 /**
  * Output a hidden CSRF input field.
  */
-function csrfField(): string {
+function csrfField(): string
+{
     return '<input type="hidden" name="csrf_token" value="' . e(csrfToken()) . '">';
 }
