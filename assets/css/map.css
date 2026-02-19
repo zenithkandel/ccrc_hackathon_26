@@ -1,0 +1,315 @@
+/**
+ * SAWARI — Main User Map Page Styles
+ * 
+ * Styles specific to the public-facing map interface:
+ *   - Full-screen map layout
+ *   - Search panel (Point A / Point B)
+ *   - Route result panel
+ *   - Stop markers & popups
+ *   - Walking direction indicators
+ *   - Live tracking overlays
+ *   - Mobile responsive adjustments
+ *
+ * Depends on: global.css, components.css
+ */
+
+
+/* --- Map Page Layout --- */
+
+.map-page {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.map-container {
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-base);
+}
+
+/* Leaflet container override */
+.map-container .leaflet-container {
+    width: 100%;
+    height: 100%;
+    font-family: var(--font-sans);
+}
+
+
+/* --- Search Panel (left overlay on map) --- */
+
+.search-panel {
+    position: absolute;
+    top: var(--space-4);
+    left: var(--space-4);
+    width: var(--map-panel-width);
+    max-width: calc(100vw - var(--space-8));
+    z-index: var(--z-map-controls);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.search-panel-card {
+    background: var(--color-white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-5);
+    animation: slideDown var(--duration-slow) var(--ease-out);
+}
+
+.search-panel-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.search-panel-input-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.search-panel-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+}
+
+.search-panel-dot-a {
+    background: var(--color-primary-500);
+}
+
+.search-panel-dot-b {
+    background: var(--color-accent-600);
+}
+
+.search-panel-connector {
+    width: 2px;
+    height: 20px;
+    background: var(--color-neutral-300);
+    margin-left: 5px;
+}
+
+.search-panel-actions {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+}
+
+
+/* --- Route Result Panel --- */
+
+.result-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 50vh;
+    background: var(--color-white);
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    z-index: var(--z-map-controls);
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform var(--transition-slow);
+}
+
+.result-panel.open {
+    transform: translateY(0);
+    animation: slideUp var(--duration-slow) var(--ease-out);
+}
+
+.result-panel-handle {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-3) 0 var(--space-1);
+}
+
+.result-panel-handle-bar {
+    width: 40px;
+    height: 4px;
+    background: var(--color-neutral-300);
+    border-radius: var(--radius-full);
+}
+
+.result-panel-content {
+    padding: 0 var(--space-5) var(--space-6);
+}
+
+/* Vehicle info inside result */
+.result-vehicle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    background: var(--color-neutral-50);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-4);
+}
+
+.result-vehicle-image {
+    width: 64px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    background: var(--color-neutral-200);
+}
+
+.result-vehicle-name {
+    font-weight: var(--font-semibold);
+    color: var(--color-neutral-900);
+}
+
+.result-vehicle-type {
+    font-size: var(--text-xs);
+    color: var(--color-neutral-500);
+}
+
+.result-fare {
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: var(--color-primary-600);
+}
+
+/* Stops timeline in result */
+.stops-timeline {
+    position: relative;
+    padding-left: var(--space-8);
+}
+
+.stops-timeline::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--color-neutral-200);
+}
+
+.stop-item {
+    position: relative;
+    padding: var(--space-2-5) 0;
+    font-size: var(--text-sm);
+    color: var(--color-neutral-700);
+}
+
+.stop-item::before {
+    content: '';
+    position: absolute;
+    left: calc(-1 * var(--space-8) + 7px);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-full);
+    background: var(--color-neutral-300);
+    border: 2px solid var(--color-white);
+}
+
+.stop-item-boarding::before {
+    background: var(--color-primary-500);
+    width: 14px;
+    height: 14px;
+    left: calc(-1 * var(--space-8) + 5px);
+}
+
+.stop-item-destination::before {
+    background: var(--color-accent-600);
+    width: 14px;
+    height: 14px;
+    left: calc(-1 * var(--space-8) + 5px);
+}
+
+.stop-item-transfer::before {
+    background: var(--color-warning-500);
+    width: 14px;
+    height: 14px;
+    left: calc(-1 * var(--space-8) + 5px);
+}
+
+
+/* --- Map Marker Custom Styles --- */
+
+.marker-stop {
+    background: var(--color-primary-600);
+    border: 2px solid var(--color-white);
+    border-radius: var(--radius-full);
+    width: 12px;
+    height: 12px;
+    box-shadow: var(--shadow-sm);
+}
+
+.marker-vehicle {
+    background: var(--color-accent-600);
+    border: 2px solid var(--color-white);
+    border-radius: var(--radius-full);
+    width: 16px;
+    height: 16px;
+    box-shadow: var(--shadow-md);
+}
+
+/* Vehicle approaching popup */
+.vehicle-popup {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    padding: var(--space-2);
+}
+
+.vehicle-popup-name {
+    font-weight: var(--font-semibold);
+    color: var(--color-neutral-900);
+}
+
+.vehicle-popup-eta {
+    font-size: var(--text-xs);
+    color: var(--color-neutral-500);
+    margin-top: var(--space-1);
+}
+
+
+/* --- Conductor Tip --- */
+
+.conductor-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-info-50);
+    border: 1px solid var(--color-info-100);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    color: var(--color-info-700);
+    margin: var(--space-4) 0;
+}
+
+
+/* --- Walking Direction Hint --- */
+
+.walk-hint {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+    color: var(--color-neutral-500);
+}
+
+
+/* --- Mobile Responsive --- */
+
+@media (max-width: 640px) {
+    .search-panel {
+        top: var(--space-3);
+        left: var(--space-3);
+        right: var(--space-3);
+        width: auto;
+    }
+
+    .result-panel {
+        max-height: 65vh;
+    }
+}
