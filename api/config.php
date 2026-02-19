@@ -240,7 +240,8 @@ function getAction(): string
  */
 function paginate(int $total, int $page = null, int $perPage = DEFAULT_PAGE_SIZE): array
 {
-    if ($page === null) $page = getInt('page', 1);
+    if ($page === null)
+        $page = getInt('page', 1);
     $page = max(1, $page);
     $perPage = min(max(1, $perPage), MAX_PAGE_SIZE);
     $totalPages = max(1, (int) ceil($total / $perPage));
