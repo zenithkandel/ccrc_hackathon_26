@@ -227,7 +227,8 @@ require_once __DIR__ . '/api/config.php';
 
             <h1>Navigate with <span style="color:var(--color-accent-300);">Sawari</span></h1>
 
-            <p>Find bus routes, track vehicles in real-time, and navigate Nepal's public transport system with confidence. No more asking strangers for directions.</p>
+            <p>Find bus routes, track vehicles in real-time, and navigate Nepal's public transport system with
+                confidence. No more asking strangers for directions.</p>
 
             <div class="hero-actions">
                 <a href="<?= BASE_URL ?>/pages/map.php" class="btn btn-hero-primary">
@@ -250,7 +251,8 @@ require_once __DIR__ . '/api/config.php';
                     <i data-feather="search" style="width:24px;height:24px;"></i>
                 </div>
                 <h3>Smart Route Finding</h3>
-                <p>Enter your start and destination — Sawari finds the best bus routes, including transfers when needed.</p>
+                <p>Enter your start and destination — Sawari finds the best bus routes, including transfers when needed.
+                </p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon" style="background:var(--color-accent-50);color:var(--color-accent-600);">
