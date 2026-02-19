@@ -1,13 +1,255 @@
-SAWARI
-I have imagined sawari as a user guiding app which guides us people around the crowded city of Nepal by telling them about the bus routes in their way. Lets explain using an example. You are at your home, you now need to go to a job appointment or a friends home or anything. Lets take your home as point A and your friends home as point B. now you have some options which are either take a pathao ride which is a ride booking app which lets us to take bikes and taxies to the destination. Another option is go and ask hundreds of people about the way to go there.Yes, there is google maps but it doesnot show the route the public transportation uses. It just shows the driving route where there might or might not be public transportation services. There is where sawari comes in handy. Lets see how it works:
+# SAWARI
 
-1. you enter your starting point (point A) 2. you enter your destination (point B) 3. sawari processing: a. analyzes the distance and the location b. searches for the bus stops and stations around point A c. searches for the bus stops and stations around point B d. checks if there are any public transportation going from the nearest bus station at point A to nearest bus station at point B e. if yes, i. it decides the bus stations and the route ii. it gives the walking direction from point A to bus station A iii. it shows which bus to ride (mahanagar, sajha, Nepal yatayat, araniko yatayat, etc…) along with their pictures for bus identification
-   iv. it shows how much price to pay and what to say to the conductor to get off at the designated station v. after reaching the station B, it shows the walking direction from station B to point B f. if not, i. then it searches for the nearest bus station at point A from where the buses towards point B are available. ii. It also searches for the nearest bus station at point B from where the buses towards point A are available. iii. It gets both the routes of the buses and then calculates where the two routes meet and where the user should drop and change the bus using advanced math algorithms like Dijkstra. The app gives both the routes and then uses the complex algorithms to decide where should I get off and change the bus and then according to the algorithm’s output, it tells the user the idea.
-   iv. In exchanging buses, when the user says that they have gotten off the first bus, it shows the picture and the name of the bus which they have to take from that point to get to the destination v. it shows which bus to ride (mahanagar, sajha, Nepal yatayat, araniko yatayat, etc…) along with their pictures for bus identification vi. it shows how much price to pay and what to say to the conductor to get off at the designated station vii. after reaching the station B, it shows the walking direction from station B to point B g. if somehow it fails to do the calculation, the app apolizes the user about its failure 4. after the ride is completed, the app asks the user for the review of the ride, the accuracy of the app and a suggestion box where they can add complains and suggestions for the app. 5. That’s all 😊
-   EXTRA FEATURES AND UX ENHANCEMENTS 1. Fare calculation: a. Government assigned rate index + normal rate increment done b. For eg: if the government says its 13rs for the ride, the bus takes 15 rs. So accordingly we need to account for the calculation c. The app lets the user to select whether they are student or oldage person so that they can get discount. 2. Tourist help mode: a. What to say while getting on the bus b. What to say while getting off the bus c. Extra precautions to follow (pickpockets, haphazard driving, etc..) 3. Seamless bus switching mechanism: a. Accurate and useful bus switching mechanism. b. Not only bus but it accounts for micro bus as well as tuk tuks 4. Estimated time of wait in a bus stop:
-   a. Calculate the route length of the bus b. Calculate the number of buses c. And as per the number of buses and the route length, calculate the bus frequency and display “a bus should come every 3 minutes in the station” 5. Proper rating, review, complaining, suggestion feature 6. Smart Emergency alerts issued by the administration: a. If due to any emergencies such as strikes or anything, if the route is disturbed then the admin can label it as disturbance felt and then the app will reroute 7. Community driven app: a. Users can suggest missing stops, wrong calculations, wrong routes, etc b. Agents leaderboard to motivate the users to contribute 8. Carbon emission calculation: a. Show in the app that if you use a routeao or other ride sharing app you do this much kg of carbon emissions and if you use public transport, you use this much kg of carbon emissions and you save the planet
-   Data Collection Methodology - Sawari will be using agents are the main source of data collection. - Volunteers who will be referred to as “agents” will be collecting the data by travelling around the valley and then will be feeding it to our data servers and using it as the main dataset. - Every agents will be given an app which will have the following features: o Map places:  The agents can go to the places where the buses stop  They can then click a button in their app which will log their exact GPS coordinates at that time instance and they can label that place as the places name.  When the places name is labelled, the app will show similar entries which are already in the app and ask the agent to re check if the place they are trying to add already exists or not.  If two places have same name then they will be labelled by a following number. For example if I am going from north to south, the buses stop in one place by saying “charkapath wari” and another place by bname of “charkapath pari” which is totally direction based which changes depending on which direction you are going. Thus we label it as charkapath 1, charkapath 2, charkapath 3, charkapath 4, etc…  Every place can have a short description about 10 words. For example charkapath 1: near US embassy, charkapath 2: near hotel Shambhala, charkapath 3: near maharajgung bhatbhateni, charkapath 4: near Chirayu hospital.  This is how our app will have the index of all the bus stops in the valley.
-   o Vehicle registration:  Agents can click a photo of the vehicle and then type its name to create an entry  Then they can write a description about the vehicle  They can mention precautions while riding that vehicle like (many accidents due to overspeeding)  Starts service at: time (6am)  Ends service at: time (7pm)  Then the app will check if a vehicle similar to that name already exists in the database and then prevent duplicate data. o Route mapping:  After the vehicles and places are successfully added to the database, the agents can make a route using those available data.  A route will contain a name which indicates the starting point -> ending point  The route will be an array of the places kept in a specific order  The routes will be shown in a drag and drop type UI along with a map preview alongside  Then the created routes can be assigned to the created vehicles and similar can done in the vehicles side.
-   Page Structure: 1. Landing page (page where the introduction to the project will be done) a. Basic landing page components along with a agents leaderboard page where all the users can see which user has contributed the most to the system. The contributions will be of 3 types (places, vehicles,routes) 2. Main page (page where the end user navigates) a. Full paged map preview b. Floating search bar (to enter starting point and destination) c. Floating details bar which can be expanded (to see details like route details, bus review, images, ratings, time, fare, etc). 3. Agent’s dashboard (page where the agents can propose changes in the app) a. Vehicle section b. Places section c. Routes section d. Profile management section 4. Admin dashboard (page where the agent’s proposal to changes are verified and aprooved) a. Vehicle CRUD b. Places CRUD c. Routes CRUD d. Reports handling e. Program logs f. Proposals handling i. Vehicles ii. Places iii. Routes g. Accounts management section
-   Tech and Stack Layer Technologies Frontend HTML, CSS, JavaScript Backend PHP Database MySQL Maps & Routing Leaflet, OpenStreetMaps, OSRM Geolocation Browser Geolocation API Algorithms Dijkstra, A\* (pathfinding & route optimization)
-   DATABASE STRUCTURE: Table structure: 1. Locations: Stores all the location data of the places registered to the system TITLE DESCRIPTION DATA-TYPE Location id Stores unique identifier of the location entry Integer auto-increment Name Name of the place Text Description Short description of the place 5 -10 words Text Latitude Pin point latitude Text Longitude Pin point longitude Text Type Type of the location (stop or landmark) Text Status Status of the entry’s visibility and authenticity. (pending, approved, rejected) Text Contribution origin Index to the contribution entry associated with this entry from the contributions table integer Updated by Index to the agent’s unique identifier from agent table Integer Approved by Index to the admin’s unique identifier from admin table Integer Updated at Unix time stamp of the date of the approval from admin Text departure_count The number of times this location has been used as a departure to find routes Integer destination_count The number of times this location has been used as a destination to find routes integer 2. Vehicles: stores all the data related to the vehicles/yatayats registered in our system. TITLE DESCRIPTION DATA-TYPE Vehicle id Stores unique identifier of the vehicle entry Integer auto-increment Name Name of the vehicle/yatayat Text Description Short description of the yatayat/vehicle 5 -10 words Text Image path Path to the image of the vehicle or the yatayat text Status Status of the entry’s visibility and authenticity. (pending, approved, rejected) text Contribution origin Index to the contribution entry associated with this entry from the contributions table integer Updated by Index to the agent’s unique identifier from agent table Integer Approved by Index to the admin’s unique identifier from admin table Integer Updated at Unix time stamp of the date of the approval from admin Text Used routes The array of the routes that this vehicle moves in along with the number of vehicles in that route. Example: [{path:1,count:6 },{path:3,count:4}] text Starts at Time at which this service starts operating eg: 6:00 am, 7:00am Text Stops at Time at which this service stops operating eg: 9:00 pm, 7:00pm text 3. Routes TITLE DESCRIPTION DATA-TYPE Route id Stores unique identifier of the route entry Integer auto-increment Name Name of the route in format (start point – end point) eg: (Greenland - Sundhara) Text Description Short description of the yatayat/vehicle 5 -10 words Text Image path Path to the image of the vehicle’s or the yatayat text Status Status of the entry’s visibility and authenticity. (pending, approved, rejected) text Contribution origin Index to the contribution entry associated with this entry from the contributions table integer Updated by Index to the agent’s unique identifier from agent table Integer Approved by Index to the admin’s unique identifier from admin table Integer Updated at Unix time stamp of the date of the approval from admin Text Location list The array of the locations that this vehicle moves along with the index of the location. Example: [{index: 1, location: location id from locations table}, {index: 2, location: location id from locations table},{index: 3, location: location id from locations table}] text 4. Contributions TITLE DESCRIPTION DATA-TYPE Contribution id Stores unique identifier of the contribution Integer auto-increment type The type of contribution (vehicle, route, location) Text Associated entry The index of the entry in the related table which this contribution corresponds to in the table associated with vehicle or route or location integer Proposed by Index to the agent’s unique identifier from agent table text Accepted by Index to the admin’s unique identifier from admin table text status Status of the contribution request (accepted, rejected, pending) Text Proposed at Unix time stamp of the creation of the request text Responded at Unix time stamp of the rejection or approval of the request Text Rejection reason The reason for rejection if the admin rejected the request Text 5. Agents TITLE DESCRIPTION DATA-TYPE Agent id Stores unique identifier of the agent Integer auto-increment Name Full name of the agent Text email Email address of the agent text Phone number Phone number of the agent text image Path to the profile picture image Text Joined at Unix time stamp of the user creation text Password hash Hash of the password text contributions Array of the count of contributions made to the system for all three fields. Example: [{type: “vehicle”, count:5},{type:”location”,count:10},{type:”route”,count:3}] text Last login Unix time stamp of the user’s last login text 6. Admin TITLE DESCRIPTION DATA-TYPE Admin id Stores unique identifier of the admin Integer auto-increment Name Full name of the agent Text email Email address of the agent text Phone number Phone number of the agent text image Path to the profile picture image Text Joined at Unix time stamp of the user creation text Password hash Hash of the password text Last login Unix time stamp of the user’s last login text 7. Alerts TITLE DESCRIPTION DATA-TYPE Alert id Stores unique identifier of the issued alert Integer auto-increment Name Name of the alert Text description Short description about the alert and its reason text Issued by Index to the admin’s unique identifier from admin table Integer Routes affected Array of the routes affected by this issue. Eg: [3,5,9,12] Text Reported at Unix time stamp of the time of alert creation text Expires at Unix time stamp of the expected time that the issue will be resolved text 8. Suggestions TITLE DESCRIPTION DATA-TYPE Suggestion ID Stores unique identifier of the suggestion entry Integer auto-increment Type Type of feedback (complaint, suggestion, correction, appreciation) text Message Detailed message provided by the user Text Rating User rating for the trip or route (1–5) integer Related route Index to the route related to this feedback if provided Integer Related vehicle Index to the vehicle related to this feedback if provided Integer IP IP address of the client device Text Status Status of the feedback (pending, reviewed, resolved) Text Reviewed by Index to the admin’s unique identifier from admin table integer Submitted at Unix timestamp of the feedback submission Text Reviewed at Unix time stamp of admin review text 9. Trips TITLE DESCRIPTION DATA-TYPE Trip ID Stores unique identifier of the trip Integer auto-increment IP IP of the clients device Text Starting point Index of the location from the locations table. integer Destination Point Index of the location from the locations table. Integer Routes used Array of routes/route used for the trip. Eg:[3,2,12] text queried at Unix time stamp of the time that the user searched for that route Text
+I have imagined Sawari as a user-guiding app which guides people around the crowded cities of Nepal by telling them about the bus routes on their way. Let's explain using an example. You are at your home, and you need to go to a job appointment, a friend's home, or anywhere else. Let's take your home as Point A and your friend's home as Point B. Currently, you have options like taking a Pathao ride (a ride-booking app for bikes and taxis). Another option is to ask hundreds of people about the way. Yes, there is Google Maps, but it doesn't show the routes public transportation uses. It just shows the driving route where there might or might not be public transportation services. This is where Sawari comes in handy.
+
+## How it works:
+
+1.  You enter your starting point (Point A).
+2.  You enter your destination (Point B).
+3.  **Sawari Processing:**
+    1.  Analyzes the distance and the location.
+    2.  Searches for bus stops and stations around Point A.
+    3.  Searches for bus stops and stations around Point B.
+    4.  Checks if there is any public transportation going from the nearest bus station at Point A to the nearest bus station at Point B.
+    5.  **If yes:**
+        1.  It decides the bus stations and the route.
+        2.  It gives the walking direction from Point A to Bus Station A.
+        3.  It shows which bus to ride (Mahanagar, Sajha, Nepal Yatayat, Araniko Yatayat, etc.) along with their pictures for identification.
+        4.  It shows the price to pay and what to say to the conductor to get off at the designated station.
+        5.  After reaching Station B, it shows the walking direction from Station B to Point B.
+    6.  **If not:**
+        1.  It searches for the nearest bus station at Point A from where buses towards Point B are available.
+        2.  It also searches for the nearest bus station at Point B from where buses towards Point A are available.
+        3.  It retrieves both routes and calculates where they meet, deciding where the user should drop off and change buses using advanced math algorithms like _Dijkstra_.
+        4.  In exchanging buses, when the user says they have gotten off the first bus, it shows the picture and name of the bus to take next.
+        5.  It shows which bus to ride along with pictures for identification.
+        6.  It shows the price to pay and what to say to the conductor.
+        7.  After reaching Station B, it shows the walking direction to Point B.
+    7.  If calculation fails, the app apologizes to the user.
+4.  After the ride, the app asks for a review, accuracy rating, and suggestions.
+5.  That’s all 😊
+
+## EXTRA FEATURES AND UX ENHANCEMENTS
+
+1.  **Fare Calculation:**
+    1.  Government assigned rate index + normal rate increment.
+    2.  (e.g., if government rate is 13rs, bus takes 15rs. We account for this).
+    3.  User selects if they are a student or elderly for discounts.
+2.  **Tourist Help Mode:**
+    1.  What to say while getting on/off the bus.
+    2.  Extra precautions (pickpockets, haphazard driving, etc.).
+3.  **Seamless Bus Switching Mechanism:**
+    1.  Accounts for buses, micro-buses, and tempos (tuk-tuks).
+4.  **Estimated Wait Time:**
+    1.  Calculates route length and number of buses to estimate frequency (e.g., "a bus should come every 3 minutes").
+5.  **Rating, Review, & Complaints:**
+    1.  Robust feedback system.
+6.  **Smart Emergency Alerts:**
+    1.  Admin can label routes as "disturbed" (strikes, accidents) to trigger rerouting.
+7.  **Community Driven:**
+    1.  Users suggest missing stops or wrong routes.
+    2.  Agents Leaderboard to motivate contributors.
+8.  **Carbon Emission Calculation:**
+    1.  Compares carbon footprint of public transport vs. ride-sharing to encourage green travel.
+
+## Data Collection Methodology
+
+- **Agents:** The main source of data. Volunteers (Agents) travel around the valley feeding data to servers.
+- **Agent App Features:**
+  - **Map Places:**
+    - Log GPS coordinates of stops.
+    - Label places (e.g., "Charkhal 1", "Charkhal 2" for directional stops).
+    - Add descriptions (e.g., "Near US Embassy").
+  - **Vehicle Registration:**
+    - Photo, name, and description of the vehicle.
+    - Precautions (e.g., "Overspeeding common").
+    - Service start/end times.
+    - Duplicate check to prevent redundancy.
+  - **Route Mapping:**
+    - Create routes connecting mapped places.
+    - Drag-and-drop UI for ordering stops.
+    - Assign routes to vehicles.
+
+## Page Structure
+
+1.  **Landing Page:** Project intro, Agents Leaderboard.
+2.  **Main Page (User):** Full-screen map, search bar (Start/End), floating details bar (route info, fare, images).
+3.  **Agent Dashboard:** Manage Vehicles, Places, Routes, Profile.
+4.  **Admin Dashboard:** CRUD for Vehicles, Places, Routes; Report/Proposal handling; User management.
+
+## Tech Stack
+
+| Layer           | Technologies                  |
+| --------------- | ----------------------------- |
+| **Frontend**    | HTML, CSS, JavaScript         |
+| **Backend**     | PHP                           |
+| **Database**    | MySQL                         |
+| **Maps**        | Leaflet, OpenStreetMaps, OSRM |
+| **Geolocation** | Browser Geolocation API       |
+| **Algorithms**  | Dijkstra, A\* (Pathfinding)   |
+
+## DATABASE STRUCTURE
+
+### 1. `locations`
+
+Stores all the location data of the places registered to the system.
+
+| TITLE               | DESCRIPTION                                                                                       | DATA-TYPE                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `location_id`       | Stores the unique identifier of the location entry.                                               | `INT AUTO_INCREMENT`                      |
+| `name`              | The official name of the place or bus stop.                                                       | `VARCHAR(255)`                            |
+| `description`       | A short description of the place, usually between 5 to 10 words.                                  | `TEXT`                                    |
+| `latitude`          | The pin-point latitude coordinate of the location.                                                | `DECIMAL(10, 8)`                          |
+| `longitude`         | The pin-point longitude coordinate of the location.                                               | `DECIMAL(11, 8)`                          |
+| `type`              | The type of the location, such as a designated bus stop or a general landmark.                    | `ENUM('stop', 'landmark')`                |
+| `status`            | The status of the entry’s visibility and authenticity (pending, approved, or rejected).           | `ENUM('pending', 'approved', 'rejected')` |
+| `contribution_id`   | The index to the contribution entry associated with this location from the `contributions` table. | `INT`                                     |
+| `updated_by`        | The index to the agent’s unique identifier from the `agents` table who last modified the entry.   | `INT`                                     |
+| `approved_by`       | The index to the admin’s unique identifier from the `admins` table who approved the entry.        | `INT`                                     |
+| `updated_at`        | The timestamp indicating the date and time of the approval from the admin.                        | `DATETIME`                                |
+| `departure_count`   | The number of times this location has been used as a departure point to find routes.              | `INT DEFAULT 0`                           |
+| `destination_count` | The number of times this location has been used as a destination point to find routes.            | `INT DEFAULT 0`                           |
+
+---
+
+### 2. `vehicles`
+
+Stores all the data related to the vehicles or yatayats registered in our system.
+
+| TITLE             | DESCRIPTION                                                                                                                                                                   | DATA-TYPE                                 |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `vehicle_id`      | Stores the unique identifier of the vehicle entry.                                                                                                                            | `INT AUTO_INCREMENT`                      |
+| `name`            | The name of the vehicle or the yatayat company.                                                                                                                               | `VARCHAR(255)`                            |
+| `description`     | A short description of the yatayat or vehicle (approx. 5 to 10 words).                                                                                                        | `TEXT`                                    |
+| `image_path`      | The file path to the image showing the vehicle or the yatayat for user identification.                                                                                        | `VARCHAR(255)`                            |
+| `status`          | The status of the entry’s visibility and authenticity (pending, approved, or rejected).                                                                                       | `ENUM('pending', 'approved', 'rejected')` |
+| `contribution_id` | The index to the contribution entry associated with this vehicle from the `contributions` table.                                                                              | `INT`                                     |
+| `updated_by`      | The index to the agent’s unique identifier from the `agents` table who last updated the entry.                                                                                | `INT`                                     |
+| `approved_by`     | The index to the admin’s unique identifier from the `admins` table who approved the entry.                                                                                    | `INT`                                     |
+| `updated_at`      | The timestamp indicating the date and time of the approval from the admin.                                                                                                    | `DATETIME`                                |
+| `used_routes`     | A JSON array of the routes that this vehicle moves in along with the number of vehicles in that route. Example: `[{"route_id": 1, "count": 6}, {"route_id": 3, "count": 4}]`. | `JSON`                                    |
+| `starts_at`       | The time at which this vehicle service starts operating (e.g., 6:00 AM).                                                                                                      | `TIME`                                    |
+| `stops_at`        | The time at which this vehicle service stops operating (e.g., 9:00 PM).                                                                                                       | `TIME`                                    |
+
+---
+
+### 3. `routes`
+
+Stores all the data regarding the bus routes, which are sequences of mapped locations.
+
+| TITLE             | DESCRIPTION                                                                                                                                                              | DATA-TYPE                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| `route_id`        | Stores the unique identifier of the route entry.                                                                                                                         | `INT AUTO_INCREMENT`                      |
+| `name`            | The name of the route in a format indicating start and end points (e.g., Greenland - Sundhara).                                                                          | `VARCHAR(255)`                            |
+| `description`     | A short description of the specific route, usually between 5 to 10 words.                                                                                                | `TEXT`                                    |
+| `image_path`      | The file path to the image representing the route map or the visual layout of the route.                                                                                 | `VARCHAR(255)`                            |
+| `status`          | The status of the entry’s visibility and authenticity (pending, approved, or rejected).                                                                                  | `ENUM('pending', 'approved', 'rejected')` |
+| `contribution_id` | The index to the contribution entry associated with this route from the `contributions` table.                                                                           | `INT`                                     |
+| `updated_by`      | The index to the agent’s unique identifier from the `agents` table who created or updated the route.                                                                     | `INT`                                     |
+| `approved_by`     | The index to the admin’s unique identifier from the `admins` table who verified the route.                                                                               | `INT`                                     |
+| `updated_at`      | The timestamp indicating the date and time of the approval from the admin.                                                                                               | `DATETIME`                                |
+| `location_list`   | A JSON array of the locations that this route moves along with the index of the location. Example: `[{"index": 1, "location_id": 10}, {"index": 2, "location_id": 15}]`. | `JSON`                                    |
+
+---
+
+### 4. `contributions`
+
+Stores the history and status of all data proposals made by agents.
+
+| TITLE                 | DESCRIPTION                                                                                                       | DATA-TYPE                                 |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `contribution_id`     | Stores the unique identifier of the contribution request.                                                         | `INT AUTO_INCREMENT`                      |
+| `type`                | The type of contribution, which can be a vehicle, a route, or a location.                                         | `ENUM('vehicle', 'route', 'location')`    |
+| `associated_entry_id` | The index of the entry in the related table (vehicle, route, or location) which this contribution corresponds to. | `INT`                                     |
+| `proposed_by`         | The index to the agent’s unique identifier from the `agents` table who made the proposal.                         | `INT`                                     |
+| `accepted_by`         | The index to the admin’s unique identifier from the `admins` table who responded to the proposal.                 | `INT`                                     |
+| `status`              | The status of the contribution request (accepted, rejected, or pending).                                          | `ENUM('pending', 'accepted', 'rejected')` |
+| `proposed_at`         | The timestamp marking the creation of the contribution request.                                                   | `DATETIME`                                |
+| `responded_at`        | The timestamp marking the rejection or approval of the request by an admin.                                       | `DATETIME`                                |
+| `rejection_reason`    | The detailed reason for rejection if the admin decided to reject the request.                                     | `TEXT`                                    |
+
+---
+
+### 5. `agents`
+
+Stores all the data related to the volunteers (agents) who collect and feed data into the system.
+
+| TITLE                   | DESCRIPTION                                                                                                                                                       | DATA-TYPE            |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| `agent_id`              | Stores the unique identifier of the agent.                                                                                                                        | `INT AUTO_INCREMENT` |
+| `name`                  | The full name of the registered agent.                                                                                                                            | `VARCHAR(255)`       |
+| `email`                 | The official email address of the agent for communication and login.                                                                                              | `VARCHAR(255)`       |
+| `phone_number`          | The primary phone number of the agent.                                                                                                                            | `VARCHAR(20)`        |
+| `image_path`            | The file path to the agent's profile picture image.                                                                                                               | `VARCHAR(255)`       |
+| `joined_at`             | The timestamp indicating when the agent account was created.                                                                                                      | `DATETIME`           |
+| `password_hash`         | The secure hash of the agent's login password.                                                                                                                    | `VARCHAR(255)`       |
+| `contributions_summary` | A JSON array containing the count of contributions made to the system for vehicles, locations, and routes. Example: `{"vehicle": 5, "location": 10, "route": 3}`. | `JSON`               |
+| `last_login`            | The timestamp indicating the date and time of the agent's last login.                                                                                             | `DATETIME`           |
+
+---
+
+### 6. `admins`
+
+Stores all the data related to the administrators who manage the system and verify data.
+
+| TITLE           | DESCRIPTION                                                           | DATA-TYPE            |
+| --------------- | --------------------------------------------------------------------- | -------------------- |
+| `admin_id`      | Stores the unique identifier of the admin.                            | `INT AUTO_INCREMENT` |
+| `name`          | The full name of the administrator.                                   | `VARCHAR(255)`       |
+| `email`         | The email address of the admin for system access.                     | `VARCHAR(255)`       |
+| `phone_number`  | The contact phone number of the administrator.                        | `VARCHAR(20)`        |
+| `image_path`    | The file path to the admin's profile picture image.                   | `VARCHAR(255)`       |
+| `joined_at`     | The timestamp indicating when the admin account was created.          | `DATETIME`           |
+| `password_hash` | The secure hash of the admin's login password.                        | `VARCHAR(255)`       |
+| `last_login`    | The timestamp indicating the date and time of the admin's last login. | `DATETIME`           |
+
+---
+
+### 7. `alerts`
+
+Stores data about smart emergency alerts issued by the administration due to route disturbances.
+
+| TITLE             | DESCRIPTION                                                                                              | DATA-TYPE            |
+| ----------------- | -------------------------------------------------------------------------------------------------------- | -------------------- |
+| `alert_id`        | Stores the unique identifier of the issued emergency alert.                                              | `INT AUTO_INCREMENT` |
+| `name`            | The title or name of the alert (e.g., Strike in Sundhara).                                               | `VARCHAR(255)`       |
+| `description`     | A short description providing details about the alert and the reason for the disturbance.                | `TEXT`               |
+| `issued_by`       | The index to the admin’s unique identifier from the `admins` table who created the alert.                | `INT`                |
+| `routes_affected` | A JSON array containing the IDs of the routes affected by this specific issue. Example: `[3, 5, 9, 12]`. | `JSON`               |
+| `reported_at`     | The timestamp indicating when the alert was first created.                                               | `DATETIME`           |
+| `expires_at`      | The timestamp indicating the expected time that the issue will be resolved and the alert will expire.    | `DATETIME`           |
+
+---
+
+### 8. `suggestions`
+
+Stores user feedback, complaints, and suggestions regarding rides and app accuracy.
+
+| TITLE                | DESCRIPTION                                                                                   | DATA-TYPE                                                       |
+| -------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `suggestion_id`      | Stores the unique identifier of the suggestion or feedback entry.                             | `INT AUTO_INCREMENT`                                            |
+| `type`               | The type of feedback provided (complaint, suggestion, correction, or appreciation).           | `ENUM('complaint', 'suggestion', 'correction', 'appreciation')` |
+| `message`            | The detailed message or feedback provided by the end user.                                    | `TEXT`                                                          |
+| `rating`             | The numerical user rating for the trip or the route accuracy (ranging from 1 to 5).           | `INT`                                                           |
+| `related_route_id`   | The index to the specific route related to this feedback if one was provided.                 | `INT`                                                           |
+| `related_vehicle_id` | The index to the specific vehicle related to this feedback if one was provided.               | `INT`                                                           |
+| `ip_address`         | The IP address of the client device that submitted the feedback.                              | `VARCHAR(45)`                                                   |
+| `status`             | The current status of the feedback entry (pending, reviewed, or resolved).                    | `ENUM('pending', 'reviewed', 'resolved')`                       |
+| `reviewed_by`        | The index to the admin’s unique identifier from the `admins` table who reviewed the feedback. | `INT`                                                           |
+| `submitted_at`       | The timestamp marking when the feedback was submitted.                                        | `DATETIME`                                                      |
+| `reviewed_at`        | The timestamp marking when the admin completed the review of the feedback.                    | `DATETIME`                                                      |
+
+---
+
+### 9. `trips`
+
+Logs trip searches and route queries for system analysis and improvement.
+
+| TITLE                     | DESCRIPTION                                                                       | DATA-TYPE            |
+| ------------------------- | --------------------------------------------------------------------------------- | -------------------- |
+| `trip_id`                 | Stores the unique identifier of the recorded trip query.                          | `INT AUTO_INCREMENT` |
+| `ip_address`              | The IP address of the client device that performed the search.                    | `VARCHAR(45)`        |
+| `start_location_id`       | The index of the starting point location from the `locations` table.              | `INT`                |
+| `destination_location_id` | The index of the destination point location from the `locations` table.           | `INT`                |
+| `routes_used`             | A JSON array of the routes suggested or used for the trip. Example: `[3, 2, 12]`. | `JSON`               |
+| `queried_at`              | The timestamp indicating the time that the user searched for that specific route. | `DATETIME`           |
