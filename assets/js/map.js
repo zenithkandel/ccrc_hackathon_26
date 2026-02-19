@@ -11,7 +11,6 @@ const SawariMap = (function () {
     'use strict';
 
     const CONFIG = window.SAWARI_MAP_CONFIG || {};
-    const BASE_URL = CONFIG.baseUrl || '';
 
     let map = null;
     let stopsLayer = null;

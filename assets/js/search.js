@@ -10,8 +10,6 @@
 const SawariSearch = (function () {
     'use strict';
 
-    const BASE_URL = (window.SAWARI_MAP_CONFIG || {}).baseUrl || '';
-
     // ─── State ──────────────────────────────────────────────
     let startLocation = null;
     let endLocation = null;
@@ -159,7 +157,7 @@ const SawariSearch = (function () {
         var userCoords = { lat: lat, lng: lng };
 
         SawariUtils.apiFetch(
-            BASE_URL + '/api/locations/read.php?nearest=1&lat=' + lat +
+            'api/locations/read.php?nearest=1&lat=' + lat +
             '&lng=' + lng + '&radius=50&status=approved&limit=1'
         ).then(function (data) {
             var locs = data.locations || data.data || [];
@@ -336,7 +334,7 @@ const SawariSearch = (function () {
 
                 // Find nearest bus stop to this internet place
                 SawariUtils.apiFetch(
-                    BASE_URL + '/api/locations/read.php?nearest=1&lat=' + lat +
+                    'api/locations/read.php?nearest=1&lat=' + lat +
                     '&lng=' + lng + '&radius=50&status=approved&limit=1'
                 ).then(function (data) {
                     var locs = data.locations || data.data || [];
@@ -395,7 +393,7 @@ const SawariSearch = (function () {
                 var lat = pos.coords.latitude, lng = pos.coords.longitude;
                 var userCoords = { lat: lat, lng: lng };
                 SawariUtils.apiFetch(
-                    BASE_URL + '/api/locations/read.php?nearest=1&lat=' + lat +
+                    'api/locations/read.php?nearest=1&lat=' + lat +
                     '&lng=' + lng + '&radius=50&status=approved&limit=1'
                 ).then(function (data) {
                     var locs = data.locations || data.data || [];
