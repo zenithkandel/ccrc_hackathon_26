@@ -315,9 +315,9 @@ const SawariSearch = (function () {
 
                     const icon = L.divIcon({
                         className: 'marker-alert',
-                        html: `<div style="width:24px;height:24px;background:${color};border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:14px;color:#fff;font-weight:bold;">!</div>`,
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 12]
+                        html: `<div class="marker-pin marker-pin-alert" style="background:${color};"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>`,
+                        iconSize: [28, 36],
+                        iconAnchor: [14, 36]
                     });
 
                     L.marker([parseFloat(firstStop.latitude), parseFloat(firstStop.longitude)], { icon })

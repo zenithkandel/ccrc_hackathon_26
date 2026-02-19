@@ -31,25 +31,28 @@ const SawariMap = (function () {
     // State: which point are we setting next? ('a' or 'b')
     let nextPoint = 'a';
 
-    // Custom icons
+    // Custom icons — unique SVG-based markers
     const iconA = L.divIcon({
-        className: 'marker-point-a',
-        html: '<div style="width:18px;height:18px;background:var(--color-primary-500,#3B82F6);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>',
-        iconSize: [18, 18],
-        iconAnchor: [9, 9]
+        className: 'marker-icon-a',
+        html: '<div class="marker-pin marker-pin-origin"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 1.892.402 3.13 1.5 4.5L12 22l6.5-7.5c1.098-1.37 1.5-2.608 1.5-4.5a8 8 0 0 0-8-8z"/></svg></div>',
+        iconSize: [32, 40],
+        iconAnchor: [16, 40],
+        popupAnchor: [0, -40]
     });
 
     const iconB = L.divIcon({
-        className: 'marker-point-b',
-        html: '<div style="width:18px;height:18px;background:var(--color-accent-600,#E8590C);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>',
-        iconSize: [18, 18],
-        iconAnchor: [9, 9]
+        className: 'marker-icon-b',
+        html: '<div class="marker-pin marker-pin-dest"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>',
+        iconSize: [32, 40],
+        iconAnchor: [16, 40],
+        popupAnchor: [0, -40]
     });
 
     const iconStop = L.divIcon({
-        className: 'marker-stop',
-        iconSize: [12, 12],
-        iconAnchor: [6, 6]
+        className: 'marker-icon-stop',
+        html: '<div class="marker-dot marker-dot-stop"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></div>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
     });
 
     /* ──────────────────────────────────────────────
@@ -296,12 +299,27 @@ const SawariMap = (function () {
      * Add a circle marker at a stop with a popup.
      */
     function addRouteStopMarker(lat, lng, name, cssClass) {
-        const el = document.createElement('div');
-        el.className = cssClass || 'marker-stop';
+        // Choose icon based on marker type
+        let iconHtml, size, anchor;
+        if (cssClass === 'marker-stop-boarding') {
+            iconHtml = '<div class="marker-pin marker-pin-board"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></div>';
+            size = [28, 36]; anchor = [14, 36];
+        } else if (cssClass === 'marker-stop-destination') {
+            iconHtml = '<div class="marker-pin marker-pin-dest"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>';
+            size = [28, 36]; anchor = [14, 36];
+        } else if (cssClass === 'marker-stop-transfer') {
+            iconHtml = '<div class="marker-pin marker-pin-transfer"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>';
+            size = [28, 36]; anchor = [14, 36];
+        } else {
+            // Regular intermediate stop — small dot
+            iconHtml = '<div class="marker-dot marker-dot-intermediate"></div>';
+            size = [10, 10]; anchor = [5, 5];
+        }
         const icon = L.divIcon({
             className: cssClass || 'marker-stop',
-            iconSize: cssClass ? [14, 14] : [12, 12],
-            iconAnchor: cssClass ? [7, 7] : [6, 6]
+            html: iconHtml,
+            iconSize: size,
+            iconAnchor: anchor
         });
         const m = L.marker([lat, lng], { icon })
             .bindPopup(`<strong>${escHtml(name)}</strong>`)

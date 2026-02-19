@@ -174,6 +174,100 @@
     color: var(--color-primary-600);
 }
 
+/* Fare block with student price */
+.result-fare-block {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.result-fare-student {
+    font-size: var(--text-xs);
+    color: var(--color-neutral-400);
+    margin-top: 2px;
+}
+
+/* Vehicle Hero Card (large image) */
+.result-vehicle-hero {
+    position: relative;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    margin-bottom: var(--space-4);
+    background: var(--color-neutral-200);
+}
+
+.result-vehicle-hero-img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    display: block;
+}
+
+.result-vehicle-hero-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+    padding: var(--space-6) var(--space-4) var(--space-4);
+}
+
+.result-vehicle-hero-info {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.result-vehicle-hero-info .result-vehicle-name {
+    color: #fff;
+    font-size: var(--text-base);
+}
+
+.result-vehicle-hero-info .result-vehicle-type {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.result-vehicle-hero-info .result-fare {
+    color: #fff;
+    font-size: var(--text-lg);
+}
+
+.result-vehicle-hero-info .result-fare-student {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Stop timeline icons */
+.stop-icon {
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+    margin-right: 2px;
+}
+
+.stop-icon-board {
+    color: #16A34A;
+}
+
+.stop-icon-dest {
+    color: var(--color-accent-600);
+}
+
+.stop-icon-transfer {
+    color: #D97706;
+}
+
+/* Carbon card inline icons */
+.carbon-icon {
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+.carbon-icon-leaf {
+    color: var(--color-success-600);
+}
+
 /* Stops timeline in result */
 .stops-timeline {
     position: relative;
@@ -232,15 +326,103 @@
 }
 
 
-/* --- Map Marker Custom Styles --- */
+/* --- Map Marker Custom Styles — SVG Pin Icons --- */
 
-.marker-stop {
-    background: var(--color-primary-600);
-    border: 2px solid var(--color-white);
+/* Shared pin base (teardrop shape) */
+.marker-pin {
+    width: 28px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 2px solid #fff;
+}
+
+.marker-pin svg {
+    transform: rotate(45deg);
+}
+
+/* Origin pin — blue */
+.marker-pin-origin {
+    background: var(--color-primary-500, #3B82F6);
+}
+
+/* Destination pin — orange */
+.marker-pin-dest {
+    background: var(--color-accent-600, #E8590C);
+}
+
+/* Boarding pin — green */
+.marker-pin-board {
+    background: #16A34A;
+}
+
+/* Transfer pin — amber */
+.marker-pin-transfer {
+    background: #D97706;
+}
+
+/* Alert pin — dynamic color via inline style */
+.marker-pin-alert {
+    background: #DC2626;
+}
+
+/* Bus stop dot marker */
+.marker-dot {
     border-radius: var(--radius-full);
-    width: 12px;
-    height: 12px;
+    border: 2px solid var(--color-white);
     box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.marker-dot-stop {
+    width: 22px;
+    height: 22px;
+    background: var(--color-primary-600);
+}
+
+.marker-dot-intermediate {
+    width: 10px;
+    height: 10px;
+    background: var(--color-neutral-400);
+}
+
+/* Vehicle marker (tracking) */
+.marker-vehicle-dot {
+    width: 32px;
+    height: 32px;
+    background: var(--color-accent-600);
+    border-radius: var(--radius-full);
+    border: 3px solid #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.marker-vehicle-dot:hover {
+    transform: scale(1.15);
+}
+
+.marker-vehicle-dot-pulse {
+    position: relative;
+    width: 36px;
+    height: 36px;
+}
+
+.marker-vehicle-dot-pulse::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border: 2px solid var(--color-accent-400);
+    border-radius: var(--radius-full);
+    animation: vehiclePulse 1.5s ease-out infinite;
 }
 
 .marker-vehicle {
@@ -325,28 +507,15 @@
 }
 
 /* Approaching stop — pulsing ring animation */
-.marker-vehicle-approaching {
-    width: 20px !important;
-    height: 20px !important;
+.marker-vehicle-approaching .marker-vehicle-dot {
+    width: 36px;
+    height: 36px;
 }
 
-.marker-vehicle-pulse {
-    width: 16px;
-    height: 16px;
-    background: var(--color-accent-600);
-    border: 2px solid var(--color-white);
-    border-radius: var(--radius-full);
-    box-shadow: var(--shadow-md);
-    position: relative;
-}
-
-.marker-vehicle-pulse::after {
-    content: '';
-    position: absolute;
-    inset: -4px;
-    border: 2px solid var(--color-accent-400);
-    border-radius: var(--radius-full);
-    animation: vehiclePulse 1.5s ease-out infinite;
+.marker-vehicle-icon {
+    /* Leaflet divIcon resets — needed */
+    background: transparent !important;
+    border: none !important;
 }
 
 @keyframes vehiclePulse {
