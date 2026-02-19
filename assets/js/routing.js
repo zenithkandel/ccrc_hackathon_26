@@ -288,9 +288,7 @@ const SawariRouting = (function () {
 
         // Vehicle info
         if (vehicle) {
-            const imgSrc = vehicle.image_path
-                ? SawariMap.BASE + '/' + vehicle.image_path
-                : '';
+            const imgSrc = "../uploads/vehicles/" + vehicle.image_path;
             html += `
                 <div class="result-vehicle">
                     ${imgSrc ? `<img class="result-vehicle-image" src="${imgSrc}" alt="${esc(vehicle.name)}">` : ''}
