@@ -223,8 +223,9 @@ CREATE TABLE suggestions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =============================================
--- DEFAULT ADMIN SEED (password: change_me_immediately)
--- Hash generated with: password_hash('change_me_immediately', PASSWORD_BCRYPT)
+-- DEFAULT ADMIN SEED (password: admin123)
+-- Change this password immediately after first login!
+-- Hash generated with: password_hash('admin123', PASSWORD_BCRYPT)
 -- =============================================
 INSERT INTO admins (name, email, password, role) VALUES
-('Super Admin', 'admin@sawari.com', '$2y$10$placeholder_hash_replace_before_use', 'superadmin');
+('Super Admin', 'admin@sawari.com', '$2y$12$Ao.m4poLfru1/LQa2c0BhOYVYlbnB4Lk8GbCPxsJgpSXAPgxUQaHW', 'superadmin');
