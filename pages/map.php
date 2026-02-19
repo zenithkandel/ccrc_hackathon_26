@@ -44,14 +44,43 @@ require_once __DIR__ . '/../api/config.php';
     <!-- ===== Map Container ===== -->
     <div class="map-container" id="map"></div>
 
+    <!-- ===== Settings Panel (top-right gear) ===== -->
+    <div class="settings-fab" id="settings-fab">
+        <button class="settings-fab-btn" id="settings-btn" title="Map settings">
+            <i data-feather="settings" style="width:20px;height:20px;"></i>
+        </button>
+        <div class="settings-dropdown" id="settings-dropdown">
+            <div class="settings-dropdown-header">Map Layers</div>
+            <label class="settings-toggle">
+                <input type="checkbox" id="toggle-stops" checked>
+                <span class="settings-toggle-slider"></span>
+                <span class="settings-toggle-label">Bus Stops</span>
+            </label>
+            <label class="settings-toggle">
+                <input type="checkbox" id="toggle-vehicles" checked>
+                <span class="settings-toggle-slider"></span>
+                <span class="settings-toggle-label">Live Vehicles</span>
+            </label>
+            <label class="settings-toggle">
+                <input type="checkbox" id="toggle-alerts" checked>
+                <span class="settings-toggle-slider"></span>
+                <span class="settings-toggle-label">Warnings</span>
+            </label>
+            <label class="settings-toggle">
+                <input type="checkbox" id="toggle-routes" checked>
+                <span class="settings-toggle-slider"></span>
+                <span class="settings-toggle-label">Route Lines</span>
+            </label>
+        </div>
+    </div>
+
     <!-- ===== Search Panel (top-left overlay) ===== -->
     <div class="search-panel" id="search-panel">
         <div class="search-panel-card">
             <!-- Brand -->
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4);">
+            <div class="search-panel-header" id="search-panel-header">
                 <div style="display:flex;align-items:center;gap:var(--space-2);">
-                    <span
-                        style="font-size:var(--text-lg);font-weight:var(--font-bold);color:var(--color-neutral-900);letter-spacing:var(--tracking-tight);">Sawari</span>
+                    <span class="search-panel-brand">Sawari</span>
                     <span class="badge badge-accent" style="font-size:10px;">Beta</span>
                 </div>
                 <div style="display:flex;gap:var(--space-1);">
@@ -63,10 +92,14 @@ require_once __DIR__ . '/../api/config.php';
                     <button class="btn btn-ghost btn-icon btn-sm" id="locate-btn" title="My Location">
                         <i data-feather="crosshair" style="width:18px;height:18px;"></i>
                     </button>
+                    <button class="btn btn-ghost btn-icon btn-sm search-panel-collapse-btn" id="search-collapse-btn" title="Collapse">
+                        <i data-feather="chevron-up" style="width:18px;height:18px;"></i>
+                    </button>
                 </div>
             </div>
 
-            <!-- Search Inputs -->
+            <!-- Search Inputs (collapsible body) -->
+            <div class="search-panel-body" id="search-panel-body">
             <div class="search-panel-inputs">
                 <div class="search-panel-input-row">
                     <div class="search-panel-dot search-panel-dot-a"></div>
@@ -109,6 +142,7 @@ require_once __DIR__ . '/../api/config.php';
                 style="font-size:var(--text-xs);color:var(--color-neutral-400);margin:var(--space-3) 0 0;text-align:center;">
                 Or click on the map to set points
             </p>
+            </div><!-- /search-panel-body -->
         </div>
 
         <!-- Active alerts banner (shown if any) -->
@@ -123,8 +157,11 @@ require_once __DIR__ . '/../api/config.php';
 
     <!-- ===== Route Result Panel (bottom sheet) ===== -->
     <div class="result-panel" id="result-panel">
-        <div class="result-panel-handle">
+        <div class="result-panel-handle" id="result-panel-handle">
             <div class="result-panel-handle-bar"></div>
+        </div>
+        <div class="result-panel-peek" id="result-panel-peek">
+            <!-- Peek summary filled by routing.js -->
         </div>
         <div class="result-panel-content" id="result-content">
             <!-- Filled dynamically by routing.js -->
