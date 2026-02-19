@@ -49,11 +49,18 @@ void gpsUpdate() {
 }
 
 /**
- * Check if GPS has a valid location fix.
- * Uses TinyGPSPlus isValid() which verifies the NMEA data integrity.
+ * Check if GPS has a valid and recent location fix.
+ * Uses isValid() for fix validity and age() to ensure data freshness.
+ * 
+ * NOTE: We intentionally do NOT use isUpdated() here because it auto-clears
+ * after each call, which would cause the fix flag to be true for only one
+ * loop iteration per NMEA update (~10ms out of every 1000ms). This would
+ * cause the 2-second send interval to frequently miss the "fix available"
+ * window. Using age() < 5000ms ensures the data is recent without the
+ * one-shot clearing behavior.
  */
 bool gpsHasFix() {
-    return _gps.location.isValid() && _gps.location.isUpdated();
+    return _gps.location.isValid() && _gps.location.age() < 5000;
 }
 
 /**
@@ -119,21 +126,23 @@ void gpsGetTelemetry(TelemetryData* data) {
  * 
  * Output format matches the API specification:
  * {
- *   "bus_id": 1,
- *   "latitude": 27.712345,
- *   "longitude": 85.312345,
- *   "speed": 34.5,
- *   "direction": 182.4,
- *   "altitude": 1350.2,
- *   "satellites": 9,
- *   "hdop": 0.9,
- *   "timestamp": "2026-02-19T10:15:23Z"
+ *   "data": {
+ *     "bus_id": 1,
+ *     "latitude": 27.712345,
+ *     "longitude": 85.312345,
+ *     "speed": 34.5,
+ *     "direction": 182.4,
+ *     "altitude": 1350.2,
+ *     "satellites": 9,
+ *     "hdop": 0.9,
+ *     "timestamp": "2026-02-19T10:15:23Z"
+ *   }
  * }
  */
 String gpsFormatPayload(const TelemetryData* data) {
-    char buffer[384];
+    char buffer[400];
     snprintf(buffer, sizeof(buffer),
-        "{"
+        "{\"data\":{"
         "\"bus_id\":%d,"
         "\"latitude\":%.6f,"
         "\"longitude\":%.6f,"
@@ -143,7 +152,7 @@ String gpsFormatPayload(const TelemetryData* data) {
         "\"satellites\":%d,"
         "\"hdop\":%.1f,"
         "\"timestamp\":\"%s\""
-        "}",
+        "}}",
         BUS_ID,
         data->latitude,
         data->longitude,
