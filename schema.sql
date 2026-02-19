@@ -122,7 +122,6 @@ CREATE TABLE `routes` (
   `route_id` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
-  `image_path` varchar(255) DEFAULT NULL,
   `status` enum('pending','approved','rejected') DEFAULT 'pending',
   `contribution_id` int(11) DEFAULT NULL,
   `updated_by` int(11) DEFAULT NULL,
