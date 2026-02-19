@@ -195,7 +195,7 @@ switch ($action) {
         if (!$cont)
             jsonError('Contribution not found.');
 
-        $db->prepare("UPDATE contributions SET status = 'rejected', reviewed_by = :admin, reviewed_at = NOW(), admin_note = :reason WHERE contribution_id = :id")
+        $db->prepare("UPDATE contributions SET status = 'rejected', reviewed_by = :admin, reviewed_at = NOW(), rejection_reason = :reason WHERE contribution_id = :id")
             ->execute([':admin' => getAdminId(), ':id' => $id, ':reason' => $reason]);
 
         $table = $cont['type'] === 'location' ? 'locations' : ($cont['type'] === 'vehicle' ? 'vehicles' : 'routes');

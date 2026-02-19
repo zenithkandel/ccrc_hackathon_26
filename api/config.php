@@ -234,15 +234,25 @@ function getAction(): string
 // ============================================================
 
 /**
- * Calculate pagination offset from page number.
- * Returns [offset, limit].
+ * Calculate pagination from total count.
+ * Reads page from GET params automatically.
+ * Returns associative array: offset, per_page, page, total, total_pages.
  */
-function paginate(int $page = 1, int $perPage = DEFAULT_PAGE_SIZE): array
+function paginate(int $total, int $page = null, int $perPage = DEFAULT_PAGE_SIZE): array
 {
+    if ($page === null) $page = getInt('page', 1);
     $page = max(1, $page);
     $perPage = min(max(1, $perPage), MAX_PAGE_SIZE);
+    $totalPages = max(1, (int) ceil($total / $perPage));
+    $page = min($page, $totalPages);
     $offset = ($page - 1) * $perPage;
-    return [$offset, $perPage];
+    return [
+        'offset' => $offset,
+        'per_page' => $perPage,
+        'page' => $page,
+        'total' => $total,
+        'total_pages' => $totalPages
+    ];
 }
 
 
