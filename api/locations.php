@@ -11,6 +11,8 @@
  *   reject   – POST – Set status = rejected (with reason stored as contribution)
  *   delete   – POST – Hard delete
  *   search   – GET  – Search locations by name (public, approved only)
+ *   approved – GET  – All approved locations for map markers (public)
+ *   nearby   – GET  – Nearby duplicate check (Haversine)
  */
 
 require_once __DIR__ . '/config.php';
@@ -317,6 +319,20 @@ switch ($action) {
 
         $stmt = $db->prepare($sql);
         $stmt->execute([':lat1' => $lat, ':lng1' => $lng, ':lat2' => $lat, ':radius' => $radius]);
+
+        jsonResponse(['success' => true, 'locations' => $stmt->fetchAll()]);
+        break;
+
+    /* ── All Approved Locations (public, for map markers) ──── */
+    case 'approved':
+        $db = getDB();
+
+        $stmt = $db->prepare("SELECT location_id, name, latitude, longitude, type,
+                                     departure_count, destination_count
+                              FROM locations
+                              WHERE status = 'approved'
+                              ORDER BY name ASC");
+        $stmt->execute();
 
         jsonResponse(['success' => true, 'locations' => $stmt->fetchAll()]);
         break;

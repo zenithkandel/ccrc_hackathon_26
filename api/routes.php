@@ -287,6 +287,41 @@ switch ($action) {
         }
         break;
 
+    /* ══════════════════════════════════════════════════════
+     *  PUBLIC ENDPOINTS
+     * ══════════════════════════════════════════════════════ */
+
+    /* ── Approved Routes (public, for map/routing) ──────── */
+    case 'approved':
+        $db = getDB();
+
+        $stmt = $db->prepare("SELECT route_id, name, description, location_list,
+                                     fare_base, fare_per_km
+                              FROM routes
+                              WHERE status = 'approved'
+                              ORDER BY name ASC");
+        $stmt->execute();
+        $routes = $stmt->fetchAll();
+
+        // Parse location_list JSON and attach vehicle info
+        foreach ($routes as &$r) {
+            $r['location_list_parsed'] = $r['location_list'] ? json_decode($r['location_list'], true) : [];
+            $r['stop_count'] = count($r['location_list_parsed']);
+            unset($r['location_list']); // don't send raw JSON to client
+
+            // Find vehicles that use this route
+            $vStmt = $db->prepare("SELECT vehicle_id, name, image_path, electric, starts_at, stops_at
+                                   FROM vehicles
+                                   WHERE status = 'approved'
+                                     AND JSON_CONTAINS(used_routes, :rid)");
+            $vStmt->execute([':rid' => json_encode($r['route_id'])]);
+            $r['vehicles'] = $vStmt->fetchAll();
+        }
+        unset($r);
+
+        jsonResponse(['success' => true, 'routes' => $routes]);
+        break;
+
     default:
         jsonError('Unknown action.', 400);
 }
