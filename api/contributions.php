@@ -258,7 +258,8 @@ switch ($action) {
             $s = $db->prepare("SELECT name FROM $tbl WHERE contribution_id = :cid LIMIT 1");
             $s->execute([':cid' => $cont['contribution_id']]);
             $row = $s->fetch();
-            if ($row) $cont['item_name'] = $row['name'];
+            if ($row)
+                $cont['item_name'] = $row['name'];
         }
         unset($cont);
 
