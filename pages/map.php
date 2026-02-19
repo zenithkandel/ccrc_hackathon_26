@@ -49,7 +49,8 @@ require_once __DIR__ . '/../api/config.php';
             <!-- Brand -->
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4);">
                 <div style="display:flex;align-items:center;gap:var(--space-2);">
-                    <span style="font-size:var(--text-lg);font-weight:var(--font-bold);color:var(--color-neutral-900);letter-spacing:var(--tracking-tight);">Sawari</span>
+                    <span
+                        style="font-size:var(--text-lg);font-weight:var(--font-bold);color:var(--color-neutral-900);letter-spacing:var(--tracking-tight);">Sawari</span>
                     <span class="badge badge-accent" style="font-size:10px;">Beta</span>
                 </div>
                 <button class="btn btn-ghost btn-icon btn-sm" id="locate-btn" title="My Location">
@@ -78,8 +79,7 @@ require_once __DIR__ . '/../api/config.php';
                 <div class="search-panel-input-row">
                     <div class="search-panel-dot search-panel-dot-b"></div>
                     <div style="flex:1;position:relative;">
-                        <input type="text" class="form-input" id="input-b" placeholder="Where to?"
-                            autocomplete="off">
+                        <input type="text" class="form-input" id="input-b" placeholder="Where to?" autocomplete="off">
                         <div class="search-results" id="results-b"></div>
                     </div>
                     <button class="btn btn-ghost btn-icon btn-sm" id="clear-b" title="Clear" style="display:none;">
@@ -97,7 +97,8 @@ require_once __DIR__ . '/../api/config.php';
             </div>
 
             <!-- Map click hint -->
-            <p id="map-hint" style="font-size:var(--text-xs);color:var(--color-neutral-400);margin:var(--space-3) 0 0;text-align:center;">
+            <p id="map-hint"
+                style="font-size:var(--text-xs);color:var(--color-neutral-400);margin:var(--space-3) 0 0;text-align:center;">
                 Or click on the map to set points
             </p>
         </div>
