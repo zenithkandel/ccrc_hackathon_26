@@ -68,7 +68,7 @@
 
 // API endpoint for telemetry data submission
 // UPDATE THIS to your actual server URL before deploying
-#define API_ENDPOINT        "https://zenithkandel.com.np/test api/api.php"
+#define API_ENDPOINT        "http://zenithkandel.com.np/test%20api/api.php"
 
 // HTTP request timeout in milliseconds
 #define HTTP_TIMEOUT        5000
