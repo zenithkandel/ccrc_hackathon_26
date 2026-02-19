@@ -31,7 +31,7 @@ switch ($action) {
         requireAdminAPI();
         $db = getDB();
 
-        $where  = [];
+        $where = [];
         $params = [];
 
         $status = getString('status');
@@ -62,9 +62,11 @@ switch ($action) {
                 LIMIT :offset, :limit";
 
         $stmt = $db->prepare($sql);
-        foreach ($params as $k => $val) { $stmt->bindValue($k, $val); }
+        foreach ($params as $k => $val) {
+            $stmt->bindValue($k, $val);
+        }
         $stmt->bindValue(':offset', $pagination['offset'], PDO::PARAM_INT);
-        $stmt->bindValue(':limit',  $pagination['per_page'], PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $pagination['per_page'], PDO::PARAM_INT);
         $stmt->execute();
 
         jsonResponse(['success' => true, 'agents' => $stmt->fetchAll(), 'pagination' => $pagination]);
@@ -75,7 +77,8 @@ switch ($action) {
         requireAdminAPI();
         $db = getDB();
         $id = getInt('id');
-        if (!$id) jsonError('Agent ID required.');
+        if (!$id)
+            jsonError('Agent ID required.');
 
         $stmt = $db->prepare("SELECT agent_id, name, email, phone, points,
                                      contributions_count, approved_count, status,
@@ -83,7 +86,8 @@ switch ($action) {
                               FROM agents WHERE agent_id = :id");
         $stmt->execute([':id' => $id]);
         $agent = $stmt->fetch();
-        if (!$agent) jsonError('Agent not found.', 404);
+        if (!$agent)
+            jsonError('Agent not found.', 404);
 
         // Recent contributions
         $cStmt = $db->prepare("SELECT * FROM contributions WHERE agent_id = :id ORDER BY created_at DESC LIMIT 10");
@@ -98,10 +102,11 @@ switch ($action) {
         validateCsrf();
         $db = getDB();
         $id = postInt('id');
-        if (!$id) jsonError('Agent ID required.');
+        if (!$id)
+            jsonError('Agent ID required.');
 
         $db->prepare("UPDATE agents SET status = 'active', approved_by = :admin WHERE agent_id = :id")
-           ->execute([':admin' => getAdminId(), ':id' => $id]);
+            ->execute([':admin' => getAdminId(), ':id' => $id]);
 
         jsonSuccess('Agent activated.');
         break;
@@ -112,10 +117,11 @@ switch ($action) {
         validateCsrf();
         $db = getDB();
         $id = postInt('id');
-        if (!$id) jsonError('Agent ID required.');
+        if (!$id)
+            jsonError('Agent ID required.');
 
         $db->prepare("UPDATE agents SET status = 'suspended' WHERE agent_id = :id")
-           ->execute([':id' => $id]);
+            ->execute([':id' => $id]);
 
         jsonSuccess('Agent suspended.');
         break;
@@ -126,7 +132,8 @@ switch ($action) {
         validateCsrf();
         $db = getDB();
         $id = postInt('id');
-        if (!$id) jsonError('Agent ID required.');
+        if (!$id)
+            jsonError('Agent ID required.');
 
         $db->prepare("DELETE FROM agents WHERE agent_id = :id")->execute([':id' => $id]);
         jsonSuccess('Agent deleted.');
@@ -138,22 +145,27 @@ switch ($action) {
 
     /* ── Register ────────────────────────────────────────── */
     case 'register':
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') jsonError('POST required.', 405);
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST')
+            jsonError('POST required.', 405);
         $db = getDB();
 
-        $name  = postString('name');
+        $name = postString('name');
         $email = postString('email');
-        $pass  = postString('password');
+        $pass = postString('password');
         $phone = postString('phone');
 
-        if (!$name)  jsonError('Name is required.');
-        if (!$email) jsonError('Email is required.');
-        if (!$pass || strlen($pass) < 6) jsonError('Password must be at least 6 characters.');
+        if (!$name)
+            jsonError('Name is required.');
+        if (!$email)
+            jsonError('Email is required.');
+        if (!$pass || strlen($pass) < 6)
+            jsonError('Password must be at least 6 characters.');
 
         // Check duplicate
         $check = $db->prepare("SELECT agent_id FROM agents WHERE email = :email");
         $check->execute([':email' => $email]);
-        if ($check->fetch()) jsonError('An account with this email already exists.');
+        if ($check->fetch())
+            jsonError('An account with this email already exists.');
 
         $hash = password_hash($pass, PASSWORD_BCRYPT);
 
@@ -165,13 +177,15 @@ switch ($action) {
 
     /* ── Login ───────────────────────────────────────────── */
     case 'login':
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') jsonError('POST required.', 405);
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST')
+            jsonError('POST required.', 405);
         $db = getDB();
 
         $email = postString('email');
-        $pass  = postString('password');
+        $pass = postString('password');
 
-        if (!$email || !$pass) jsonError('Email and password required.');
+        if (!$email || !$pass)
+            jsonError('Email and password required.');
 
         $stmt = $db->prepare("SELECT * FROM agents WHERE email = :email");
         $stmt->execute([':email' => $email]);
@@ -186,21 +200,21 @@ switch ($action) {
         }
 
         // Set session
-        $_SESSION['agent_id']   = $agent['agent_id'];
+        $_SESSION['agent_id'] = $agent['agent_id'];
         $_SESSION['agent_name'] = $agent['name'];
         $_SESSION['agent_email'] = $agent['email'];
 
         $db->prepare("UPDATE agents SET last_login = NOW() WHERE agent_id = :id")
-           ->execute([':id' => $agent['agent_id']]);
+            ->execute([':id' => $agent['agent_id']]);
 
         jsonResponse([
             'success' => true,
             'message' => 'Login successful.',
-            'agent'   => [
+            'agent' => [
                 'agent_id' => $agent['agent_id'],
-                'name'     => $agent['name'],
-                'email'    => $agent['email'],
-                'points'   => (int) $agent['points']
+                'name' => $agent['name'],
+                'email' => $agent['email'],
+                'points' => (int) $agent['points']
             ]
         ]);
         break;
