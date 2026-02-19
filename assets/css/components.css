@@ -218,7 +218,7 @@
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
-.btn-group .btn + .btn {
+.btn-group .btn+.btn {
     margin-left: -1px;
 }
 
@@ -346,7 +346,7 @@
     border: 1px solid var(--color-neutral-300);
     border-radius: var(--radius-md);
     transition: border-color var(--transition-fast),
-                box-shadow var(--transition-fast);
+        box-shadow var(--transition-fast);
     appearance: none;
 }
 
@@ -444,7 +444,7 @@
     left: auto;
 }
 
-.input-group .input-icon-right + .form-input,
+.input-group .input-icon-right+.form-input,
 .input-group .form-input.has-icon-right {
     padding-right: var(--space-10);
 }
@@ -514,15 +514,15 @@
     transition: transform var(--transition-fast);
 }
 
-.toggle input:checked + .toggle-track {
+.toggle input:checked+.toggle-track {
     background: var(--color-primary-600);
 }
 
-.toggle input:checked + .toggle-track::after {
+.toggle input:checked+.toggle-track::after {
     transform: translateX(18px);
 }
 
-.toggle input:focus-visible + .toggle-track {
+.toggle input:focus-visible+.toggle-track {
     box-shadow: 0 0 0 3px var(--color-primary-100);
 }
 
@@ -688,11 +688,25 @@
     flex-shrink: 0;
 }
 
-.status-dot-pending  { background: var(--status-pending-dot); }
-.status-dot-approved { background: var(--status-approved-dot); }
-.status-dot-rejected { background: var(--status-rejected-dot); }
-.status-dot-active   { background: var(--color-success-500); }
-.status-dot-inactive { background: var(--color-neutral-400); }
+.status-dot-pending {
+    background: var(--status-pending-dot);
+}
+
+.status-dot-approved {
+    background: var(--status-approved-dot);
+}
+
+.status-dot-rejected {
+    background: var(--status-rejected-dot);
+}
+
+.status-dot-active {
+    background: var(--color-success-500);
+}
+
+.status-dot-inactive {
+    background: var(--color-neutral-400);
+}
 
 /* Pulsing live indicator */
 .status-dot-live {
@@ -906,10 +920,21 @@
     animation: slideInRight var(--duration-slow) var(--ease-out);
 }
 
-.toast-success { border-left: 3px solid var(--color-success-500); }
-.toast-danger  { border-left: 3px solid var(--color-danger-500); }
-.toast-warning { border-left: 3px solid var(--color-warning-500); }
-.toast-info    { border-left: 3px solid var(--color-info-500); }
+.toast-success {
+    border-left: 3px solid var(--color-success-500);
+}
+
+.toast-danger {
+    border-left: 3px solid var(--color-danger-500);
+}
+
+.toast-warning {
+    border-left: 3px solid var(--color-warning-500);
+}
+
+.toast-info {
+    border-left: 3px solid var(--color-info-500);
+}
 
 
 /* ==========================================================================
@@ -959,7 +984,7 @@
     z-index: var(--z-sidebar);
     padding: var(--space-4) 0;
     transition: width var(--transition-slow),
-                transform var(--transition-slow);
+        transform var(--transition-slow);
 }
 
 /* Page content when sidebar present */
@@ -1285,12 +1310,10 @@
 
 /* Skeleton loading placeholder */
 .skeleton {
-    background: linear-gradient(
-        90deg,
-        var(--color-neutral-100) 25%,
-        var(--color-neutral-200) 50%,
-        var(--color-neutral-100) 75%
-    );
+    background: linear-gradient(90deg,
+            var(--color-neutral-100) 25%,
+            var(--color-neutral-200) 50%,
+            var(--color-neutral-100) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
     border-radius: var(--radius-md);
