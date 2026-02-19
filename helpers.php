@@ -218,10 +218,19 @@ function getWalkingDirections(float $fromLat, float $fromLng, float $toLat, floa
  * Sends all waypoints in a single OSRM request so the returned geometry
  * traces the actual roads on OpenStreetMap between the bus stops.
  *
- * Falls back to straight-line coordinates if OSRM fails.
+ * IMPORTANT — Route-finding decisions are made ENTIRELY from stored DB data
+ * (Dijkstra on the route graph). OSRM is used ONLY here — to fetch the
+ * realistic road geometry between each pair of adjacent stops so the
+ * polyline on the map traces actual roads instead of straight lines.
+ *
+ * Strategy:
+ *   For each pair of consecutive stops (A→B), make an individual OSRM
+ *   driving request. This avoids the problem where a single multi-waypoint
+ *   request with closely-spaced stops causes OSRM to route through wrong
+ *   roads or create U-turn loops.
  *
  * @param array $stops  Array of [lat, lng] pairs (the bus stops in order)
- * @return array  Array of [lat, lng] pairs tracing the road
+ * @return array  Array of [lat, lng] pairs tracing the road through all stops
  */
 function getDrivingRouteGeometry(array $stops): array
 {
@@ -229,38 +238,57 @@ function getDrivingRouteGeometry(array $stops): array
         return $stops;
     }
 
-    // ── Simplify waypoints: skip intermediate stops that are very close
-    // together. Dense waypoints on one-way streets cause OSRM to create
-    // loops around blocks. Keep first, last, and stops ≥ 250m from the
-    // previous kept stop.
-    $simplified = [$stops[0]];
-    for ($i = 1; $i < count($stops) - 1; $i++) {
-        $prev = $simplified[count($simplified) - 1];
-        $dist = haversineDistance($prev[0], $prev[1], $stops[$i][0], $stops[$i][1]);
-        if ($dist >= 0.25) { // 250 metres
-            $simplified[] = $stops[$i];
+    $fullGeometry = [];
+
+    // Process each pair of consecutive stops independently
+    for ($i = 0; $i < count($stops) - 1; $i++) {
+        $segmentGeometry = getOSRMSegmentGeometry(
+            $stops[$i][0],
+            $stops[$i][1],
+            $stops[$i + 1][0],
+            $stops[$i + 1][1]
+        );
+
+        if (empty($segmentGeometry)) {
+            // Fallback: straight line for this segment
+            $segmentGeometry = [$stops[$i], $stops[$i + 1]];
+        }
+
+        // Append segment, skipping duplicate junction point
+        if (!empty($fullGeometry)) {
+            // Remove first point of this segment (same as last point of previous)
+            array_shift($segmentGeometry);
+        }
+
+        foreach ($segmentGeometry as $point) {
+            $fullGeometry[] = $point;
         }
     }
-    $simplified[] = $stops[count($stops) - 1]; // always keep last
 
-    if (count($simplified) < 2) {
-        return $stops;
-    }
+    return !empty($fullGeometry) ? $fullGeometry : $stops;
+}
 
-    // Build OSRM coordinate string: lng1,lat1;lng2,lat2;...
-    $coordParts = [];
-    foreach ($simplified as $s) {
-        $coordParts[] = sprintf('%.6f,%.6f', $s[1], $s[0]); // lng,lat order for OSRM
-    }
-    $coordStr = implode(';', $coordParts);
-
-    // Use large snapping radius (100m per waypoint) to snap to main roads
-    // instead of narrow side lanes, preventing U-turn loops.
-    $radiuses = implode(';', array_fill(0, count($simplified), '100'));
-
-    $url = OSRM_API_URL . '/route/v1/driving/' . $coordStr
-        . '?overview=full&geometries=geojson&continue_straight=true'
-        . '&radiuses=' . $radiuses;
+/**
+ * Fetch OSRM road geometry between two points (single segment).
+ *
+ * Makes a simple A→B driving request — no intermediate waypoints,
+ * so OSRM always finds the natural shortest road path.
+ *
+ * @param float $fromLat  Start latitude
+ * @param float $fromLng  Start longitude
+ * @param float $toLat    End latitude
+ * @param float $toLng    End longitude
+ * @return array  Array of [lat, lng] pairs, or empty array on failure
+ */
+function getOSRMSegmentGeometry(float $fromLat, float $fromLng, float $toLat, float $toLng): array
+{
+    $url = OSRM_API_URL . sprintf(
+        '/route/v1/driving/%.6f,%.6f;%.6f,%.6f?overview=full&geometries=geojson&continue_straight=true',
+        $fromLng,
+        $fromLat,  // OSRM uses lng,lat order
+        $toLng,
+        $toLat
+    );
 
     $context = stream_context_create([
         'http' => [
@@ -292,8 +320,7 @@ function getDrivingRouteGeometry(array $stops): array
         }
     }
 
-    // Fallback: return the raw stop coordinates (straight lines)
-    return $stops;
+    return []; // caller handles fallback
 }
 
 /**

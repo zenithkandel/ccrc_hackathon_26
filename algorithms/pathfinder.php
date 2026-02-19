@@ -6,12 +6,23 @@
  *
  * Orchestrates the full route-finding pipeline:
  *   1. Validate inputs
- *   2. Build the transit graph
+ *   2. Build the transit graph from STORED DATABASE route data
  *   3. Handle locations that are not directly on any route (walk to nearest)
- *   4. Run modified Dijkstra
+ *   4. Run modified Dijkstra on the DB-sourced graph
  *   5. Parse path into human-readable segments (walking / riding / transfer)
  *   6. Enrich with vehicle info, fares, alerts, conductor instructions
  *   7. Return the complete response JSON structure
+ *
+ * ARCHITECTURE NOTE — OSRM's role is strictly LIMITED:
+ *   - ALL routing decisions (which bus to take, where to transfer, optimal path)
+ *     are computed from the stored route data in the database using Dijkstra.
+ *   - OSRM is used ONLY for:
+ *     (a) Walking directions — foot-profile routing from user to nearest stop
+ *     (b) Driving geometry — road-following polylines BETWEEN consecutive stops
+ *         for map display (not for routing decisions)
+ *   - OSRM calls are per-segment (stop A → stop B) to prevent routing artifacts.
+ *   - If OSRM is unavailable, the system falls back to straight-line geometry
+ *     without affecting route-finding correctness.
  */
 
 require_once __DIR__ . '/graph.php';
@@ -441,7 +452,10 @@ function buildRidingSegment(
     // ── Vehicle info
     $vehicle = getVehicleForRoute($routeId);
 
-    // ── Path coordinates for the map polyline (road-following via OSRM)
+    // ── Path coordinates for the map polyline
+    // NOTE: The route itself was already determined by Dijkstra using stored DB data.
+    // OSRM is called here ONLY to get road-following geometry for map display.
+    // Each pair of consecutive stops gets its own OSRM segment call.
     $rawStopCoords = [];
     foreach ($stopIds as $sid) {
         $rawStopCoords[] = [$locationCoords[$sid]['lat'], $locationCoords[$sid]['lng']];
