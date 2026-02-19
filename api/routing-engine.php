@@ -235,7 +235,9 @@ function routeSegmentDistance(array $stops, int $fromIdx, int $toIdx): float
 }
 
 /**
- * Calculate fare for a route segment.
+ * Calculate fare for a route segment (Nepal fare rules).
+ * - Minimum fare: 20 NPR
+ * - Fare is rounded to the nearest multiple of 5
  */
 function calculateFare(?float $fareBase, ?float $farePerKm, float $distKm): ?float
 {
@@ -245,7 +247,12 @@ function calculateFare(?float $fareBase, ?float $farePerKm, float $distKm): ?flo
     if ($farePerKm && $distKm > 0) {
         $fare += $farePerKm * $distKm;
     }
-    return round($fare, 2);
+    // Round to nearest multiple of 5
+    $fare = round($fare / 5) * 5;
+    // Minimum fare 20 NPR
+    if ($fare < 20)
+        $fare = 20;
+    return (float) $fare;
 }
 
 /**

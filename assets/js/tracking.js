@@ -27,19 +27,25 @@ const SawariTracking = (function () {
     // Currently shown vehicle count
     let activeCount = 0;
 
-    // Vehicle icon
+    // Smooth animation: store previous positions for interpolation
+    let vehiclePrevPos = {}; // { vehicle_id: { lat, lng } }
+    const ANIMATE_DURATION = 2000; // 2 seconds smooth slide
+    let animationFrames = {};
+
+    // Vehicle icon — SVG bus icon
     const vehicleIcon = L.divIcon({
-        className: 'marker-vehicle',
-        iconSize: [16, 16],
-        iconAnchor: [8, 8]
+        className: 'marker-vehicle-icon',
+        html: '<div class="marker-vehicle-dot"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M16 6v6"/><path d="M2 12h20"/><path d="M18 18H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div>',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
     });
 
     // Pulsing vehicle icon (for vehicles approaching a stop < 500m)
     const vehicleIconApproaching = L.divIcon({
-        className: 'marker-vehicle marker-vehicle-approaching',
-        html: '<div class="marker-vehicle-pulse"></div>',
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
+        className: 'marker-vehicle-icon marker-vehicle-approaching',
+        html: '<div class="marker-vehicle-dot marker-vehicle-dot-pulse"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M16 6v6"/><path d="M2 12h20"/><path d="M18 18H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div>',
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
     });
 
     /* ──────────────────────────────────────────────
@@ -149,8 +155,8 @@ const SawariTracking = (function () {
             const icon = isApproaching ? vehicleIconApproaching : vehicleIcon;
 
             if (vehicleMarkers[id]) {
-                // Update existing marker position (smooth)
-                vehicleMarkers[id].setLatLng([lat, lng]);
+                // Smooth slide from old position to new position
+                animateMarker(id, vehicleMarkers[id], lat, lng);
                 vehicleMarkers[id].setIcon(icon);
                 vehicleMarkers[id].getPopup().setContent(popupHtml);
             } else {
@@ -182,6 +188,43 @@ const SawariTracking = (function () {
 
         activeCount = activeIds.size;
         updateCountBadge();
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Smooth marker animation (slide between positions)
+     * ────────────────────────────────────────────── */
+    function animateMarker(id, marker, toLat, toLng) {
+        // Cancel any ongoing animation for this marker
+        if (animationFrames[id]) cancelAnimationFrame(animationFrames[id]);
+
+        const from = marker.getLatLng();
+        const fromLat = from.lat;
+        const fromLng = from.lng;
+
+        // If barely moved, snap immediately
+        const dLat = toLat - fromLat;
+        const dLng = toLng - fromLng;
+        if (Math.abs(dLat) < 0.000001 && Math.abs(dLng) < 0.000001) return;
+
+        const start = performance.now();
+
+        function step(now) {
+            let t = (now - start) / ANIMATE_DURATION;
+            if (t > 1) t = 1;
+            // Ease-out cubic for natural deceleration
+            const ease = 1 - Math.pow(1 - t, 3);
+            const lat = fromLat + dLat * ease;
+            const lng = fromLng + dLng * ease;
+            marker.setLatLng([lat, lng]);
+
+            if (t < 1) {
+                animationFrames[id] = requestAnimationFrame(step);
+            } else {
+                delete animationFrames[id];
+            }
+        }
+
+        animationFrames[id] = requestAnimationFrame(step);
     }
 
     /* ──────────────────────────────────────────────

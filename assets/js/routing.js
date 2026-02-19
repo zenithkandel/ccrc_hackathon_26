@@ -286,18 +286,22 @@ const SawariRouting = (function () {
                 </div>`;
         }
 
-        // Vehicle info
+        // Vehicle info — hero image
         if (vehicle) {
             const imgSrc = "../uploads/vehicles/" + vehicle.image_path;
             html += `
-                <div class="result-vehicle">
-                    ${imgSrc ? `<img class="result-vehicle-image" src="${imgSrc}" alt="${esc(vehicle.name)}">` : ''}
-                    <div style="flex:1;">
-                        <div class="result-vehicle-name">${esc(vehicle.name)}</div>
-                        <div class="result-vehicle-type">${esc(result.route_name)}</div>
-                        ${vehicle.electric === '1' || vehicle.electric === 1 ? '<span class="badge badge-success" style="font-size:10px;margin-top:2px;">Electric</span>' : ''}
+                <div class="result-vehicle-hero">
+                    ${imgSrc ? `<img class="result-vehicle-hero-img" src="${imgSrc}" alt="${esc(vehicle.name)}">` : ''}
+                    <div class="result-vehicle-hero-overlay">
+                        <div class="result-vehicle-hero-info">
+                            <div>
+                                <div class="result-vehicle-name">${esc(vehicle.name)}</div>
+                                <div class="result-vehicle-type">${esc(result.route_name)} • ${result.stop_count || stops.length} stops</div>
+                                ${vehicle.electric === '1' || vehicle.electric === 1 ? '<span class="badge badge-success" style="font-size:10px;margin-top:2px;">Electric</span>' : ''}
+                            </div>
+                            ${result.fare !== null ? `<div class="result-fare-block"><div class="result-fare">Rs. ${roundFare(result.fare)}</div><div class="result-fare-student">Student/Elderly: Rs. ${roundFare(result.fare * 0.75)}</div></div>` : ''}
+                        </div>
                     </div>
-                    ${result.fare !== null ? `<div class="result-fare">Rs. ${Math.round(result.fare)}</div>` : ''}
                 </div>`;
         } else {
             html += `
@@ -306,7 +310,7 @@ const SawariRouting = (function () {
                         <div class="result-vehicle-name">${esc(result.route_name)}</div>
                         <div class="result-vehicle-type">${result.stop_count} stops • ${formatDistance(result.distance_km)}</div>
                     </div>
-                    ${result.fare !== null ? `<div class="result-fare">Rs. ${Math.round(result.fare)}</div>` : ''}
+                    ${result.fare !== null ? `<div class="result-fare">Rs. ${roundFare(result.fare)}</div>` : ''}
                 </div>`;
         }
 
@@ -326,11 +330,11 @@ const SawariRouting = (function () {
             if (i === 0) cls += ' stop-item-boarding';
             else if (i === stops.length - 1) cls += ' stop-item-destination';
 
-            let label = esc(s.name);
-            if (i === 0) label = '🟢 Board here — ' + label;
-            else if (i === stops.length - 1) label = '🔴 Get off here — ' + label;
+            let icon = '';
+            if (i === 0) icon = '<i data-feather="log-in" class="stop-icon stop-icon-board"></i> Board here — ';
+            else if (i === stops.length - 1) icon = '<i data-feather="log-out" class="stop-icon stop-icon-dest"></i> Get off here — ';
 
-            html += `<div class="${cls}">${label}</div>`;
+            html += `<div class="${cls}">${icon}${esc(s.name)}</div>`;
         });
         html += '</div>';
 
@@ -473,7 +477,7 @@ const SawariRouting = (function () {
             html += `
                 <div style="text-align:center;margin-top:var(--space-4);padding:var(--space-3);background:var(--color-neutral-50);border-radius:var(--radius-lg);">
                     <div style="font-size:var(--text-xs);color:var(--color-neutral-500);">Total Fare</div>
-                    <div class="result-fare">Rs. ${Math.round(result.total_fare)}</div>
+                    <div class="result-fare">Rs. ${roundFare(result.total_fare)}</div><div class="result-fare-student">Student/Elderly: Rs. ${roundFare(result.total_fare * 0.75)}</div>
                 </div>`;
         }
 
@@ -543,7 +547,7 @@ const SawariRouting = (function () {
                         <div class="result-vehicle-name">${esc(vehicle.name)}</div>
                         <div class="result-vehicle-type">${esc(leg.route_name)}</div>
                     </div>
-                    ${leg.fare !== null ? `<div class="result-fare">Rs. ${Math.round(leg.fare)}</div>` : ''}
+                    ${leg.fare !== null ? `<div class="result-fare">Rs. ${roundFare(leg.fare)}</div>` : ''}
                 </div>`;
         }
         return `
@@ -552,7 +556,7 @@ const SawariRouting = (function () {
                     <div class="result-vehicle-name">${esc(leg.route_name)}</div>
                     <div class="result-vehicle-type">${formatDistance(leg.distance_km)}</div>
                 </div>
-                ${leg.fare !== null ? `<div class="result-fare">Rs. ${Math.round(leg.fare)}</div>` : ''}
+                ${leg.fare !== null ? `<div class="result-fare">Rs. ${roundFare(leg.fare)}</div>` : ''}
             </div>`;
     }
 
@@ -566,12 +570,12 @@ const SawariRouting = (function () {
             else if (i === stops.length - 1 && isLeg2) cls += ' stop-item-destination';
             else if (i === stops.length - 1 && !isLeg2) cls += ' stop-item-transfer';
 
-            let label = esc(s.name);
-            if (i === 0 && !isLeg2) label = '🟢 Board — ' + label;
-            else if (i === stops.length - 1 && isLeg2) label = '🔴 Get off — ' + label;
-            else if ((i === stops.length - 1 && !isLeg2) || (i === 0 && isLeg2)) label = '🟡 Transfer — ' + label;
+            let icon = '';
+            if (i === 0 && !isLeg2) icon = '<i data-feather="log-in" class="stop-icon stop-icon-board"></i> Board — ';
+            else if (i === stops.length - 1 && isLeg2) icon = '<i data-feather="log-out" class="stop-icon stop-icon-dest"></i> Get off — ';
+            else if ((i === stops.length - 1 && !isLeg2) || (i === 0 && isLeg2)) icon = '<i data-feather="repeat" class="stop-icon stop-icon-transfer"></i> Transfer — ';
 
-            html += `<div class="${cls}">${label}</div>`;
+            html += `<div class="${cls}">${icon}${esc(s.name)}</div>`;
         });
         html += '</div>';
         return html;
@@ -593,7 +597,7 @@ const SawariRouting = (function () {
                 ? `Option ${i + 1} • ${formatDistance(r.distance_km)}`
                 : `Option ${i + 1} • ${formatDistance(r.total_distance)}`;
             const fare = type === 'direct' ? r.fare : r.total_fare;
-            const fareStr = fare !== null ? ` • Rs.${Math.round(fare)}` : '';
+            const fareStr = fare !== null ? ` • Rs.${roundFare(fare)}` : '';
 
             html += `
                 <button class="btn ${isActive ? 'btn-primary' : 'btn-secondary'} btn-sm"
@@ -663,6 +667,17 @@ const SawariRouting = (function () {
         return km.toFixed(1) + ' km';
     }
 
+    /**
+     * Nepal fare rule: round to nearest multiple of 5, minimum 20 NPR.
+     * Student/elderly gets 75% of standard fare with minimum 15 NPR.
+     */
+    function roundFare(fare) {
+        if (fare === null || fare === undefined) return 0;
+        let rounded = Math.round(fare / 5) * 5;
+        if (rounded < 20) rounded = 20;
+        return rounded;
+    }
+
     /* ──────────────────────────────────────────────
      *  Carbon Emission Calculator
      * ────────────────────────────────────────────── */
@@ -684,15 +699,15 @@ const SawariRouting = (function () {
                 </div>
                 <div class="carbon-card-body">
                     <div class="carbon-row">
-                        <span>🚌 Bus trip</span>
+                        <span><i data-feather="truck" class="carbon-icon"></i> Bus trip</span>
                         <span>${carbon.busCO2} kg CO₂</span>
                     </div>
                     <div class="carbon-row">
-                        <span>🚗 If by car/taxi</span>
+                        <span><i data-feather="navigation" class="carbon-icon"></i> If by car/taxi</span>
                         <span>${carbon.carCO2} kg CO₂</span>
                     </div>
                     <div class="carbon-saved">
-                        🌱 You save <strong>${carbon.saved} kg CO₂</strong> by taking the bus!
+                        <i data-feather="leaf" class="carbon-icon carbon-icon-leaf"></i> You save <strong>${carbon.saved} kg CO₂</strong> by taking the bus!
                     </div>
                 </div>
             </div>`;
