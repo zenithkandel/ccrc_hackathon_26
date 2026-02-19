@@ -91,8 +91,7 @@ I have imagined Sawari as a user-guiding app which guides people around the crow
 | **Backend**     | PHP                           |
 | **Database**    | MySQL                         |
 | **Maps**        | Leaflet, OpenStreetMaps, OSRM |
-| **Geolocation** | Browser Geolocation API       |
-| **Algorithms**  | Dijkstra, A\* (Pathfinding)   |
+| **Geolocation** | Browser Geolocation API       || **GPS Tracking**| Vehicle GPS modules (HTTP)    || **Algorithms**  | Dijkstra, A\* (Pathfinding)   |
 
 ## DATABASE STRUCTURE
 
