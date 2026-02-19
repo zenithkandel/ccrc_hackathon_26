@@ -7,7 +7,7 @@
 const SawariUtils = (() => {
     // Base URL (set from PHP, fallback for standalone use)
     const BASE_URL = document.querySelector('meta[name="base-url"]')?.content
-        || window.location.origin + '/test_sawari';
+        || window.location.origin + '/CCRC';
 
     /**
      * Wrapper around fetch() with common defaults.
