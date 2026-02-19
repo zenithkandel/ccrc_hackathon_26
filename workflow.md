@@ -563,7 +563,7 @@ Create a PHP script (`seed.php`) that inserts a default admin account:
 - Table listing all routes with columns: Name, Status, # Stops, Updated By, Actions
 - Filter bar: by status, search by name
 - **Add/Edit Route** modal:
-  - Name, Description, Image upload
+  - Name, Description
   - Location selector: searchable dropdown of approved locations
   - Drag-and-drop sortable list to order stops
   - Preview on Leaflet map (polyline connecting stops)
@@ -684,11 +684,10 @@ Create a PHP script (`seed.php`) that inserts a default admin account:
 - Table of routes submitted by this agent
 - **Create Route** flow:
   1. Enter route name (format: "Start - End") and description
-  2. Upload route image (optional)
-  3. Select locations to include: searchable dropdown of **approved** locations
-  4. Order locations by drag-and-drop or index input
-  5. Preview on Leaflet map (polyline connecting selected stops in order)
-  6. Submit → creates route + contribution record
+  2. Select locations to include: searchable dropdown of **approved** locations
+  3. Order locations by drag-and-drop or index input
+  4. Preview on Leaflet map (polyline connecting selected stops in order)
+  5. Submit → creates route + contribution record
 - **Edit** own pending routes
 - View approved routes (read-only)
 
