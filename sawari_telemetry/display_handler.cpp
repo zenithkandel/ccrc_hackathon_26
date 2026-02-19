@@ -258,30 +258,30 @@ void displayBootProgress(int progress, const char* status) {
 // ============================================================================
 //
 //  128x64 layout inside frame:
-//  y=0-4:  WiFi semicircle waves (top-clipped circles)
-//  y=28:   "WiFi Setup" (6x10, 60px, x=34)        bottom=38
-//  y=40:   "Connect to AP:" (6x10, 84px, x=10)    bottom=50
-//  y=50:   AP_NAME (7x14B, 84px, x=22)            bottom=64→use y=48→62
+//  WiFi icon: upper-half arcs at (64,20), r=16/10/5, dot r=2
+//    Outer arc: y=4–20,  Mid arc: y=10–20,  Inner arc: y=15–20
+//    Dot:       y=18–22
+//  y=26: "WiFi Setup"     (6x10, 60px, x=34)      bottom=36
+//  y=38: "Connect to AP:" (6x10, 84px, x=22)      bottom=48
+//  y=48: AP_NAME          (7x14B, 84px, x=22)     bottom=62
 //
 void displayWiFiSetup() {
     _display.clearBuffer();
     _display.drawFrame(0, 0, 128, 64);
 
-    // WiFi icon (semi-circle waves)
-    int cx = 64, cy = 12;
-    _display.drawCircle(cx, cy + 8, 4);
-    _display.drawCircle(cx, cy, 10);
-    _display.drawCircle(cx, cy, 16);
-    _display.setDrawColor(0);
-    _display.drawBox(cx - 20, cy + 2, 40, 20);
-    _display.setDrawColor(1);
-    _display.drawDisc(cx, cy + 8, 3);
+    // WiFi icon — clean upper-half arcs (no draw-then-erase hack)
+    int cx = 64, cy = 20;
+    _display.drawCircle(cx, cy, 16, U8G2_DRAW_UPPER_LEFT | U8G2_DRAW_UPPER_RIGHT);
+    _display.drawCircle(cx, cy, 10, U8G2_DRAW_UPPER_LEFT | U8G2_DRAW_UPPER_RIGHT);
+    _display.drawCircle(cx, cy,  5, U8G2_DRAW_UPPER_LEFT | U8G2_DRAW_UPPER_RIGHT);
+    _display.drawDisc(cx, cy, 2);  // center dot
 
+    // All text centered horizontally
     _display.setFont(u8g2_font_6x10_tr);
-    _display.drawStr(34, 28, "WiFi Setup");
-    _display.drawStr(10, 40, "Connect to AP:");
+    _display.drawStr(34, 26, "WiFi Setup");       // 10*6=60, x=(128-60)/2=34
+    _display.drawStr(22, 38, "Connect to AP:");   // 14*6=84, x=(128-84)/2=22
 
-    // AP name (7x14B: 12*7=84px at x=22 → 106, bottom=48+14=62 inside frame)
+    // AP name bold centered (12*7=84, x=(128-84)/2=22, bottom=48+14=62 ✓)
     _display.setFont(u8g2_font_7x14B_tr);
     _display.drawStr(22, 48, AP_NAME);
 
