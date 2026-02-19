@@ -32,8 +32,8 @@ $navSections = [
     ],
     'COLLECT DATA' => [
         'add-location' => ['label' => 'Add Location', 'icon' => 'map-pin', 'url' => BASE_URL . '/pages/agent/add-location.php'],
-        'add-vehicle'  => ['label' => 'Add Vehicle', 'icon' => 'truck', 'url' => BASE_URL . '/pages/agent/add-vehicle.php'],
-        'add-route'    => ['label' => 'Add Route', 'icon' => 'git-branch', 'url' => BASE_URL . '/pages/agent/add-route.php'],
+        'add-vehicle' => ['label' => 'Add Vehicle', 'icon' => 'truck', 'url' => BASE_URL . '/pages/agent/add-vehicle.php'],
+        'add-route' => ['label' => 'Add Route', 'icon' => 'git-branch', 'url' => BASE_URL . '/pages/agent/add-route.php'],
     ],
     'HISTORY' => [
         'contributions' => ['label' => 'My Contributions', 'icon' => 'inbox', 'url' => BASE_URL . '/pages/agent/my-contributions.php'],

@@ -238,7 +238,7 @@ function getAction(): string
  * Reads page from GET params automatically.
  * Returns associative array: offset, per_page, page, total, total_pages.
  */
-function paginate(int $total, int $page = null, int $perPage = DEFAULT_PAGE_SIZE): array
+function paginate(int $total, ?int $page = null, int $perPage = DEFAULT_PAGE_SIZE): array
 {
     if ($page === null)
         $page = getInt('page', 1);
