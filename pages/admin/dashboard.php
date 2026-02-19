@@ -8,7 +8,7 @@
 
 require_once __DIR__ . '/../../includes/auth-admin.php';
 
-$pageTitle   = 'Dashboard';
+$pageTitle = 'Dashboard';
 $currentPage = 'dashboard';
 require_once __DIR__ . '/../../includes/admin-header.php';
 ?>
@@ -121,59 +121,59 @@ require_once __DIR__ . '/../../includes/admin-header.php';
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    loadDashboardStats();
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        loadDashboardStats();
+    });
 
-async function loadDashboardStats() {
-    try {
-        const data = await Sawari.api('admins', 'stats');
-        
-        if (data.success) {
-            const s = data.stats;
-            
-            // Primary stats
-            document.getElementById('stat-pending').textContent = s.pending_contributions;
-            document.getElementById('stat-locations').textContent = s.total_locations;
-            document.getElementById('stat-vehicles').textContent = s.total_vehicles;
-            document.getElementById('stat-routes').textContent = s.total_routes;
-            
-            // Secondary stats
-            document.getElementById('stat-agents').textContent = s.total_agents;
-            document.getElementById('stat-alerts').textContent = s.active_alerts;
-            document.getElementById('stat-suggestions').textContent = s.pending_suggestions;
-            
-            // Recent contributions table
-            renderRecentTable(data.recent_contributions);
+    async function loadDashboardStats() {
+        try {
+            const data = await Sawari.api('admins', 'stats');
+
+            if (data.success) {
+                const s = data.stats;
+
+                // Primary stats
+                document.getElementById('stat-pending').textContent = s.pending_contributions;
+                document.getElementById('stat-locations').textContent = s.total_locations;
+                document.getElementById('stat-vehicles').textContent = s.total_vehicles;
+                document.getElementById('stat-routes').textContent = s.total_routes;
+
+                // Secondary stats
+                document.getElementById('stat-agents').textContent = s.total_agents;
+                document.getElementById('stat-alerts').textContent = s.active_alerts;
+                document.getElementById('stat-suggestions').textContent = s.pending_suggestions;
+
+                // Recent contributions table
+                renderRecentTable(data.recent_contributions);
+            }
+        } catch (err) {
+            console.error('Failed to load stats:', err);
         }
-    } catch (err) {
-        console.error('Failed to load stats:', err);
     }
-}
 
-function renderRecentTable(contributions) {
-    const tbody = document.getElementById('recent-table-body');
-    
-    if (!contributions || contributions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-6">No contributions yet.</td></tr>';
-        return;
+    function renderRecentTable(contributions) {
+        const tbody = document.getElementById('recent-table-body');
+
+        if (!contributions || contributions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-6">No contributions yet.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = contributions.map(function (c) {
+            const typeIcon = { location: 'map-pin', vehicle: 'truck', route: 'git-branch' }[c.type] || 'file';
+            const statusClass = { pending: 'badge-pending', approved: 'badge-approved', rejected: 'badge-rejected' }[c.status] || 'badge-neutral';
+
+            return '<tr>' +
+                '<td><span class="flex items-center gap-2"><i data-feather="' + typeIcon + '" style="width:14px;height:14px;"></i> ' + Sawari.escape(c.type) + '</span></td>' +
+                '<td>' + Sawari.escape(c.agent_name) + '</td>' +
+                '<td><span class="badge ' + statusClass + '">' + Sawari.escape(c.status) + '</span></td>' +
+                '<td class="text-muted">' + Sawari.escape(c.created_at) + '</td>' +
+                '</tr>';
+        }).join('');
+
+        // Re-render feather icons for dynamically added elements
+        feather.replace({ 'stroke-width': 1.75 });
     }
-    
-    tbody.innerHTML = contributions.map(function(c) {
-        const typeIcon = { location: 'map-pin', vehicle: 'truck', route: 'git-branch' }[c.type] || 'file';
-        const statusClass = { pending: 'badge-pending', approved: 'badge-approved', rejected: 'badge-rejected' }[c.status] || 'badge-neutral';
-        
-        return '<tr>' +
-            '<td><span class="flex items-center gap-2"><i data-feather="' + typeIcon + '" style="width:14px;height:14px;"></i> ' + Sawari.escape(c.type) + '</span></td>' +
-            '<td>' + Sawari.escape(c.agent_name) + '</td>' +
-            '<td><span class="badge ' + statusClass + '">' + Sawari.escape(c.status) + '</span></td>' +
-            '<td class="text-muted">' + Sawari.escape(c.created_at) + '</td>' +
-        '</tr>';
-    }).join('');
-    
-    // Re-render feather icons for dynamically added elements
-    feather.replace({ 'stroke-width': 1.75 });
-}
 </script>
 
 <?php require_once __DIR__ . '/../../includes/admin-footer.php'; ?>
