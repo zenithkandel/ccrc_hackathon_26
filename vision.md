@@ -51,6 +51,12 @@ I have imagined Sawari as a user-guiding app which guides people around the crow
     2.  Agents Leaderboard to motivate contributors.
 8.  **Carbon Emission Calculation:**
     1.  Compares carbon footprint of public transport vs. ride-sharing to encourage green travel.
+9.  **Live Bus Tracking (GPS Module):**
+    1.  Vehicles equipped with GPS modules report their latitude, longitude, and speed to the server in real-time.
+    2.  The interactive map shows live bus icons for all tracked vehicles, with their name, speed, and last-updated time.
+    3.  Bus positions auto-refresh every 10 seconds without reloading the page.
+    4.  Only vehicles with active GPS data (non-NULL coordinates) are displayed on the map.
+    5.  Admins can view GPS status of all vehicles from the dashboard.
 
 ## Data Collection Methodology
 
@@ -130,6 +136,10 @@ Stores all the data related to the vehicles or yatayats registered in our system
 | `used_routes`     | A JSON array of the routes that this vehicle moves in along with the number of vehicles in that route. Example: `[{"route_id": 1, "count": 6}, {"route_id": 3, "count": 4}]`. | `JSON`                                    |
 | `starts_at`       | The time at which this vehicle service starts operating (e.g., 6:00 AM).                                                                                                      | `TIME`                                    |
 | `stops_at`        | The time at which this vehicle service stops operating (e.g., 9:00 PM).                                                                                                       | `TIME`                                    |
+| `current_lat`     | The real-time GPS latitude of the vehicle, updated by the onboard GPS module. NULL if tracking is inactive.                                                                   | `DECIMAL(10, 8) DEFAULT NULL`             |
+| `current_lng`     | The real-time GPS longitude of the vehicle, updated by the onboard GPS module. NULL if tracking is inactive.                                                                  | `DECIMAL(11, 8) DEFAULT NULL`             |
+| `current_speed`   | The current speed of the vehicle in km/h as reported by the GPS module. NULL if tracking is inactive.                                                                         | `DECIMAL(5, 1) DEFAULT NULL`              |
+| `gps_updated_at`  | The timestamp of the last GPS position update from the vehicle's tracking device.                                                                                             | `DATETIME DEFAULT NULL`                   |
 
 ---
 
