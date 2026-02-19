@@ -23,7 +23,7 @@ switch ($action) {
         requireAdminAPI();
         $db = getDB();
 
-        $where  = [];
+        $where = [];
         $params = [];
 
         $status = getString('status');
@@ -54,9 +54,11 @@ switch ($action) {
                 LIMIT :offset, :limit";
 
         $stmt = $db->prepare($sql);
-        foreach ($params as $k => $val) { $stmt->bindValue($k, $val); }
+        foreach ($params as $k => $val) {
+            $stmt->bindValue($k, $val);
+        }
         $stmt->bindValue(':offset', $pagination['offset'], PDO::PARAM_INT);
-        $stmt->bindValue(':limit',  $pagination['per_page'], PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $pagination['per_page'], PDO::PARAM_INT);
         $stmt->execute();
 
         jsonResponse(['success' => true, 'alerts' => $stmt->fetchAll(), 'pagination' => $pagination]);
@@ -67,7 +69,8 @@ switch ($action) {
         requireAdminAPI();
         $db = getDB();
         $id = getInt('id');
-        if (!$id) jsonError('Alert ID required.');
+        if (!$id)
+            jsonError('Alert ID required.');
 
         $stmt = $db->prepare("SELECT al.*, adm.name AS created_by_name, r.name AS route_name
                               FROM alerts al
@@ -76,7 +79,8 @@ switch ($action) {
                               WHERE al.alert_id = :id");
         $stmt->execute([':id' => $id]);
         $alert = $stmt->fetch();
-        if (!$alert) jsonError('Alert not found.', 404);
+        if (!$alert)
+            jsonError('Alert not found.', 404);
 
         jsonResponse(['success' => true, 'alert' => $alert]);
         break;
@@ -87,24 +91,26 @@ switch ($action) {
         validateCsrf();
         $db = getDB();
 
-        $title     = postString('title');
-        $desc      = postString('description');
-        $severity  = postString('severity') ?: 'medium';
-        $routeId   = postInt('route_id');
+        $title = postString('title');
+        $desc = postString('description');
+        $severity = postString('severity') ?: 'medium';
+        $routeId = postInt('route_id');
         $expiresAt = postString('expires_at');
 
-        if (!$title) jsonError('Title is required.');
-        if (!$desc)  jsonError('Description is required.');
+        if (!$title)
+            jsonError('Title is required.');
+        if (!$desc)
+            jsonError('Description is required.');
 
         $stmt = $db->prepare("INSERT INTO alerts (route_id, title, description, severity, created_by, expires_at)
                               VALUES (:route, :title, :desc, :sev, :admin, :exp)");
         $stmt->execute([
             ':route' => $routeId ?: null,
             ':title' => $title,
-            ':desc'  => $desc,
-            ':sev'   => $severity,
+            ':desc' => $desc,
+            ':sev' => $severity,
             ':admin' => getAdminId(),
-            ':exp'   => $expiresAt ?: null
+            ':exp' => $expiresAt ?: null
         ]);
 
         jsonSuccess('Alert created.');
@@ -116,25 +122,27 @@ switch ($action) {
         validateCsrf();
         $db = getDB();
 
-        $id        = postInt('alert_id');
-        $title     = postString('title');
-        $desc      = postString('description');
-        $severity  = postString('severity');
-        $routeId   = postInt('route_id');
+        $id = postInt('alert_id');
+        $title = postString('title');
+        $desc = postString('description');
+        $severity = postString('severity');
+        $routeId = postInt('route_id');
         $expiresAt = postString('expires_at');
 
-        if (!$id)    jsonError('Alert ID required.');
-        if (!$title) jsonError('Title is required.');
+        if (!$id)
+            jsonError('Alert ID required.');
+        if (!$title)
+            jsonError('Title is required.');
 
         $stmt = $db->prepare("UPDATE alerts SET route_id = :route, title = :title, description = :desc,
                               severity = :sev, expires_at = :exp WHERE alert_id = :id");
         $stmt->execute([
             ':route' => $routeId ?: null,
             ':title' => $title,
-            ':desc'  => $desc,
-            ':sev'   => $severity,
-            ':exp'   => $expiresAt ?: null,
-            ':id'    => $id
+            ':desc' => $desc,
+            ':sev' => $severity,
+            ':exp' => $expiresAt ?: null,
+            ':id' => $id
         ]);
 
         jsonSuccess('Alert updated.');
@@ -146,10 +154,11 @@ switch ($action) {
         validateCsrf();
         $db = getDB();
         $id = postInt('id');
-        if (!$id) jsonError('Alert ID required.');
+        if (!$id)
+            jsonError('Alert ID required.');
 
         $db->prepare("UPDATE alerts SET status = 'resolved', resolved_at = NOW() WHERE alert_id = :id")
-           ->execute([':id' => $id]);
+            ->execute([':id' => $id]);
 
         jsonSuccess('Alert resolved.');
         break;
@@ -160,7 +169,8 @@ switch ($action) {
         validateCsrf();
         $db = getDB();
         $id = postInt('id');
-        if (!$id) jsonError('Alert ID required.');
+        if (!$id)
+            jsonError('Alert ID required.');
 
         $db->prepare("DELETE FROM alerts WHERE alert_id = :id")->execute([':id' => $id]);
         jsonSuccess('Alert deleted.');
