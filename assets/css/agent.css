@@ -96,7 +96,7 @@
     border-color: var(--color-neutral-300);
 }
 
-.contribution-card + .contribution-card {
+.contribution-card+.contribution-card {
     margin-top: var(--space-3);
 }
 

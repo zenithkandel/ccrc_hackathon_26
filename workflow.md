@@ -15,7 +15,8 @@ CCRC/
 │
 ├── assets/
 │   ├── css/
-│   │   ├── global.css          ← Shared styles, variables, reset
+│   │   ├── global.css          ← Design tokens, reset, typography, layout utilities
+│   │   ├── components.css      ← Reusable UI components (buttons, cards, forms, etc.)
 │   │   ├── map.css             ← Main user page styles
 │   │   ├── agent.css           ← Agent dashboard styles
 │   │   └── admin.css           ← Admin dashboard styles
