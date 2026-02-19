@@ -18,12 +18,18 @@ require_once __DIR__ . '/../../includes/agent-header.php';
 
     <!-- Map -->
     <div class="card">
-        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--space-2);">
             <h3 class="card-title">Pin Location on Map</h3>
-            <button class="btn btn-ghost btn-sm" id="gps-btn" title="Use my GPS location">
-                <i data-feather="crosshair" style="width:16px;height:16px;"></i>
-                Use GPS
-            </button>
+            <div style="display:flex;align-items:center;gap:var(--space-3);">
+                <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:var(--text-xs);color:var(--color-neutral-600);user-select:none;">
+                    <input type="checkbox" id="toggle-existing" style="accent-color:var(--color-primary-600);width:16px;height:16px;cursor:pointer;">
+                    Show existing stops
+                </label>
+                <button class="btn btn-ghost btn-sm" id="gps-btn" title="Use my GPS location">
+                    <i data-feather="crosshair" style="width:16px;height:16px;"></i>
+                    Use GPS
+                </button>
+            </div>
         </div>
         <div class="card-body" style="padding:0;">
             <div id="location-map" class="data-collection-map"
@@ -120,6 +126,8 @@ require_once __DIR__ . '/../../includes/agent-header.php';
         var submitBtn = document.getElementById('submit-btn');
         var dupWarn = document.getElementById('duplicate-warning');
         var dupText = document.getElementById('duplicate-text');
+        var existingLayer = null;
+        var existingLoaded = false;
 
         // Initialize map centered on Kathmandu
         function initMap() {
@@ -130,9 +138,46 @@ require_once __DIR__ . '/../../includes/agent-header.php';
                 maxZoom: 19
             }).addTo(map);
 
+            existingLayer = L.layerGroup();
+
+            // Toggle existing locations
+            document.getElementById('toggle-existing').addEventListener('change', function () {
+                if (this.checked) {
+                    existingLayer.addTo(map);
+                    if (!existingLoaded) loadExistingLocations();
+                } else {
+                    map.removeLayer(existingLayer);
+                }
+            });
+
             // Click to place marker
             map.on('click', function (e) {
                 setMarker(e.latlng.lat, e.latlng.lng);
+            });
+        }
+
+        // Load approved locations from API and add to layer
+        function loadExistingLocations() {
+            existingLoaded = true;
+            Sawari.api('locations', 'approved', {}, 'GET').then(function (res) {
+                if (!res.success || !res.locations) return;
+                res.locations.forEach(function (loc) {
+                    var lat = parseFloat(loc.latitude);
+                    var lng = parseFloat(loc.longitude);
+                    if (isNaN(lat) || isNaN(lng)) return;
+
+                    var color = loc.type === 'stop' ? '#1A56DB' : '#7C3AED';
+                    var icon = L.divIcon({
+                        className: 'existing-loc-marker',
+                        html: '<div style="width:12px;height:12px;background:' + color + ';border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.3);opacity:0.7;"></div>',
+                        iconSize: [12, 12],
+                        iconAnchor: [6, 6]
+                    });
+
+                    L.marker([lat, lng], { icon: icon, interactive: true })
+                        .bindPopup('<div style="font-size:13px;"><strong>' + Sawari.escHtml(loc.name) + '</strong><br><span style="color:#64748B;font-size:11px;">' + loc.type + '</span></div>')
+                        .addTo(existingLayer);
+                });
             });
         }
 
