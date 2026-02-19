@@ -97,10 +97,17 @@ if (isAgentLoggedIn()) {
             box-shadow: var(--shadow-sm);
         }
 
-        .auth-panel { display: none; }
-        .auth-panel.active { display: block; }
+        .auth-panel {
+            display: none;
+        }
 
-        .form-group + .form-group { margin-top: var(--space-4); }
+        .auth-panel.active {
+            display: block;
+        }
+
+        .form-group+.form-group {
+            margin-top: var(--space-4);
+        }
 
         .auth-submit {
             width: 100%;
@@ -120,7 +127,9 @@ if (isAgentLoggedIn()) {
             text-decoration: none;
         }
 
-        .auth-footer a:hover { text-decoration: underline; }
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
 
         .password-toggle {
             position: absolute;
@@ -135,7 +144,9 @@ if (isAgentLoggedIn()) {
             display: flex;
         }
 
-        .password-toggle:hover { color: var(--color-neutral-600); }
+        .password-toggle:hover {
+            color: var(--color-neutral-600);
+        }
 
         .form-input-wrap {
             position: relative;
@@ -165,13 +176,16 @@ if (isAgentLoggedIn()) {
                 <form id="login-form" autocomplete="on">
                     <div class="form-group">
                         <label class="form-label" for="login-email">Email</label>
-                        <input type="email" id="login-email" class="form-input" placeholder="agent@example.com" required autocomplete="email">
+                        <input type="email" id="login-email" class="form-input" placeholder="agent@example.com" required
+                            autocomplete="email">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="login-password">Password</label>
                         <div class="form-input-wrap">
-                            <input type="password" id="login-password" class="form-input" placeholder="Enter your password" required autocomplete="current-password">
-                            <button type="button" class="password-toggle" data-target="login-password" aria-label="Toggle password visibility">
+                            <input type="password" id="login-password" class="form-input"
+                                placeholder="Enter your password" required autocomplete="current-password">
+                            <button type="button" class="password-toggle" data-target="login-password"
+                                aria-label="Toggle password visibility">
                                 <i data-feather="eye" style="width:18px;height:18px;"></i>
                             </button>
                         </div>
@@ -188,21 +202,26 @@ if (isAgentLoggedIn()) {
                 <form id="register-form" autocomplete="on">
                     <div class="form-group">
                         <label class="form-label" for="reg-name">Full Name</label>
-                        <input type="text" id="reg-name" class="form-input" placeholder="Your full name" required autocomplete="name">
+                        <input type="text" id="reg-name" class="form-input" placeholder="Your full name" required
+                            autocomplete="name">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="reg-email">Email</label>
-                        <input type="email" id="reg-email" class="form-input" placeholder="agent@example.com" required autocomplete="email">
+                        <input type="email" id="reg-email" class="form-input" placeholder="agent@example.com" required
+                            autocomplete="email">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="reg-phone">Phone (optional)</label>
-                        <input type="tel" id="reg-phone" class="form-input" placeholder="+977 98XXXXXXXX" autocomplete="tel">
+                        <input type="tel" id="reg-phone" class="form-input" placeholder="+977 98XXXXXXXX"
+                            autocomplete="tel">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="reg-password">Password</label>
                         <div class="form-input-wrap">
-                            <input type="password" id="reg-password" class="form-input" placeholder="Minimum 6 characters" required minlength="6" autocomplete="new-password">
-                            <button type="button" class="password-toggle" data-target="reg-password" aria-label="Toggle password visibility">
+                            <input type="password" id="reg-password" class="form-input"
+                                placeholder="Minimum 6 characters" required minlength="6" autocomplete="new-password">
+                            <button type="button" class="password-toggle" data-target="reg-password"
+                                aria-label="Toggle password visibility">
                                 <i data-feather="eye" style="width:18px;height:18px;"></i>
                             </button>
                         </div>
@@ -210,8 +229,10 @@ if (isAgentLoggedIn()) {
                     <div class="form-group">
                         <label class="form-label" for="reg-password-confirm">Confirm Password</label>
                         <div class="form-input-wrap">
-                            <input type="password" id="reg-password-confirm" class="form-input" placeholder="Re-enter your password" required minlength="6" autocomplete="new-password">
-                            <button type="button" class="password-toggle" data-target="reg-password-confirm" aria-label="Toggle password visibility">
+                            <input type="password" id="reg-password-confirm" class="form-input"
+                                placeholder="Re-enter your password" required minlength="6" autocomplete="new-password">
+                            <button type="button" class="password-toggle" data-target="reg-password-confirm"
+                                aria-label="Toggle password visibility">
                                 <i data-feather="eye" style="width:18px;height:18px;"></i>
                             </button>
                         </div>

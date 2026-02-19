@@ -208,7 +208,7 @@ switch ($action) {
         $db->prepare("UPDATE routes SET status = 'rejected', approved_by = :admin, updated_at = NOW() WHERE route_id = :id")
             ->execute([':admin' => getAdminId(), ':id' => $id]);
 
-        $db->prepare("UPDATE contributions SET status = 'rejected', reviewed_by = :admin, reviewed_at = NOW(), admin_note = :reason
+        $db->prepare("UPDATE contributions SET status = 'rejected', reviewed_by = :admin, reviewed_at = NOW(), rejection_reason = :reason
                       WHERE contribution_id = (SELECT contribution_id FROM routes WHERE route_id = :id)")
             ->execute([':admin' => getAdminId(), ':id' => $id, ':reason' => $reason]);
 
@@ -226,6 +226,59 @@ switch ($action) {
 
         $db->prepare("DELETE FROM routes WHERE route_id = :id")->execute([':id' => $id]);
         jsonSuccess('Route deleted.');
+        break;
+
+    /* ══════════════════════════════════════════════════════
+     *  AGENT ENDPOINTS
+     * ══════════════════════════════════════════════════════ */
+
+    /* ── Submit Route (Agent) ─────────────────────────────── */
+    case 'submit':
+        requireAgentAPI();
+        validateCsrf();
+        $db = getDB();
+
+        $name = postString('name');
+        $desc = postString('description');
+        $locationList = postString('location_list');
+        $fareBase = isset($_POST['fare_base']) ? floatval($_POST['fare_base']) : null;
+        $farePerKm = isset($_POST['fare_per_km']) ? floatval($_POST['fare_per_km']) : null;
+        $notes = postString('notes');
+
+        if (!$name) jsonError('Route name is required.');
+        if (!$locationList) jsonError('At least 2 stops are required.');
+
+        $stops = json_decode($locationList, true);
+        if (!is_array($stops) || count($stops) < 2) jsonError('A route must have at least 2 stops.');
+
+        $db->beginTransaction();
+        try {
+            // Create contribution
+            $cStmt = $db->prepare("INSERT INTO contributions (agent_id, type, status, notes) VALUES (:agent, 'route', 'pending', :notes)");
+            $cStmt->execute([':agent' => getAgentId(), ':notes' => $notes]);
+            $contribId = (int) $db->lastInsertId();
+
+            // Create route
+            $rStmt = $db->prepare("INSERT INTO routes (name, description, location_list, fare_base, fare_per_km, status, contribution_id, updated_by)
+                                   VALUES (:name, :desc, :locs, :fare_base, :fare_km, 'pending', :cid, :agent)");
+            $rStmt->execute([
+                ':name' => $name, ':desc' => $desc,
+                ':locs' => json_encode($stops),
+                ':fare_base' => $fareBase, ':fare_km' => $farePerKm,
+                ':cid' => $contribId, ':agent' => getAgentId()
+            ]);
+
+            // Update agent count
+            $db->prepare("UPDATE agents SET contributions_count = contributions_count + 1 WHERE agent_id = :id")
+                ->execute([':id' => getAgentId()]);
+
+            $db->commit();
+            jsonSuccess('Route submitted for review.');
+        } catch (Exception $e) {
+            $db->rollBack();
+            error_log('Route submit error: ' . $e->getMessage());
+            jsonError('Failed to submit route. Please try again.');
+        }
         break;
 
     default:

@@ -245,6 +245,73 @@ switch ($action) {
         jsonResponse(['success' => true, 'agent' => $stmt->fetch()]);
         break;
 
+    /* ── Dashboard Stats (agent) ─────────────────────────── */
+    case 'dashboard':
+        requireAgentAPI();
+        $db = getDB();
+        $agentId = getAgentId();
+
+        // Agent profile
+        $stmt = $db->prepare("SELECT agent_id, name, email, phone, points,
+                                     contributions_count, approved_count, status, created_at
+                              FROM agents WHERE agent_id = :id");
+        $stmt->execute([':id' => $agentId]);
+        $agent = $stmt->fetch();
+
+        // Count by status
+        $pendingStmt = $db->prepare("SELECT COUNT(*) FROM contributions WHERE agent_id = :id AND status = 'pending'");
+        $pendingStmt->execute([':id' => $agentId]);
+        $pending = (int) $pendingStmt->fetchColumn();
+
+        $rejectedStmt = $db->prepare("SELECT COUNT(*) FROM contributions WHERE agent_id = :id AND status = 'rejected'");
+        $rejectedStmt->execute([':id' => $agentId]);
+        $rejected = (int) $rejectedStmt->fetchColumn();
+
+        // Count by type
+        $typeStmt = $db->prepare("SELECT type, COUNT(*) as count FROM contributions WHERE agent_id = :id GROUP BY type");
+        $typeStmt->execute([':id' => $agentId]);
+        $byType = [];
+        while ($row = $typeStmt->fetch()) {
+            $byType[$row['type']] = (int) $row['count'];
+        }
+
+        // Rank (position among all agents by points)
+        $rankStmt = $db->prepare("SELECT COUNT(*) + 1 FROM agents WHERE points > (SELECT points FROM agents WHERE agent_id = :id)");
+        $rankStmt->execute([':id' => $agentId]);
+        $rank = (int) $rankStmt->fetchColumn();
+
+        $totalAgents = $db->query("SELECT COUNT(*) FROM agents")->fetchColumn();
+
+        // Recent contributions (last 5)
+        $recentStmt = $db->prepare("SELECT c.* FROM contributions c WHERE c.agent_id = :id ORDER BY c.created_at DESC LIMIT 5");
+        $recentStmt->execute([':id' => $agentId]);
+        $recent = $recentStmt->fetchAll();
+
+        // Fetch item name for each
+        foreach ($recent as &$cont) {
+            $cont['item_name'] = '—';
+            $tbl = $cont['type'] === 'location' ? 'locations' : ($cont['type'] === 'vehicle' ? 'vehicles' : 'routes');
+            $s = $db->prepare("SELECT name FROM $tbl WHERE contribution_id = :cid LIMIT 1");
+            $s->execute([':cid' => $cont['contribution_id']]);
+            $row = $s->fetch();
+            if ($row) $cont['item_name'] = $row['name'];
+        }
+        unset($cont);
+
+        jsonResponse([
+            'success' => true,
+            'agent' => $agent,
+            'stats' => [
+                'pending' => $pending,
+                'rejected' => $rejected,
+                'by_type' => $byType,
+                'rank' => $rank,
+                'total_agents' => (int) $totalAgents
+            ],
+            'recent' => $recent
+        ]);
+        break;
+
     default:
         jsonError('Unknown action.', 400);
 }

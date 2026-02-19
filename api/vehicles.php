@@ -221,7 +221,7 @@ switch ($action) {
         $db->prepare("UPDATE vehicles SET status = 'rejected', approved_by = :admin, updated_at = NOW() WHERE vehicle_id = :id")
             ->execute([':admin' => getAdminId(), ':id' => $id]);
 
-        $db->prepare("UPDATE contributions SET status = 'rejected', reviewed_by = :admin, reviewed_at = NOW(), admin_note = :reason
+        $db->prepare("UPDATE contributions SET status = 'rejected', reviewed_by = :admin, reviewed_at = NOW(), rejection_reason = :reason
                       WHERE contribution_id = (SELECT contribution_id FROM vehicles WHERE vehicle_id = :id)")
             ->execute([':admin' => getAdminId(), ':id' => $id, ':reason' => $reason]);
 
@@ -239,6 +239,61 @@ switch ($action) {
 
         $db->prepare("DELETE FROM vehicles WHERE vehicle_id = :id")->execute([':id' => $id]);
         jsonSuccess('Vehicle deleted.');
+        break;
+
+    /* ══════════════════════════════════════════════════════
+     *  AGENT ENDPOINTS
+     * ══════════════════════════════════════════════════════ */
+
+    /* ── Submit Vehicle (Agent) ──────────────────────────── */
+    case 'submit':
+        requireAgentAPI();
+        validateCsrf();
+        $db = getDB();
+
+        $name = postString('name');
+        $desc = postString('description');
+        $electric = postInt('electric');
+        $starts = postString('starts_at');
+        $stops = postString('stops_at');
+        $notes = postString('notes');
+
+        if (!$name) jsonError('Vehicle name is required.');
+
+        // Handle image
+        $imagePath = null;
+        if (!empty($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $imagePath = handleImageUpload($_FILES['image']);
+        }
+
+        $db->beginTransaction();
+        try {
+            // Create contribution
+            $cStmt = $db->prepare("INSERT INTO contributions (agent_id, type, status, notes) VALUES (:agent, 'vehicle', 'pending', :notes)");
+            $cStmt->execute([':agent' => getAgentId(), ':notes' => $notes]);
+            $contribId = (int) $db->lastInsertId();
+
+            // Create vehicle
+            $vStmt = $db->prepare("INSERT INTO vehicles (name, description, image_path, electric, starts_at, stops_at, status, contribution_id, updated_by)
+                                   VALUES (:name, :desc, :img, :elec, :starts, :stops, 'pending', :cid, :agent)");
+            $vStmt->execute([
+                ':name' => $name, ':desc' => $desc,
+                ':img' => $imagePath, ':elec' => $electric,
+                ':starts' => $starts ?: null, ':stops' => $stops ?: null,
+                ':cid' => $contribId, ':agent' => getAgentId()
+            ]);
+
+            // Update agent count
+            $db->prepare("UPDATE agents SET contributions_count = contributions_count + 1 WHERE agent_id = :id")
+                ->execute([':id' => getAgentId()]);
+
+            $db->commit();
+            jsonSuccess('Vehicle submitted for review.');
+        } catch (Exception $e) {
+            $db->rollBack();
+            error_log('Vehicle submit error: ' . $e->getMessage());
+            jsonError('Failed to submit vehicle. Please try again.');
+        }
         break;
 
     default:

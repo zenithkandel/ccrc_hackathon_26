@@ -237,6 +237,83 @@ switch ($action) {
         jsonResponse(['success' => true, 'locations' => $stmt->fetchAll()]);
         break;
 
+    /* ══════════════════════════════════════════════════════
+     *  AGENT ENDPOINTS
+     * ══════════════════════════════════════════════════════ */
+
+    /* ── Submit Location (Agent) ─────────────────────────── */
+    case 'submit':
+        requireAgentAPI();
+        validateCsrf();
+        $db = getDB();
+
+        $name = postString('name');
+        $lat = isset($_POST['latitude']) ? floatval($_POST['latitude']) : null;
+        $lng = isset($_POST['longitude']) ? floatval($_POST['longitude']) : null;
+        $type = postString('type') ?: 'stop';
+        $desc = postString('description');
+        $notes = postString('notes');
+
+        if (!$name) jsonError('Name is required.');
+        if (!$lat || !$lng) jsonError('Location coordinates are required.');
+        if (!in_array($type, ['stop', 'landmark'])) jsonError('Invalid location type.');
+
+        $db->beginTransaction();
+        try {
+            // Create contribution record
+            $cStmt = $db->prepare("INSERT INTO contributions (agent_id, type, status, notes) VALUES (:agent, 'location', 'pending', :notes)");
+            $cStmt->execute([':agent' => getAgentId(), ':notes' => $notes]);
+            $contribId = (int) $db->lastInsertId();
+
+            // Create the location
+            $lStmt = $db->prepare("INSERT INTO locations (name, description, latitude, longitude, type, status, contribution_id, updated_by)
+                                   VALUES (:name, :desc, :lat, :lng, :type, 'pending', :cid, :agent)");
+            $lStmt->execute([
+                ':name' => $name, ':desc' => $desc,
+                ':lat' => $lat, ':lng' => $lng,
+                ':type' => $type, ':cid' => $contribId,
+                ':agent' => getAgentId()
+            ]);
+
+            // Update agent contribution count
+            $db->prepare("UPDATE agents SET contributions_count = contributions_count + 1 WHERE agent_id = :id")
+                ->execute([':id' => getAgentId()]);
+
+            $db->commit();
+            jsonSuccess('Location submitted for review.');
+        } catch (Exception $e) {
+            $db->rollBack();
+            error_log('Location submit error: ' . $e->getMessage());
+            jsonError('Failed to submit location. Please try again.');
+        }
+        break;
+
+    /* ── Nearby Check (duplicate detection) ──────────────── */
+    case 'nearby':
+        $db = getDB();
+        $lat = isset($_GET['lat']) ? floatval($_GET['lat']) : null;
+        $lng = isset($_GET['lng']) ? floatval($_GET['lng']) : null;
+        $radius = isset($_GET['radius']) ? floatval($_GET['radius']) : 0.3; // km
+
+        if (!$lat || !$lng) jsonError('Coordinates required.');
+
+        // Haversine formula to find locations within radius (in km)
+        $sql = "SELECT location_id, name, latitude, longitude, type, status,
+                       (6371 * acos(cos(radians(:lat1)) * cos(radians(latitude))
+                        * cos(radians(longitude) - radians(:lng1))
+                        + sin(radians(:lat2)) * sin(radians(latitude)))) AS distance
+                FROM locations
+                WHERE status IN ('approved', 'pending')
+                HAVING distance < :radius
+                ORDER BY distance ASC
+                LIMIT 10";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':lat1' => $lat, ':lng1' => $lng, ':lat2' => $lat, ':radius' => $radius]);
+
+        jsonResponse(['success' => true, 'locations' => $stmt->fetchAll()]);
+        break;
+
     default:
         jsonError('Unknown action.', 400);
 }
