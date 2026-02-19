@@ -68,6 +68,7 @@ const SawariRouting = (function () {
         showLoading(true);
         SawariMap.clearRouteDisplay();
         resultPanel.classList.remove('open');
+        resultPanel.classList.remove('expanded');
 
         // Close search dropdowns
         SawariSearch.closeResults('a');

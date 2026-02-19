@@ -43,7 +43,7 @@
     position: absolute;
     top: var(--space-4);
     right: var(--space-4);
-    z-index: var(--z-map-controls);
+    z-index: calc(var(--z-map-controls) + 1);
 }
 
 .settings-fab-btn {
@@ -201,6 +201,11 @@
     display: none;
 }
 
+/* Inline settings button — hidden on desktop, shown on mobile */
+.search-panel-settings-btn {
+    display: none;
+}
+
 /* Search panel body — collapsible on mobile */
 .search-panel-body {
     transition: max-height var(--duration-slow) var(--ease-out),
@@ -285,6 +290,7 @@
     display: flex;
     justify-content: center;
     padding: var(--space-3) 0 var(--space-1);
+    cursor: pointer;
 }
 
 .result-panel-handle-bar {
@@ -766,14 +772,12 @@
         display: flex;
     }
 
-    .settings-fab {
-        top: var(--space-3);
-        right: var(--space-3);
+    .search-panel-settings-btn {
+        display: flex;
     }
 
-    .settings-fab-btn {
-        width: 36px;
-        height: 36px;
+    .settings-fab {
+        display: none;
     }
 
     .result-panel {
@@ -838,26 +842,10 @@
         display: none;
     }
 
-    /* Settings FAB on mobile — smaller, below search panel */
-    .settings-fab {
-        top: var(--space-2);
-        right: var(--space-2);
-    }
-
-    .settings-fab-btn {
-        width: 34px;
-        height: 34px;
-        box-shadow: var(--shadow-md);
-    }
-
-    .settings-fab-btn svg {
-        width: 16px !important;
-        height: 16px !important;
-    }
-
     .settings-dropdown {
         width: 180px;
         padding: var(--space-2);
+        z-index: calc(var(--z-map-controls) + 2);
     }
 
     .settings-toggle {
@@ -1071,11 +1059,6 @@
 
     .peek-fare {
         font-size: var(--text-sm);
-    }
-
-    .settings-fab-btn {
-        width: 32px;
-        height: 32px;
     }
 }
 

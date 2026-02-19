@@ -92,6 +92,10 @@ require_once __DIR__ . '/../api/config.php';
                     <button class="btn btn-ghost btn-icon btn-sm" id="locate-btn" title="My Location">
                         <i data-feather="crosshair" style="width:18px;height:18px;"></i>
                     </button>
+                    <button class="btn btn-ghost btn-icon btn-sm search-panel-settings-btn" id="search-settings-btn"
+                        title="Map settings">
+                        <i data-feather="settings" style="width:18px;height:18px;"></i>
+                    </button>
                     <button class="btn btn-ghost btn-icon btn-sm search-panel-collapse-btn" id="search-collapse-btn"
                         title="Collapse">
                         <i data-feather="chevron-up" style="width:18px;height:18px;"></i>
@@ -298,18 +302,37 @@ require_once __DIR__ . '/../api/config.php';
         /* ===== Settings panel toggle ===== */
         (function () {
             const btn = document.getElementById('settings-btn');
+            const inlineBtn = document.getElementById('search-settings-btn');
             const dropdown = document.getElementById('settings-dropdown');
             let open = false;
 
-            btn.addEventListener('click', (e) => {
+            function toggleSettings(e) {
                 e.stopPropagation();
                 open = !open;
                 dropdown.classList.toggle('open', open);
                 btn.classList.toggle('active', open);
-            });
+
+                // On mobile, position dropdown below the search panel header
+                if (window.innerWidth <= 640 && open) {
+                    const header = document.getElementById('search-panel-header');
+                    const rect = header.getBoundingClientRect();
+                    dropdown.style.position = 'fixed';
+                    dropdown.style.top = (rect.bottom + 4) + 'px';
+                    dropdown.style.right = '8px';
+                    dropdown.style.left = 'auto';
+                } else {
+                    dropdown.style.position = '';
+                    dropdown.style.top = '';
+                    dropdown.style.right = '';
+                    dropdown.style.left = '';
+                }
+            }
+
+            btn.addEventListener('click', toggleSettings);
+            inlineBtn.addEventListener('click', toggleSettings);
 
             document.addEventListener('click', (e) => {
-                if (open && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+                if (open && !dropdown.contains(e.target) && !btn.contains(e.target) && !inlineBtn.contains(e.target)) {
                     open = false;
                     dropdown.classList.remove('open');
                     btn.classList.remove('active');
