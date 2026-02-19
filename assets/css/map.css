@@ -1203,6 +1203,62 @@ body.map-picking .leaflet-container {
     }
 }
 
+/* ─── Live Bus Tracking Markers ───────────────────────────── */
+.marker-bus {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #dc2626;
+    border: 2px solid #fff;
+    border-radius: var(--radius-full);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+    color: #fff;
+    font-size: 14px;
+    animation: busPulse 3s ease-in-out infinite;
+    transition: transform 0.3s ease;
+}
+
+.marker-bus:hover {
+    transform: scale(1.15);
+}
+
+@keyframes busPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 2px 16px rgba(220, 38, 38, 0.6);
+    }
+}
+
+.bus-tracking-popup {
+    min-width: 160px;
+}
+
+.bus-tracking-popup strong {
+    display: block;
+    font-size: 0.875rem;
+    margin-bottom: 4px;
+    color: var(--color-text, #1a1a2e);
+}
+
+.bus-popup-detail {
+    display: flex;
+    gap: 12px;
+    font-size: 0.8125rem;
+    color: #6b7280;
+}
+
+.bus-popup-detail i {
+    margin-right: 3px;
+    color: #dc2626;
+}
+
 /* ─── Star Rating ─────────────────────────────────────────── */
 .star-rating {
     display: flex;

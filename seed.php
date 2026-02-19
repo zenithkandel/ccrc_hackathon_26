@@ -536,9 +536,17 @@ $vehicles = [
 ];
 
 $insertVehicle = $pdo->prepare('
-    INSERT INTO vehicles (name, description, image_path, status, approved_by, updated_at, starts_at, stops_at, used_routes)
-    VALUES (:name, :desc, :image, "approved", :admin, NOW(), :starts, :stops, :routes)
+    INSERT INTO vehicles (name, description, image_path, status, approved_by, updated_at, starts_at, stops_at, used_routes, current_lat, current_lng, current_speed, gps_updated_at)
+    VALUES (:name, :desc, :image, "approved", :admin, NOW(), :starts, :stops, :routes, :lat, :lng, :speed, :gps_at)
 ');
+
+// Some vehicles have live GPS positions for demo purposes
+$gpsData = [
+    'Sajha Yatayat Bus (Line 1 & 7)' => ['lat' => 27.7140, 'lng' => 85.3190, 'speed' => 18.5],
+    'Mahanagar Yatayat (Ring Road Bus)' => ['lat' => 27.6920, 'lng' => 85.3220, 'speed' => 22.0],
+    'Micro Bus (Ratnapark-Jorpati)' => ['lat' => 27.7350, 'lng' => 85.3240, 'speed' => 15.0],
+    'Safa Tempo (Lalitpur)' => ['lat' => 27.6780, 'lng' => 85.3160, 'speed' => 12.5],
+];
 
 $vehicleIds = [];
 foreach ($vehicles as $v) {
@@ -548,6 +556,7 @@ foreach ($vehicles as $v) {
             $usedRoutes[] = ['route_id' => $routeIds[$r['name']], 'count' => $r['count']];
         }
     }
+    $gps = $gpsData[$v['name']] ?? null;
     $insertVehicle->execute([
         'name' => $v['name'],
         'desc' => $v['desc'],
@@ -556,6 +565,10 @@ foreach ($vehicles as $v) {
         'starts' => $v['start'],
         'stops' => $v['stop'],
         'routes' => json_encode($usedRoutes),
+        'lat' => $gps ? $gps['lat'] : null,
+        'lng' => $gps ? $gps['lng'] : null,
+        'speed' => $gps ? $gps['speed'] : null,
+        'gps_at' => $gps ? date('Y-m-d H:i:s') : null,
     ]);
     $vehicleIds[$v['name']] = (int) $pdo->lastInsertId();
     echo "   ✓ {$v['name']}{$nl}";

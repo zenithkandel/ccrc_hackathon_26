@@ -13,6 +13,7 @@ Sawari is a web-based public transport navigation system for Kathmandu Valley, N
 - **Carbon Comparison** — CO₂ savings from choosing public transport
 - **Community Driven** — Volunteer agents contribute route data
 - **Interactive Map** — Leaflet.js map with route visualization
+- **Live Bus Tracking** — Real-time GPS positions of tracked vehicles on the map (auto-refresh every 10s)
 
 ## Tech Stack
 
@@ -20,6 +21,7 @@ Sawari is a web-based public transport navigation system for Kathmandu Valley, N
 - **Database:** MySQL 8+ (PDO)
 - **Frontend:** HTML5, CSS3, vanilla JavaScript
 - **Maps:** Leaflet.js + OpenStreetMap tiles
+- **GPS Tracking:** Vehicle GPS modules reporting via HTTP API
 - **Walking API:** OSRM (public instance)
 - **Server:** Apache (XAMPP)
 
@@ -165,20 +167,22 @@ Key settings in `config/constants.php`:
 
 ## API Endpoints
 
-| Method | Endpoint                        | Description     | Auth   |
-| ------ | ------------------------------- | --------------- | ------ |
-| POST   | `/api/auth/login.php`           | Login           | No     |
-| POST   | `/api/auth/register.php`        | Register agent  | No     |
-| GET    | `/api/search/locations.php?q=X` | Autocomplete    | Public |
-| POST   | `/api/search/find-route.php`    | Find route A→B  | Public |
-| GET    | `/api/locations/read.php`       | List locations  | Auth   |
-| POST   | `/api/locations/create.php`     | Add location    | Auth   |
-| GET    | `/api/routes/read.php`          | List routes     | Auth   |
-| POST   | `/api/routes/create.php`        | Add route       | Auth   |
-| GET    | `/api/vehicles/read.php`        | List vehicles   | Auth   |
-| POST   | `/api/vehicles/create.php`      | Add vehicle     | Auth   |
-| GET    | `/api/alerts/read.php`          | List alerts     | Public |
-| POST   | `/api/suggestions/create.php`   | Submit feedback | Public |
+| Method | Endpoint                        | Description        | Auth   |
+| ------ | ------------------------------- | ------------------ | ------ |
+| POST   | `/api/auth/login.php`           | Login              | No     |
+| POST   | `/api/auth/register.php`        | Register agent     | No     |
+| GET    | `/api/search/locations.php?q=X` | Autocomplete       | Public |
+| POST   | `/api/search/find-route.php`    | Find route A→B     | Public |
+| GET    | `/api/locations/read.php`       | List locations     | Auth   |
+| POST   | `/api/locations/create.php`     | Add location       | Auth   |
+| GET    | `/api/routes/read.php`          | List routes        | Auth   |
+| POST   | `/api/routes/create.php`        | Add route          | Auth   |
+| GET    | `/api/vehicles/read.php`        | List vehicles      | Auth   |
+| POST   | `/api/vehicles/create.php`      | Add vehicle        | Auth   |
+| GET    | `/api/alerts/read.php`          | List alerts        | Public |
+| POST   | `/api/suggestions/create.php`   | Submit feedback    | Public |
+| GET    | `/api/vehicles/tracking.php`    | Live GPS positions | Public |
+| POST   | `/api/vehicles/gps-update.php`  | Push GPS position  | Device |
 
 ## License
 

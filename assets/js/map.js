@@ -15,13 +15,16 @@ const SawariMap = (function () {
     let map = null;
     let stopsLayer = null;
     let resultLayers = null;
+    let trackedVehiclesLayer = null;
+    let trackedMarkers = {};       // { vehicle_id: L.marker }
+    let trackingInterval = null;
     let startMarker = null;
     let endMarker = null;
     let userLocMarker = null;
     let currentRouteData = null;
     let touristMode = false;
 
-    const icons = { start: null, end: null, stop: null, landmark: null, userLoc: null };
+    const icons = { start: null, end: null, stop: null, landmark: null, userLoc: null, bus: null };
 
     const ROUTE_COLORS = [
         '#2563eb', '#dc2626', '#16a34a', '#d97706',
@@ -46,9 +49,12 @@ const SawariMap = (function () {
 
         stopsLayer = L.layerGroup().addTo(map);
         resultLayers = L.layerGroup().addTo(map);
+        trackedVehiclesLayer = L.layerGroup().addTo(map);
 
         createIcons();
         loadStops();
+        loadTrackedVehicles();
+        startVehicleTracking();
         initUI();
     }
 
@@ -89,6 +95,77 @@ const SawariMap = (function () {
             html: '<div class="marker-user-loc"><div class="marker-user-pulse"></div><div class="marker-user-dot"></div></div>',
             iconSize: [24, 24],
             iconAnchor: [12, 12]
+        });
+
+        icons.bus = L.divIcon({
+            className: 'sawari-marker sawari-bus-marker',
+            html: '<div class="marker-bus"><i class="fa-solid fa-bus"></i></div>',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+            popupAnchor: [0, -18]
+        });
+    }
+
+    // ─── Live Vehicle Tracking ──────────────────────────────
+    function loadTrackedVehicles() {
+        SawariUtils.apiFetch('api/vehicles/tracking.php')
+            .then(function (data) {
+                if (!data || !data.vehicles) return;
+                updateVehicleMarkers(data.vehicles);
+            })
+            .catch(function () { });
+    }
+
+    function startVehicleTracking() {
+        if (trackingInterval) clearInterval(trackingInterval);
+        trackingInterval = setInterval(loadTrackedVehicles, 10000);
+    }
+
+    function updateVehicleMarkers(vehicles) {
+        // Track which vehicles are still present
+        var activeIds = {};
+
+        vehicles.forEach(function (v) {
+            activeIds[v.vehicle_id] = true;
+            var lat = parseFloat(v.current_lat);
+            var lng = parseFloat(v.current_lng);
+            var speed = v.current_speed !== null ? parseFloat(v.current_speed) : 0;
+            var updatedAt = v.gps_updated_at || '';
+            var timeParts = updatedAt.split(' ');
+            var timeStr = timeParts.length > 1 ? timeParts[1].substring(0, 5) : '';
+
+            var popupHtml =
+                '<div class="bus-tracking-popup">' +
+                '<strong>' + SawariUtils.escapeHTML(v.name) + '</strong>' +
+                '<div class="bus-popup-detail">' +
+                '<span><i class="fa-solid fa-gauge-high"></i> ' + speed.toFixed(1) + ' km/h</span>' +
+                '<span><i class="fa-solid fa-clock"></i> ' + SawariUtils.escapeHTML(timeStr) + '</span>' +
+                '</div>' +
+                '</div>';
+
+            if (trackedMarkers[v.vehicle_id]) {
+                // Update existing marker position smoothly
+                var marker = trackedMarkers[v.vehicle_id];
+                marker.setLatLng([lat, lng]);
+                marker.setPopupContent(popupHtml);
+            } else {
+                // Create new marker
+                var marker = L.marker([lat, lng], {
+                    icon: icons.bus,
+                    zIndexOffset: 500
+                })
+                    .bindPopup(popupHtml);
+                trackedVehiclesLayer.addLayer(marker);
+                trackedMarkers[v.vehicle_id] = marker;
+            }
+        });
+
+        // Remove markers for vehicles no longer being tracked
+        Object.keys(trackedMarkers).forEach(function (id) {
+            if (!activeIds[id]) {
+                trackedVehiclesLayer.removeLayer(trackedMarkers[id]);
+                delete trackedMarkers[id];
+            }
         });
     }
 

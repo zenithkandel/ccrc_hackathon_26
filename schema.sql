@@ -93,6 +93,10 @@ CREATE TABLE vehicles (
     used_routes JSON, -- Stores routes: [{"route_id": 1, "count": 6}, ...]
     starts_at TIME,
     stops_at TIME,
+    current_lat DECIMAL(10, 8) DEFAULT NULL,   -- GPS: real-time latitude
+    current_lng DECIMAL(11, 8) DEFAULT NULL,   -- GPS: real-time longitude
+    current_speed DECIMAL(5, 1) DEFAULT NULL,  -- GPS: speed in km/h
+    gps_updated_at DATETIME DEFAULT NULL,      -- GPS: last position update timestamp
     FOREIGN KEY (contribution_id) REFERENCES contributions(contribution_id) ON DELETE SET NULL,
     FOREIGN KEY (updated_by) REFERENCES agents(agent_id) ON DELETE SET NULL,
     FOREIGN KEY (approved_by) REFERENCES admins(admin_id) ON DELETE SET NULL
