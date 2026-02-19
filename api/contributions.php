@@ -20,7 +20,7 @@ switch ($action) {
         requireAdminAPI();
         $db = getDB();
 
-        $where  = [];
+        $where = [];
         $params = [];
 
         $status = getString('status');
@@ -58,9 +58,11 @@ switch ($action) {
                 LIMIT :offset, :limit";
 
         $stmt = $db->prepare($sql);
-        foreach ($params as $k => $val) { $stmt->bindValue($k, $val); }
+        foreach ($params as $k => $val) {
+            $stmt->bindValue($k, $val);
+        }
         $stmt->bindValue(':offset', $pagination['offset'], PDO::PARAM_INT);
-        $stmt->bindValue(':limit',  $pagination['per_page'], PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $pagination['per_page'], PDO::PARAM_INT);
         $stmt->execute();
 
         $contributions = $stmt->fetchAll();
@@ -73,19 +75,22 @@ switch ($action) {
                     $s = $db->prepare("SELECT name FROM locations WHERE contribution_id = :cid LIMIT 1");
                     $s->execute([':cid' => $cont['contribution_id']]);
                     $row = $s->fetch();
-                    if ($row) $cont['item_name'] = $row['name'];
+                    if ($row)
+                        $cont['item_name'] = $row['name'];
                     break;
                 case 'vehicle':
                     $s = $db->prepare("SELECT name FROM vehicles WHERE contribution_id = :cid LIMIT 1");
                     $s->execute([':cid' => $cont['contribution_id']]);
                     $row = $s->fetch();
-                    if ($row) $cont['item_name'] = $row['name'];
+                    if ($row)
+                        $cont['item_name'] = $row['name'];
                     break;
                 case 'route':
                     $s = $db->prepare("SELECT name FROM routes WHERE contribution_id = :cid LIMIT 1");
                     $s->execute([':cid' => $cont['contribution_id']]);
                     $row = $s->fetch();
-                    if ($row) $cont['item_name'] = $row['name'];
+                    if ($row)
+                        $cont['item_name'] = $row['name'];
                     break;
             }
         }
@@ -99,7 +104,8 @@ switch ($action) {
         requireAdminAPI();
         $db = getDB();
         $id = getInt('id');
-        if (!$id) jsonError('Contribution ID required.');
+        if (!$id)
+            jsonError('Contribution ID required.');
 
         $stmt = $db->prepare("SELECT c.*, ag.name AS agent_name, ag.email AS agent_email,
                                      adm.name AS reviewer_name
@@ -109,7 +115,8 @@ switch ($action) {
                               WHERE c.contribution_id = :id");
         $stmt->execute([':id' => $id]);
         $cont = $stmt->fetch();
-        if (!$cont) jsonError('Contribution not found.', 404);
+        if (!$cont)
+            jsonError('Contribution not found.', 404);
 
         // Fetch linked item
         $cont['item'] = null;
@@ -144,26 +151,28 @@ switch ($action) {
         validateCsrf();
         $db = getDB();
         $id = postInt('id');
-        if (!$id) jsonError('Contribution ID required.');
+        if (!$id)
+            jsonError('Contribution ID required.');
 
         // Get contribution
         $stmt = $db->prepare("SELECT * FROM contributions WHERE contribution_id = :id");
         $stmt->execute([':id' => $id]);
         $cont = $stmt->fetch();
-        if (!$cont) jsonError('Contribution not found.');
+        if (!$cont)
+            jsonError('Contribution not found.');
 
         // Update contribution
         $db->prepare("UPDATE contributions SET status = 'approved', reviewed_by = :admin, reviewed_at = NOW() WHERE contribution_id = :id")
-           ->execute([':admin' => getAdminId(), ':id' => $id]);
+            ->execute([':admin' => getAdminId(), ':id' => $id]);
 
         // Update linked item
         $table = $cont['type'] === 'location' ? 'locations' : ($cont['type'] === 'vehicle' ? 'vehicles' : 'routes');
         $db->prepare("UPDATE $table SET status = 'approved', approved_by = :admin, updated_at = NOW() WHERE contribution_id = :id")
-           ->execute([':admin' => getAdminId(), ':id' => $id]);
+            ->execute([':admin' => getAdminId(), ':id' => $id]);
 
         // Update agent stats
         $db->prepare("UPDATE agents SET approved_count = approved_count + 1, points = points + 10 WHERE agent_id = :aid")
-           ->execute([':aid' => $cont['agent_id']]);
+            ->execute([':aid' => $cont['agent_id']]);
 
         jsonSuccess('Contribution approved.');
         break;
@@ -173,22 +182,25 @@ switch ($action) {
         requireAdminAPI();
         validateCsrf();
         $db = getDB();
-        $id     = postInt('id');
+        $id = postInt('id');
         $reason = postString('reason');
-        if (!$id)     jsonError('Contribution ID required.');
-        if (!$reason) jsonError('Rejection reason required.');
+        if (!$id)
+            jsonError('Contribution ID required.');
+        if (!$reason)
+            jsonError('Rejection reason required.');
 
         $stmt = $db->prepare("SELECT * FROM contributions WHERE contribution_id = :id");
         $stmt->execute([':id' => $id]);
         $cont = $stmt->fetch();
-        if (!$cont) jsonError('Contribution not found.');
+        if (!$cont)
+            jsonError('Contribution not found.');
 
         $db->prepare("UPDATE contributions SET status = 'rejected', reviewed_by = :admin, reviewed_at = NOW(), admin_note = :reason WHERE contribution_id = :id")
-           ->execute([':admin' => getAdminId(), ':id' => $id, ':reason' => $reason]);
+            ->execute([':admin' => getAdminId(), ':id' => $id, ':reason' => $reason]);
 
         $table = $cont['type'] === 'location' ? 'locations' : ($cont['type'] === 'vehicle' ? 'vehicles' : 'routes');
         $db->prepare("UPDATE $table SET status = 'rejected', approved_by = :admin, updated_at = NOW() WHERE contribution_id = :id")
-           ->execute([':admin' => getAdminId(), ':id' => $id]);
+            ->execute([':admin' => getAdminId(), ':id' => $id]);
 
         jsonSuccess('Contribution rejected.');
         break;
