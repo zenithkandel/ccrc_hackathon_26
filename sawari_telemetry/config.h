@@ -49,6 +49,15 @@
 #define LED_DATA            14      // Data transmission blink
 
 // ============================================================================
+// PIN DEFINITIONS — BUTTONS
+// ============================================================================
+// BOOT button on ESP32 DevKit (active LOW). Used to open WiFi portal on demand.
+#define BUTTON_BOOT         0       // GPIO0 = BOOT button on most ESP32 DevKits
+
+// Long-press duration to trigger WiFi portal (milliseconds)
+#define BUTTON_LONG_PRESS_MS 2000
+
+// ============================================================================
 // NETWORK CONFIGURATION
 // ============================================================================
 // WiFiManager access point name for first-boot configuration
@@ -73,8 +82,8 @@
 // How often to refresh the OLED display
 #define DISPLAY_UPDATE_INTERVAL     500
 
-// How often to check WiFi connectivity
-#define WIFI_CHECK_INTERVAL         5000
+// How often to check WiFi connectivity and retry connection
+#define WIFI_CHECK_INTERVAL         10000       // 10 seconds
 
 // How often to attempt flushing the offline queue
 #define QUEUE_FLUSH_INTERVAL        15000
@@ -86,7 +95,7 @@
 #define DATA_LED_BLINK_MS           150
 
 // WiFi reconnect cooldown (avoid spamming reconnect attempts)
-#define WIFI_RECONNECT_INTERVAL     30000
+#define WIFI_RECONNECT_INTERVAL     10000       // 10 seconds (matches WIFI_CHECK_INTERVAL)
 
 // ============================================================================
 // OFFLINE STORAGE CONFIGURATION
