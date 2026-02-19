@@ -260,15 +260,15 @@ const SawariMap = (function () {
         return fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1`, {
             headers: { 'Accept-Language': 'en' }
         })
-        .then(r => r.json())
-        .then(data => {
-            if (data && data.display_name) {
-                const parts = data.display_name.split(',').slice(0, 3);
-                return parts.map(p => p.trim()).join(', ');
-            }
-            return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-        })
-        .catch(() => `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+            .then(r => r.json())
+            .then(data => {
+                if (data && data.display_name) {
+                    const parts = data.display_name.split(',').slice(0, 3);
+                    return parts.map(p => p.trim()).join(', ');
+                }
+                return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            })
+            .catch(() => `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
     }
 
     /* ──────────────────────────────────────────────
