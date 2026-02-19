@@ -83,7 +83,10 @@ const SawariRouting = (function () {
         const url = `${BASE}/api/routing-engine.php?action=find-route&origin_lat=${oLat}&origin_lng=${oLng}&dest_lat=${dLat}&dest_lng=${dLng}`;
 
         fetch(url)
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) throw new Error('Server error: ' + r.status);
+                return r.json();
+            })
             .then(data => {
                 showLoading(false);
 

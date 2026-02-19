@@ -90,12 +90,18 @@ const SawariTracking = (function () {
      * ────────────────────────────────────────────── */
     function pollLiveVehicles() {
         fetch(BASE + '/api/vehicles.php?action=live')
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
             .then(data => {
                 if (!data.success) return;
                 updateVehicleMarkers(data.vehicles);
             })
-            .catch(err => console.error('Live tracking poll error:', err));
+            .catch(err => {
+                // Silently ignore poll errors — will retry on next interval
+                console.warn('Live tracking poll error:', err.message);
+            });
     }
 
     /* ──────────────────────────────────────────────

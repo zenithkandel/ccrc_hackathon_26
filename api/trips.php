@@ -25,6 +25,7 @@ switch ($action) {
     case 'log':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST')
             jsonError('POST required.', 405);
+        // No CSRF for anonymous trip logging (public endpoint)
         $db = getDB();
 
         $sessionId = session_id();
@@ -81,6 +82,7 @@ switch ($action) {
     case 'feedback':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST')
             jsonError('POST required.', 405);
+        // Session-bound: verify trip belongs to user's session
         $db = getDB();
 
         $tripId = postInt('trip_id');

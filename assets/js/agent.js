@@ -22,8 +22,10 @@ var Sawari = Sawari || {};
     /* ── Constants ────────────────────────────────────────── */
     var BASE = document.querySelector('meta[name="base-url"]');
     var CSRF = document.querySelector('meta[name="csrf-token"]');
+    var AGENT_ID = document.querySelector('meta[name="agent-id"]');
     Sawari.baseUrl = BASE ? BASE.content : '';
     Sawari.csrfToken = CSRF ? CSRF.content : '';
+    Sawari.agentId = AGENT_ID ? AGENT_ID.content : '';
 
     /* ── HTML Escape ─────────────────────────────────────── */
     Sawari.escape = function (str) {

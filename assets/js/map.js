@@ -91,7 +91,10 @@ const SawariMap = (function () {
      * ────────────────────────────────────────────── */
     function loadStops() {
         fetch(BASE + '/api/locations.php?action=approved')
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
             .then(data => {
                 if (!data.success) return;
                 allStops = data.locations.map(l => ({
@@ -103,7 +106,10 @@ const SawariMap = (function () {
                 }));
                 renderStopMarkers();
             })
-            .catch(err => console.error('Failed to load stops:', err));
+            .catch(err => {
+                console.error('Failed to load stops:', err);
+                showToast('Could not load bus stops. Check your connection.', 'warning');
+            });
     }
 
     function renderStopMarkers() {

@@ -161,6 +161,31 @@ require_once __DIR__ . '/../../includes/agent-header.php';
     </div>
 </div>
 
+<!-- Agent Leaderboard -->
+<div class="card" style="margin-top:var(--space-6);">
+    <div class="card-header">
+        <h3 class="card-title">🏆 Agent Leaderboard</h3>
+    </div>
+    <div class="card-body" style="padding:0;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th style="width:50px;">#</th>
+                    <th>Agent</th>
+                    <th>Points</th>
+                    <th>Contributions</th>
+                    <th>Approved</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard-tbody">
+                <tr>
+                    <td colspan="5" class="text-center text-muted" style="padding:var(--space-8);">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <style>
     .stats-grid {
         display: grid;
@@ -249,6 +274,40 @@ require_once __DIR__ . '/../../includes/agent-header.php';
         }
 
         document.addEventListener('DOMContentLoaded', loadDashboard);
+    })();
+</script>
+
+<script>
+    (function () {
+        'use strict';
+        function loadLeaderboard() {
+            Sawari.api('agents', 'leaderboard', { limit: 10 }, 'GET').then(function (res) {
+                if (!res.success || !res.leaderboard) return;
+
+                var tbody = document.getElementById('leaderboard-tbody');
+                if (res.leaderboard.length === 0) {
+                    tbody.innerHTML = Sawari.emptyRow(5, 'No agents yet.');
+                    return;
+                }
+
+                var html = '';
+                var medals = ['🥇', '🥈', '🥉'];
+                res.leaderboard.forEach(function (a, i) {
+                    var rank = i < 3 ? medals[i] : (i + 1);
+                    var isMe = a.agent_id == (Sawari.agentId || '');
+                    var rowStyle = isMe ? 'background:var(--color-primary-50);font-weight:var(--font-semibold);' : '';
+                    html += '<tr style="' + rowStyle + '">';
+                    html += '<td style="text-align:center;font-size:var(--text-lg);">' + rank + '</td>';
+                    html += '<td>' + Sawari.escape(a.name) + (isMe ? ' <span class="badge badge-primary" style="font-size:10px;">You</span>' : '') + '</td>';
+                    html += '<td style="font-weight:var(--font-semibold);color:var(--color-primary-600);">' + (a.points || 0) + '</td>';
+                    html += '<td>' + (a.contributions_count || 0) + '</td>';
+                    html += '<td>' + (a.approved_count || 0) + '</td>';
+                    html += '</tr>';
+                });
+                tbody.innerHTML = html;
+            });
+        }
+        document.addEventListener('DOMContentLoaded', loadLeaderboard);
     })();
 </script>
 

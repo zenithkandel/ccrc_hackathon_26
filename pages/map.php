@@ -33,6 +33,7 @@ require_once __DIR__ . '/../api/config.php';
 
     <!-- Meta for JS -->
     <meta name="base-url" content="<?= BASE_URL ?>">
+    <meta name="csrf-token" content="<?= e(csrfToken()) ?>">
 </head>
 
 <body class="map-page">

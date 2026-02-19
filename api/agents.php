@@ -313,6 +313,26 @@ switch ($action) {
         ]);
         break;
 
+    /* ── Leaderboard (public) ────────────────────────────── */
+    case 'leaderboard':
+        $db = getDB();
+        $limit = getInt('limit') ?: 10;
+        $limit = min($limit, 50);
+
+        $stmt = $db->prepare("SELECT a.agent_id, a.name, a.points,
+                                     a.contributions_count, a.approved_count,
+                                     a.created_at
+                              FROM agents a
+                              WHERE a.status = 'active'
+                              ORDER BY a.points DESC, a.approved_count DESC
+                              LIMIT :lim");
+        $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        $leaders = $stmt->fetchAll();
+
+        jsonResponse(['success' => true, 'leaderboard' => $leaders]);
+        break;
+
     default:
         jsonError('Unknown action.', 400);
 }

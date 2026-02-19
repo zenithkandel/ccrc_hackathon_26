@@ -111,12 +111,17 @@ const SawariSearch = (function () {
      * ────────────────────────────────────────────── */
     function searchLocations(query, which) {
         fetch(BASE + '/api/locations.php?action=search&q=' + encodeURIComponent(query))
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
             .then(data => {
                 if (!data.success || !data.locations) return;
                 renderResults(data.locations, which);
             })
-            .catch(err => console.error('Search error:', err));
+            .catch(err => {
+                console.error('Search error:', err);
+            });
     }
 
     /* ──────────────────────────────────────────────

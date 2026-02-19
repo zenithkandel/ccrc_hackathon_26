@@ -59,6 +59,10 @@ CREATE TABLE contributions (
     FOREIGN KEY (reviewed_by) REFERENCES admins(admin_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Additional indexes for performance
+CREATE INDEX idx_contribution_agent ON contributions(agent_id, status);
+CREATE INDEX idx_contribution_type ON contributions(type, status);
+
 -- =============================================
 -- 4. LOCATIONS
 -- Bus stops and landmarks used for route mapping
@@ -142,7 +146,8 @@ CREATE TABLE vehicles (
     FOREIGN KEY (updated_by) REFERENCES agents(agent_id) ON DELETE SET NULL,
     FOREIGN KEY (approved_by) REFERENCES admins(admin_id) ON DELETE SET NULL,
     INDEX idx_vehicle_status (status),
-    INDEX idx_vehicle_gps (gps_active)
+    INDEX idx_vehicle_gps (gps_active),
+    INDEX idx_vehicle_live (status, gps_active, last_gps_update)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =============================================
@@ -173,7 +178,8 @@ CREATE TABLE trips (
     FOREIGN KEY (second_route_id) REFERENCES routes(route_id) ON DELETE SET NULL,
     INDEX idx_trip_session (session_id),
     INDEX idx_trip_route (route_id),
-    INDEX idx_trip_date (started_at)
+    INDEX idx_trip_date (started_at),
+    INDEX idx_trip_rating (rating)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =============================================

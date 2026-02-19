@@ -63,6 +63,7 @@ $navSections = [
     <!-- Meta for JS -->
     <meta name="csrf-token" content="<?= e(csrfToken()) ?>">
     <meta name="base-url" content="<?= e(BASE_URL) ?>">
+    <meta name="agent-id" content="<?= e((string)($_SESSION['agent_id'] ?? '')) ?>">
 
     <?= $extraHead ?>
 </head>
