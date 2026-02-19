@@ -288,28 +288,28 @@ var Sawari = Sawari || {};
 
     function initSidebar() {
         var toggle = document.getElementById('sidebar-toggle');
-        var sidebar = document.querySelector('.admin-sidebar');
-        var overlay = document.getElementById('sidebar-overlay');
+        var sidebar = document.getElementById('sidebar');
+        var backdrop = document.getElementById('sidebar-backdrop');
 
         if (!toggle || !sidebar) return;
 
         toggle.addEventListener('click', function () {
             sidebar.classList.toggle('open');
-            if (overlay) overlay.classList.toggle('active');
+            if (backdrop) backdrop.classList.toggle('active');
         });
 
-        if (overlay) {
-            overlay.addEventListener('click', function () {
+        if (backdrop) {
+            backdrop.addEventListener('click', function () {
                 sidebar.classList.remove('open');
-                overlay.classList.remove('active');
+                backdrop.classList.remove('active');
             });
         }
     }
 
     function initDropdowns() {
         // User dropdown toggle
-        var trigger = document.getElementById('user-dropdown-trigger');
-        var menu = document.getElementById('user-dropdown-menu');
+        var trigger = document.getElementById('user-dropdown-btn');
+        var menu = document.getElementById('user-dropdown');
         if (trigger && menu) {
             trigger.addEventListener('click', function (e) {
                 e.stopPropagation();
@@ -348,12 +348,27 @@ var Sawari = Sawari || {};
         });
     }
 
+    function initLogout() {
+        var logoutBtn = document.getElementById('logout-btn');
+        if (!logoutBtn) return;
+
+        logoutBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            Sawari.confirm('Are you sure you want to log out?', function () {
+                Sawari.api('admins', 'logout').then(function () {
+                    window.location.href = Sawari.baseUrl + '/pages/admin/login.php';
+                });
+            }, 'Log Out', 'btn-danger');
+        });
+    }
+
     /* ── Boot ─────────────────────────────────────────────── */
 
     document.addEventListener('DOMContentLoaded', function () {
         initSidebar();
         initDropdowns();
         initModalClose();
+        initLogout();
     });
 
 })();
