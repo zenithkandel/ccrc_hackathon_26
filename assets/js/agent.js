@@ -1,13 +1,16 @@
 /**
- * SAWARI — Admin JS
+ * SAWARI — Agent JS Controller
  *
- * Singleton `Sawari` namespace providing:
- *   api()       – AJAX helper (all API calls)
- *   toast()     – toast notifications
- *   modal()     – open / close reusable modal
- *   confirm()   – confirmation dialog
- *   escape()    – HTML-escape helper
- *   sidebar / dropdown / misc UI wiring
+ * Extends the `Sawari` namespace with utilities for agent pages:
+ *   api()         – AJAX helper (shared pattern with admin.js)
+ *   toast()       – toast notifications
+ *   modal()       – reusable modal open/close
+ *   confirm()     – confirmation dialog
+ *   escape()      – HTML-escape helper
+ *   setLoading()  – button loading state
+ *   emptyRow()    – empty table state
+ *   pagination()  – pagination renderer
+ *   sidebar / dropdown / modal close wiring
  */
 
 /* ─── Namespace ───────────────────────────────────────────── */
@@ -16,15 +19,15 @@ var Sawari = Sawari || {};
 (function () {
     'use strict';
 
-    /* ── Helpers ─────────────────────────────────────────── */
+    /* ── Constants ────────────────────────────────────────── */
     var BASE = document.querySelector('meta[name="base-url"]');
     var CSRF = document.querySelector('meta[name="csrf-token"]');
+    var AGENT_ID = document.querySelector('meta[name="agent-id"]');
     Sawari.baseUrl = BASE ? BASE.content : '';
     Sawari.csrfToken = CSRF ? CSRF.content : '';
+    Sawari.agentId = AGENT_ID ? AGENT_ID.content : '';
 
-    /**
-     * HTML-escape a string to prevent XSS
-     */
+    /* ── HTML Escape ─────────────────────────────────────── */
     Sawari.escape = function (str) {
         if (!str) return '';
         var div = document.createElement('div');
@@ -33,21 +36,9 @@ var Sawari = Sawari || {};
     };
 
     /* ── API Helper ──────────────────────────────────────── */
-
-    /**
-     * Sawari.api(endpoint, action, data, method)
-     *
-     * endpoint – filename without extension (e.g. 'locations')
-     * action   – the ?action= value
-     * data     – object of key/value pairs (sent as FormData for POST)
-     * method   – 'GET' or 'POST' (default: GET if no data, POST if data)
-     *
-     * Returns a Promise that resolves to parsed JSON.
-     */
     Sawari.api = function (endpoint, action, data, method) {
         var url = Sawari.baseUrl + '/api/' + endpoint + '.php?action=' + encodeURIComponent(action);
 
-        // Default method
         if (!method) {
             method = data ? 'POST' : 'GET';
         }
@@ -91,11 +82,6 @@ var Sawari = Sawari || {};
     };
 
     /* ── Toasts ──────────────────────────────────────────── */
-
-    /**
-     * Sawari.toast(message, type, duration)
-     * type: 'success' | 'danger' | 'warning' | 'info'
-     */
     Sawari.toast = function (message, type, duration) {
         type = type || 'info';
         duration = duration || 4000;
@@ -122,12 +108,10 @@ var Sawari = Sawari || {};
         container.appendChild(toast);
         feather.replace({ 'stroke-width': 1.75 });
 
-        // Slide in
         requestAnimationFrame(function () {
             toast.classList.add('toast-show');
         });
 
-        // Auto dismiss
         setTimeout(function () {
             toast.classList.add('toast-hide');
             setTimeout(function () { toast.remove(); }, 300);
@@ -135,17 +119,11 @@ var Sawari = Sawari || {};
     };
 
     /* ── Modal ───────────────────────────────────────────── */
-
-    /**
-     * Sawari.modal(title, bodyHtml, footerHtml)
-     * Opens the reusable modal. If no args, closes it.
-     */
     Sawari.modal = function (title, bodyHtml, footerHtml) {
         var overlay = document.getElementById('modal-overlay');
         if (!overlay) return;
 
         if (!title) {
-            // close
             overlay.classList.remove('active');
             return;
         }
@@ -165,10 +143,7 @@ var Sawari = Sawari || {};
         feather.replace({ 'stroke-width': 1.75 });
     };
 
-    /**
-     * Sawari.confirm(message, onConfirm, confirmLabel, confirmClass)
-     * Pops a confirmation modal, calls onConfirm() when confirmed.
-     */
+    /* ── Confirm Dialog ──────────────────────────────────── */
     Sawari.confirm = function (message, onConfirm, confirmLabel, confirmClass) {
         confirmLabel = confirmLabel || 'Confirm';
         confirmClass = confirmClass || 'btn-primary';
@@ -186,37 +161,7 @@ var Sawari = Sawari || {};
         });
     };
 
-    /* ── Rejection Flow ──────────────────────────────────── */
-
-    /**
-     * Sawari.rejectPrompt(onReject)
-     * Prompts for rejection reason, then calls onReject(reason).
-     */
-    Sawari.rejectPrompt = function (onReject) {
-        var body =
-            '<label class="form-label" for="reject-reason-input">Reason for rejection</label>' +
-            '<textarea id="reject-reason-input" class="form-input" rows="3" placeholder="Briefly describe why this is being rejected..."></textarea>';
-
-        var footer =
-            '<button class="btn btn-secondary" onclick="Sawari.modal()">Cancel</button>' +
-            '<button class="btn btn-danger" id="reject-submit-btn">Reject</button>';
-
-        Sawari.modal('Reject Item', body, footer);
-
-        document.getElementById('reject-reason-input').focus();
-        document.getElementById('reject-submit-btn').addEventListener('click', function () {
-            var reason = document.getElementById('reject-reason-input').value.trim();
-            if (!reason) {
-                Sawari.toast('Please provide a rejection reason.', 'warning');
-                return;
-            }
-            Sawari.modal();
-            if (onReject) onReject(reason);
-        });
-    };
-
-    /* ── Loading State Helper ────────────────────────────── */
-
+    /* ── Loading State ───────────────────────────────────── */
     Sawari.setLoading = function (btn, loading) {
         if (loading) {
             btn.disabled = true;
@@ -230,8 +175,7 @@ var Sawari = Sawari || {};
         }
     };
 
-    /* ── Table Empty State ───────────────────────────────── */
-
+    /* ── Empty Table Row ─────────────────────────────────── */
     Sawari.emptyRow = function (cols, message) {
         return '<tr><td colspan="' + cols + '" class="text-center text-muted" style="padding:var(--space-10) var(--space-4);">' +
             '<div class="empty-state">' +
@@ -240,12 +184,7 @@ var Sawari = Sawari || {};
             '</div></td></tr>';
     };
 
-    /* ── Pagination Renderer ─────────────────────────────── */
-
-    /**
-     * Sawari.pagination(container, page, totalPages, onPageChange)
-     * Renders pagination controls into a container element.
-     */
+    /* ── Pagination ──────────────────────────────────────── */
     Sawari.pagination = function (container, page, totalPages, onPageChange) {
         if (!container || totalPages <= 1) {
             if (container) container.innerHTML = '';
@@ -254,11 +193,9 @@ var Sawari = Sawari || {};
 
         var html = '<div class="pagination">';
 
-        // Prev
         html += '<button class="pagination-btn' + (page <= 1 ? ' disabled' : '') + '" data-page="' + (page - 1) + '"' + (page <= 1 ? ' disabled' : '') + '>';
         html += '<i data-feather="chevron-left" style="width:14px;height:14px;"></i></button>';
 
-        // Page numbers (show max 5)
         var start = Math.max(1, page - 2);
         var end = Math.min(totalPages, start + 4);
         start = Math.max(1, end - 4);
@@ -267,21 +204,53 @@ var Sawari = Sawari || {};
             html += '<button class="pagination-btn' + (i === page ? ' active' : '') + '" data-page="' + i + '">' + i + '</button>';
         }
 
-        // Next
         html += '<button class="pagination-btn' + (page >= totalPages ? ' disabled' : '') + '" data-page="' + (page + 1) + '"' + (page >= totalPages ? ' disabled' : '') + '>';
         html += '<i data-feather="chevron-right" style="width:14px;height:14px;"></i></button>';
 
         html += '</div>';
         container.innerHTML = html;
-
         feather.replace({ 'stroke-width': 1.75 });
 
-        // Bind clicks
         container.querySelectorAll('.pagination-btn:not(.disabled)').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 onPageChange(parseInt(this.dataset.page, 10));
             });
         });
+    };
+
+    /* ── Status Badge Helper ─────────────────────────────── */
+    Sawari.statusBadge = function (status) {
+        var classes = {
+            pending: 'badge-warning',
+            approved: 'badge-success',
+            rejected: 'badge-danger'
+        };
+        return '<span class="badge ' + (classes[status] || 'badge-neutral') + '">' + Sawari.escape(status) + '</span>';
+    };
+
+    /* ── Type Badge Helper ───────────────────────────────── */
+    Sawari.typeBadge = function (type) {
+        var classes = {
+            location: 'badge-primary',
+            vehicle: 'badge-accent',
+            route: 'badge-success'
+        };
+        return '<span class="badge ' + (classes[type] || 'badge-neutral') + '">' + Sawari.escape(type) + '</span>';
+    };
+
+    /* ── Format Time Ago ─────────────────────────────────── */
+    Sawari.timeAgo = function (dateStr) {
+        if (!dateStr) return '—';
+        var now = Date.now();
+        var then = new Date(dateStr).getTime();
+        var diff = Math.floor((now - then) / 1000);
+
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+
+        return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
     /* ── Sidebar & UI Wiring ─────────────────────────────── */
@@ -320,7 +289,6 @@ var Sawari = Sawari || {};
     }
 
     function initDropdowns() {
-        // User dropdown toggle
         var trigger = document.getElementById('user-dropdown-btn');
         var menu = document.getElementById('user-dropdown');
         if (trigger && menu) {
@@ -330,7 +298,6 @@ var Sawari = Sawari || {};
             });
         }
 
-        // Close dropdowns on outside click
         document.addEventListener('click', function () {
             document.querySelectorAll('.dropdown-menu.active').forEach(function (m) {
                 m.classList.remove('active');
@@ -342,18 +309,15 @@ var Sawari = Sawari || {};
         var overlay = document.getElementById('modal-overlay');
         if (!overlay) return;
 
-        // Close button
         var closeBtn = document.getElementById('modal-close');
         if (closeBtn) {
             closeBtn.addEventListener('click', function () { Sawari.modal(); });
         }
 
-        // Overlay click
         overlay.addEventListener('click', function (e) {
             if (e.target === overlay) Sawari.modal();
         });
 
-        // Escape key
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && overlay.classList.contains('active')) {
                 Sawari.modal();
@@ -368,15 +332,14 @@ var Sawari = Sawari || {};
         logoutBtn.addEventListener('click', function (e) {
             e.preventDefault();
             Sawari.confirm('Are you sure you want to log out?', function () {
-                Sawari.api('admins', 'logout').then(function () {
-                    window.location.href = Sawari.baseUrl + '/pages/admin/login.php';
+                Sawari.api('agents', 'logout').then(function () {
+                    window.location.href = Sawari.baseUrl + '/pages/agent/login.php';
                 });
             }, 'Log Out', 'btn-danger');
         });
     }
 
     /* ── Boot ─────────────────────────────────────────────── */
-
     document.addEventListener('DOMContentLoaded', function () {
         initSidebar();
         initDropdowns();

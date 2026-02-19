@@ -1,191 +1,179 @@
 <?php
 /**
- * Admin Dashboard — Sawari
+ * SAWARI — Admin Dashboard
  * 
- * Overview page with stats, recent contributions, alerts, and quick actions.
+ * Overview stats: pending contributions, total locations/vehicles/routes,
+ * active alerts, recent activity.
  */
 
-$pageTitle = 'Admin Dashboard — Sawari';
-$pageCss = ['admin.css'];
-$bodyClass = 'admin-page';
-$pageJs = ['admin.js'];
+require_once __DIR__ . '/../../includes/auth-admin.php';
 
-require_once __DIR__ . '/../../includes/header.php';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/validation.php';
-
-requireAuth('admin');
-
-$pdo = getDBConnection();
+$pageTitle = 'Dashboard';
 $currentPage = 'dashboard';
-
-// ─── Fetch Stats ─────────────────────────────────────────
-$totalLocations = $pdo->query("SELECT COUNT(*) FROM locations")->fetchColumn();
-$totalRoutes = $pdo->query("SELECT COUNT(*) FROM routes")->fetchColumn();
-$totalVehicles = $pdo->query("SELECT COUNT(*) FROM vehicles")->fetchColumn();
-$pendingContributions = $pdo->query("SELECT COUNT(*) FROM contributions WHERE status = 'pending'")->fetchColumn();
-$totalAgents = $pdo->query("SELECT COUNT(*) FROM agents")->fetchColumn();
-$activeAlerts = $pdo->query("SELECT COUNT(*) FROM alerts WHERE expires_at > NOW()")->fetchColumn();
-$unreviewedSuggestions = $pdo->query("SELECT COUNT(*) FROM suggestions WHERE status = 'pending'")->fetchColumn();
-$approvedLocations = $pdo->query("SELECT COUNT(*) FROM locations WHERE status = 'approved'")->fetchColumn();
-
-// ─── Recent Contributions (last 5) ──────────────────────
-$recentContributions = $pdo->query("
-    SELECT c.contribution_id, c.type, c.status, c.proposed_at,
-           a.name AS agent_name
-    FROM contributions c
-    LEFT JOIN agents a ON c.proposed_by = a.agent_id
-    ORDER BY c.proposed_at DESC
-    LIMIT 5
-")->fetchAll();
-
-// ─── Recent Suggestions (last 5) ────────────────────────
-$recentSuggestions = $pdo->query("
-    SELECT suggestion_id, type, message, status, submitted_at
-    FROM suggestions
-    ORDER BY submitted_at DESC
-    LIMIT 5
-")->fetchAll();
+require_once __DIR__ . '/../../includes/admin-header.php';
 ?>
 
-<div class="admin-layout">
-    <?php require_once __DIR__ . '/../../includes/admin-sidebar.php'; ?>
-
-    <div class="admin-content">
-        <div class="admin-page-header">
-            <h1>Dashboard</h1>
-            <div class="header-actions">
-                <span style="color: var(--color-text-light); font-size: 0.875rem;">
-                    Welcome, <?= sanitize(getCurrentUserName()) ?>
-                </span>
+<!-- Stats Grid (populated via JS) -->
+<div class="stats-grid" id="stats-grid">
+    <!-- Pending Contributions -->
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-label">Pending Review</span>
+            <div class="stat-card-icon stat-card-icon-warning">
+                <i data-feather="clock"></i>
             </div>
         </div>
+        <div class="stat-card-value" id="stat-pending">—</div>
+    </div>
 
-        <!-- Stats Cards -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon primary"><i class="fa-duotone fa-solid fa-location-dot"></i></div>
-                <div class="stat-info">
-                    <h3><?= $totalLocations ?></h3>
-                    <p>Total Locations</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon success"><i class="fa-duotone fa-solid fa-route"></i></div>
-                <div class="stat-info">
-                    <h3><?= $totalRoutes ?></h3>
-                    <p>Total Routes</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon info"><i class="fa-duotone fa-solid fa-bus"></i></div>
-                <div class="stat-info">
-                    <h3><?= $totalVehicles ?></h3>
-                    <p>Total Vehicles</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon warning"><i class="fa-duotone fa-solid fa-clipboard-list"></i></div>
-                <div class="stat-info">
-                    <h3><?= $pendingContributions ?></h3>
-                    <p>Pending Contributions</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon primary"><i class="fa-duotone fa-solid fa-users"></i></div>
-                <div class="stat-info">
-                    <h3><?= $totalAgents ?></h3>
-                    <p>Registered Agents</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon danger"><i class="fa-duotone fa-solid fa-triangle-exclamation"></i></div>
-                <div class="stat-info">
-                    <h3><?= $activeAlerts ?></h3>
-                    <p>Active Alerts</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon warning"><i class="fa-duotone fa-solid fa-comments"></i></div>
-                <div class="stat-info">
-                    <h3><?= $unreviewedSuggestions ?></h3>
-                    <p>Unreviewed Suggestions</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon success"><i class="fa-duotone fa-solid fa-circle-check"></i></div>
-                <div class="stat-info">
-                    <h3><?= $approvedLocations ?></h3>
-                    <p>Approved Locations</p>
-                </div>
+    <!-- Approved Locations -->
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-label">Locations</span>
+            <div class="stat-card-icon stat-card-icon-primary">
+                <i data-feather="map-pin"></i>
             </div>
         </div>
+        <div class="stat-card-value" id="stat-locations">—</div>
+    </div>
 
-        <!-- Quick Actions -->
-        <div class="quick-actions">
-            <a href="<?= BASE_URL ?>/pages/admin/locations.php" class="quick-action-btn"><i
-                    class="fa-duotone fa-solid fa-location-dot"></i> Manage Locations</a>
-            <a href="<?= BASE_URL ?>/pages/admin/routes.php" class="quick-action-btn"><i
-                    class="fa-duotone fa-solid fa-route"></i> Manage Routes</a>
-            <a href="<?= BASE_URL ?>/pages/admin/vehicles.php" class="quick-action-btn"><i
-                    class="fa-duotone fa-solid fa-bus"></i> Manage Vehicles</a>
-            <a href="<?= BASE_URL ?>/pages/admin/contributions.php" class="quick-action-btn"><i
-                    class="fa-duotone fa-solid fa-clipboard-list"></i> Review Contributions</a>
-            <a href="<?= BASE_URL ?>/pages/admin/alerts.php" class="quick-action-btn"><i
-                    class="fa-duotone fa-solid fa-triangle-exclamation"></i> Issue Alert</a>
+    <!-- Approved Vehicles -->
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-label">Vehicles</span>
+            <div class="stat-card-icon stat-card-icon-accent">
+                <i data-feather="truck"></i>
+            </div>
         </div>
+        <div class="stat-card-value" id="stat-vehicles">—</div>
+    </div>
 
-        <!-- Dashboard Grid: Recent Activity -->
-        <div class="dashboard-grid">
-            <!-- Recent Contributions -->
-            <div class="activity-list">
-                <div class="activity-header">Recent Contributions</div>
-                <?php if (empty($recentContributions)): ?>
-                    <div class="empty-state" style="padding: var(--space-xl);">
-                        <p>No contributions yet.</p>
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($recentContributions as $c): ?>
-                        <div class="activity-item">
-                            <div class="activity-icon" style="background: var(--color-primary-light);">
-                                <?= $c['type'] === 'location' ? '<i class="fa-duotone fa-solid fa-location-dot"></i>' : ($c['type'] === 'route' ? '<i class="fa-duotone fa-solid fa-route"></i>' : '<i class="fa-duotone fa-solid fa-bus"></i>') ?>
-                            </div>
-                            <div class="activity-text">
-                                <strong><?= sanitize($c['agent_name'] ?? 'Unknown') ?></strong> proposed a
-                                <strong><?= sanitize($c['type']) ?></strong>
-                                <br>
-                                <span
-                                    class="badge badge-<?= $c['status'] === 'accepted' ? 'accepted' : ($c['status'] === 'rejected' ? 'rejected' : 'pending') ?>"><?= sanitize($c['status']) ?></span>
-                            </div>
-                            <div class="activity-time"><?= timeAgo($c['proposed_at']) ?></div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+    <!-- Approved Routes -->
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-label">Routes</span>
+            <div class="stat-card-icon stat-card-icon-success">
+                <i data-feather="git-branch"></i>
             </div>
+        </div>
+        <div class="stat-card-value" id="stat-routes">—</div>
+    </div>
+</div>
 
-            <!-- Recent Suggestions -->
-            <div class="activity-list">
-                <div class="activity-header">Recent Suggestions</div>
-                <?php if (empty($recentSuggestions)): ?>
-                    <div class="empty-state" style="padding: var(--space-xl);">
-                        <p>No suggestions yet.</p>
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($recentSuggestions as $s): ?>
-                        <div class="activity-item">
-                            <div class="activity-icon" style="background: var(--color-info-light);"><i
-                                    class="fa-duotone fa-solid fa-comments"></i></div>
-                            <div class="activity-text">
-                                <span class="badge badge-info"><?= sanitize($s['type']) ?></span>
-                                <?= sanitize(mb_strimwidth($s['message'], 0, 60, '...')) ?>
-                            </div>
-                            <div class="activity-time"><?= timeAgo($s['submitted_at']) ?></div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+<!-- Secondary Stats Row -->
+<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: var(--space-8);">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-label">Active Agents</span>
+            <div class="stat-card-icon stat-card-icon-primary">
+                <i data-feather="users"></i>
             </div>
+        </div>
+        <div class="stat-card-value" id="stat-agents">—</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-label">Active Alerts</span>
+            <div class="stat-card-icon stat-card-icon-danger">
+                <i data-feather="alert-triangle"></i>
+            </div>
+        </div>
+        <div class="stat-card-value" id="stat-alerts">—</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-label">Pending Suggestions</span>
+            <div class="stat-card-icon stat-card-icon-warning">
+                <i data-feather="message-square"></i>
+            </div>
+        </div>
+        <div class="stat-card-value" id="stat-suggestions">—</div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card">
+    <div class="card-header">
+        <h4>Recent Contributions</h4>
+        <a href="<?= BASE_URL ?>/pages/admin/contributions.php" class="btn btn-ghost btn-sm">
+            View all <i data-feather="arrow-right" style="width:14px;height:14px;"></i>
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-container" style="border:none;border-radius:0;">
+            <table class="table" id="recent-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Agent</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                    </tr>
+                </thead>
+                <tbody id="recent-table-body">
+                    <tr>
+                        <td colspan="4" class="text-center text-muted p-6">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../../includes/footer.php'; ?>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        loadDashboardStats();
+    });
+
+    async function loadDashboardStats() {
+        try {
+            const data = await Sawari.api('admins', 'stats');
+
+            if (data.success) {
+                const s = data.stats;
+
+                // Primary stats
+                document.getElementById('stat-pending').textContent = s.pending_contributions;
+                document.getElementById('stat-locations').textContent = s.total_locations;
+                document.getElementById('stat-vehicles').textContent = s.total_vehicles;
+                document.getElementById('stat-routes').textContent = s.total_routes;
+
+                // Secondary stats
+                document.getElementById('stat-agents').textContent = s.total_agents;
+                document.getElementById('stat-alerts').textContent = s.active_alerts;
+                document.getElementById('stat-suggestions').textContent = s.pending_suggestions;
+
+                // Recent contributions table
+                renderRecentTable(data.recent_contributions);
+            }
+        } catch (err) {
+            console.error('Failed to load stats:', err);
+        }
+    }
+
+    function renderRecentTable(contributions) {
+        const tbody = document.getElementById('recent-table-body');
+
+        if (!contributions || contributions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted p-6">No contributions yet.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = contributions.map(function (c) {
+            const typeIcon = { location: 'map-pin', vehicle: 'truck', route: 'git-branch' }[c.type] || 'file';
+            const statusClass = { pending: 'badge-pending', approved: 'badge-approved', rejected: 'badge-rejected' }[c.status] || 'badge-neutral';
+
+            return '<tr>' +
+                '<td><span class="flex items-center gap-2"><i data-feather="' + typeIcon + '" style="width:14px;height:14px;"></i> ' + Sawari.escape(c.type) + '</span></td>' +
+                '<td>' + Sawari.escape(c.agent_name) + '</td>' +
+                '<td><span class="badge ' + statusClass + '">' + Sawari.escape(c.status) + '</span></td>' +
+                '<td class="text-muted">' + Sawari.escape(c.created_at) + '</td>' +
+                '</tr>';
+        }).join('');
+
+        // Re-render feather icons for dynamically added elements
+        feather.replace({ 'stroke-width': 1.75 });
+    }
+</script>
+
+<?php require_once __DIR__ . '/../../includes/admin-footer.php'; ?>

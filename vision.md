@@ -1,264 +1,375 @@
-# SAWARI
+# SAWARI — Product Vision & Architecture
 
-I have imagined Sawari as a user-guiding app which guides people around the crowded cities of Nepal by telling them about the bus routes on their way. Let's explain using an example. You are at your home, and you need to go to a job appointment, a friend's home, or anywhere else. Let's take your home as Point A and your friend's home as Point B. Currently, you have options like taking a Pathao ride (a ride-booking app for bikes and taxis). Another option is to ask hundreds of people about the way. Yes, there is Google Maps, but it doesn't show the routes public transportation uses. It just shows the driving route where there might or might not be public transportation services. This is where Sawari comes in handy.
+Sawari is a user-guiding web app that helps people navigate the crowded cities of Nepal using public transportation. It tells you exactly which bus to take, where to board, what to say to the conductor, how much to pay, and tracks the bus live on a map.
 
-## How it works:
+---
 
-1.  You enter your starting point (Point A).
-2.  You enter your destination (Point B).
-3.  **Sawari Processing:**
-    1.  Analyzes the distance and the location.
-    2.  Searches for bus stops and stations around Point A.
-    3.  Searches for bus stops and stations around Point B.
-    4.  Checks if there is any public transportation going from the nearest bus station at Point A to the nearest bus station at Point B.
-    5.  **If yes:**
-        1.  It decides the bus stations and the route.
-        2.  It gives the walking direction from Point A to Bus Station A.
-        3.  It shows which bus to ride (Mahanagar, Sajha, Nepal Yatayat, Araniko Yatayat, etc.) along with their pictures for identification.
-        4.  It shows the price to pay and what to say to the conductor to get off at the designated station.
-        5.  After reaching Station B, it shows the walking direction from Station B to Point B.
-    6.  **If not:**
-        1.  It searches for the nearest bus station at Point A from where buses towards Point B are available.
-        2.  It also searches for the nearest bus station at Point B from where buses towards Point A are available.
-        3.  It retrieves both routes and calculates where they meet, deciding where the user should drop off and change buses using advanced math algorithms like _Dijkstra_.
-        4.  In exchanging buses, when the user says they have gotten off the first bus, it shows the picture and name of the bus to take next.
-        5.  It shows which bus to ride along with pictures for identification.
-        6.  It shows the price to pay and what to say to the conductor.
-        7.  After reaching Station B, it shows the walking direction to Point B.
-    7.  If calculation fails, the app apologizes to the user.
-4.  After the ride, the app asks for a review, accuracy rating, and suggestions.
-5.  That’s all 😊
+## The Problem
 
-## EXTRA FEATURES AND UX ENHANCEMENTS
+You need to get from Point A (your home) to Point B (your friend's house, a job interview, the hospital). Your current options:
 
-1.  **Fare Calculation:**
-    1.  Government assigned rate index + normal rate increment.
-    2.  (e.g., if government rate is 13rs, bus takes 15rs. We account for this).
-    3.  User selects if they are a student or elderly for discounts.
-2.  **Tourist Help Mode:**
-    1.  What to say while getting on/off the bus.
-    2.  Extra precautions (pickpockets, haphazard driving, etc.).
-3.  **Seamless Bus Switching Mechanism:**
-    1.  Accounts for buses, micro-buses, and tempos (tuk-tuks).
-4.  **Estimated Wait Time:**
-    1.  Calculates route length and number of buses to estimate frequency (e.g., "a bus should come every 3 minutes").
-5.  **Rating, Review, & Complaints:**
-    1.  Robust feedback system.
-6.  **Smart Emergency Alerts:**
-    1.  Admin can label routes as "disturbed" (strikes, accidents) to trigger rerouting.
-7.  **Community Driven:**
-    1.  Users suggest missing stops or wrong routes.
-    2.  Agents Leaderboard to motivate contributors.
-8.  **Carbon Emission Calculation:**
-    1.  Compares carbon footprint of public transport vs. ride-sharing to encourage green travel.
-9.  **Live Bus Tracking (GPS Module):**
-    1.  Vehicles equipped with GPS modules report their latitude, longitude, and speed to the server in real-time.
-    2.  The interactive map shows live bus icons for all tracked vehicles, with their name, speed, and last-updated time.
-    3.  Bus positions auto-refresh every 10 seconds without reloading the page.
-    4.  Only vehicles with active GPS data (non-NULL coordinates) are displayed on the map.
-    5.  Admins can view GPS status of all vehicles from the dashboard.
+- **Pathao** — Expensive ride-booking (bikes/taxis)
+- **Ask strangers** — Unreliable and time-consuming
+- **Google Maps** — Shows driving paths, not actual public bus routes. It doesn't know which bus goes where in Nepal's informal transit system.
 
-## Data Collection Methodology
+Sawari solves this by using **its own stored public bus route database** combined with **live GPS tracking from hardware devices on buses**.
 
-- **Agents:** The main source of data. Volunteers (Agents) travel around the valley feeding data to servers.
-- **Agent App Features:**
-  - **Map Places:**
-    - Log GPS coordinates of stops.
-    - Label places (e.g., "Charkhal 1", "Charkhal 2" for directional stops).
-    - Add descriptions (e.g., "Near US Embassy").
-  - **Vehicle Registration:**
-    - Photo, name, and description of the vehicle.
-    - Precautions (e.g., "Overspeeding common").
-    - Service start/end times.
-    - Duplicate check to prevent redundancy.
-  - **Route Mapping:**
-    - Create routes connecting mapped places.
-    - Drag-and-drop UI for ordering stops.
-    - Assign routes to vehicles.
+---
 
-## Page Structure
+## How It Works
 
-1.  **Landing Page:** Project intro, Agents Leaderboard.
-2.  **Main Page (User):** Full-screen map, search bar (Start/End), floating details bar (route info, fare, images).
-3.  **Agent Dashboard:** Manage Vehicles, Places, Routes, Profile.
-4.  **Admin Dashboard:** CRUD for Vehicles, Places, Routes; Report/Proposal handling; User management.
+### Route Finding
+
+1. User enters **Point A** (starting location) and **Point B** (destination).
+2. Sawari finds the nearest approved bus stops to both points from the `locations` table.
+3. It checks the `routes` table to determine if any stored route connects the two areas using the ordered `location_list` JSON.
+4. If a **direct route** exists:
+   - Shows the vehicle name and image
+   - Displays the fare (NPR, rounded to nearest 5, minimum 20)
+   - Shows student/elderly discounted fare (75% of regular)
+   - Lists boarding stop, intermediate stops, and drop-off stop
+   - Provides a conductor tip: _"Tell the conductor: '[boarding stop]' to '[drop-off stop]'"_
+   - Draws the route on the map using OSRM for realistic road-following paths between consecutive stops
+   - Shows walking directions from Point A to boarding stop, and from drop-off to Point B
+5. If **no direct route** exists:
+   - Finds an intersection stop shared between two routes
+   - Suggests a two-bus journey: first bus → transfer stop → second bus
+   - Each leg shows vehicle, fare, stops, and conductor tip independently
+
+### Route Resolution — Technical Details
+
+Sawari does **not** calculate arbitrary road routes for buses. Instead:
+
+- It uses the ordered `location_list` JSON stored in each route record.
+- It checks whether both the origin stop and destination stop exist on the same route.
+- It validates direction by checking index order (boarding index must be before destination index).
+- OSRM is used **only for visual rendering** — to draw realistic road paths between two consecutive stored stops on the map. All routing logic comes strictly from the database.
+
+**Example route:** Kalanki → RNAC → Bagbazar → Putalisadak → Naxal → Nagpokhari → Buspark
+
+OSRM renders road paths between:
+
+- Kalanki ↔ RNAC
+- RNAC ↔ Bagbazar
+- Bagbazar ↔ Putalisadak
+- etc.
+
+The routing algorithm itself never touches OSRM. It's pure database lookup + index comparison.
+
+### Transfer Route Algorithm
+
+When no direct route connects A and B:
+
+1. Collects all routes passing near Point A.
+2. Collects all routes passing near Point B.
+3. Finds intersection stops (locations that appear on both an A-route and a B-route).
+4. Evaluates each transfer option by total distance.
+5. Returns the best transfer result with full leg details.
+
+---
+
+## Live Bus Tracking
+
+Vehicles with GPS hardware send real-time position data to Sawari via `POST /api/gps-device.php`.
+
+**GPS data payload from hardware device:**
+
+```json
+{
+  "data": {
+    "bus_id": 1,
+    "latitude": 27.673159,
+    "longitude": 85.343842,
+    "speed": 1.8,
+    "direction": 0,
+    "altitude": 1208.1,
+    "satellites": 7,
+    "hdop": 2,
+    "timestamp": "2026-02-19T09:06:53Z"
+  }
+}
+```
+
+**How tracking works:**
+
+1. The GPS device on a bus sends position data to `api/gps-device.php`.
+2. The endpoint validates the data, maps `bus_id` → `vehicle_id`, and writes `latitude`, `longitude`, `velocity` to the `vehicles` table.
+3. GPS quality is assessed via HDOP (good < 5, moderate 5-10, poor > 10).
+4. On the user's map, `tracking.js` polls `api/vehicles.php?action=live` every **8 seconds**.
+5. The API returns all vehicles where `gps_active = 1` and `last_gps_update` is within the last 2 minutes.
+6. Vehicle markers **slide smoothly** to new positions using `requestAnimationFrame` with cubic ease-out interpolation (2-second animation).
+7. For each vehicle, the system compares its position against the route's ordered stop list to determine:
+   - Which stop it's approaching
+   - Distance to that stop
+   - ETA based on current velocity
+
+**Marker behavior:**
+
+- Normal vehicles: orange circle with bus SVG icon (32px)
+- Vehicles approaching a stop (< 500m): pulsing animation ring
+- Stale vehicles (no update in 2 minutes): automatically hidden
+
+---
+
+## Nepal Fare Calculation
+
+The fare system follows Nepal's public transportation pricing rules:
+
+- **Base fare** per route (stored in `routes` table as `fare_base`)
+- **Per-kilometer rate** (stored as `fare_per_km`)
+- **Final fare** = `fare_base + fare_per_km × distance_km`
+- **Rounding**: Always rounded to the nearest **multiple of 5 NPR**
+- **Minimum fare**: **NPR 20** (NPR 15 for student/elderly)
+- **Student/Elderly discount**: **75%** of standard fare, also rounded to multiples of 5
+
+Both the server (`routing-engine.php`) and client (`routing.js`) apply the same rounding logic to maintain consistency.
+
+---
+
+## Carbon Emission Calculator
+
+Every route result shows a carbon comparison:
+
+| Mode         | CO₂ per km |
+| ------------ | ---------- |
+| Regular bus  | 0.089 kg   |
+| Electric bus | 0.020 kg   |
+| Car/taxi     | 0.210 kg   |
+
+The card shows how much CO₂ the user saves by taking the bus instead of a car.
+
+---
+
+## User Experience Features
+
+### Tourist Help Mode
+
+- What to say to the conductor when boarding
+- How to signal your stop ("Roknu!" = Stop!)
+- Safety precautions for crowded buses
+- Peak hour warnings (8-10 AM, 4-6 PM)
+
+### Smart Emergency Alerts
+
+- Admin creates alerts for specific routes (strikes, road blocks, diversions)
+- Alerts appear as warning markers on the map with severity levels (critical/high/medium/low)
+- Alert banner shown in search panel when relevant routes are affected
+
+### Community Suggestions
+
+- Users can suggest missing stops, route corrections, new routes
+- Suggestions reviewed by admin
+
+### Trip Logging & Feedback
+
+- Users can log trips and receive a feedback prompt after 5 seconds
+- Star rating (1-5), accuracy feedback (accurate/slightly off/inaccurate), text review
+- Trip data used for analytics
+
+### Estimated Wait Time
+
+- Based on route length: shorter routes run more frequently
+- Displayed as a range (e.g., "~10-15 min")
+
+---
+
+## Data Collection — Agent System
+
+Volunteers (agents) collect real-world bus data through the agent dashboard:
+
+### Agent Capabilities
+
+- **Add Location**: Pin bus stops on a Leaflet map with GPS support. Toggle to show existing approved stops to avoid duplicates. Automatic nearby-duplicate warning (< 300m).
+- **Add Vehicle**: Register buses with name, description, image upload, route assignment, electric flag, service hours.
+- **Add Route**: Build routes by selecting an ordered sequence of approved stops on the map. Outputs `location_list` JSON.
+- **My Contributions**: Track all submitted locations, vehicles, and routes with approval status.
+- **Leaderboard**: Agents ranked by contribution count.
+
+### Approval Workflow
+
+1. Agent submits data → status = `pending`
+2. Admin reviews on dashboard → `approved` or `rejected` (with reason)
+3. Only approved data appears in the public user map
+
+---
+
+## Application Pages
+
+| Page             | URL                                      | Purpose                                       |
+| ---------------- | ---------------------------------------- | --------------------------------------------- |
+| Landing          | `/CCRC/`                                 | Intro page, navigation to map/agent/admin     |
+| User Map         | `/CCRC/pages/map.php`                    | Full-screen map with route finding & tracking |
+| Agent Login      | `/CCRC/pages/agent/login.php`            | Agent authentication                          |
+| Agent Dashboard  | `/CCRC/pages/agent/dashboard.php`        | Stats, leaderboard                            |
+| Add Location     | `/CCRC/pages/agent/add-location.php`     | Pin stops on map                              |
+| Add Vehicle      | `/CCRC/pages/agent/add-vehicle.php`      | Register vehicles                             |
+| Add Route        | `/CCRC/pages/agent/add-route.php`        | Build ordered routes                          |
+| My Contributions | `/CCRC/pages/agent/my-contributions.php` | Contribution history                          |
+| Admin Login      | `/CCRC/pages/admin/login.php`            | Admin authentication                          |
+| Admin Dashboard  | `/CCRC/pages/admin/dashboard.php`        | System overview stats                         |
+| Manage Locations | `/CCRC/pages/admin/manage-locations.php` | Approve/reject stops                          |
+| Manage Vehicles  | `/CCRC/pages/admin/manage-vehicles.php`  | Approve/reject vehicles                       |
+| Manage Routes    | `/CCRC/pages/admin/manage-routes.php`    | Approve/reject routes                         |
+| Manage Agents    | `/CCRC/pages/admin/manage-agents.php`    | Agent account management                      |
+| Manage Alerts    | `/CCRC/pages/admin/manage-alerts.php`    | Create/resolve alerts                         |
+| Contributions    | `/CCRC/pages/admin/contributions.php`    | Unified review queue                          |
+| Suggestions      | `/CCRC/pages/admin/suggestions.php`      | Community suggestion inbox                    |
+
+---
 
 ## Tech Stack
 
-| Layer           | Technologies                  |
-| --------------- | ----------------------------- | --- | ---------------- | -------------------------- | --- | -------------- | --------------------------- |
-| **Frontend**    | HTML, CSS, JavaScript         |
-| **Backend**     | PHP                           |
-| **Database**    | MySQL                         |
-| **Maps**        | Leaflet, OpenStreetMaps, OSRM |
-| **Geolocation** | Browser Geolocation API       |     | **GPS Tracking** | Vehicle GPS modules (HTTP) |     | **Algorithms** | Dijkstra, A\* (Pathfinding) |
-
-## DATABASE STRUCTURE
-
-### 1. `locations`
-
-Stores all the location data of the places registered to the system.
-
-| TITLE               | DESCRIPTION                                                                                       | DATA-TYPE                                 |
-| ------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `location_id`       | Stores the unique identifier of the location entry.                                               | `INT AUTO_INCREMENT`                      |
-| `name`              | The official name of the place or bus stop.                                                       | `VARCHAR(255)`                            |
-| `description`       | A short description of the place, usually between 5 to 10 words.                                  | `TEXT`                                    |
-| `latitude`          | The pin-point latitude coordinate of the location.                                                | `DECIMAL(10, 8)`                          |
-| `longitude`         | The pin-point longitude coordinate of the location.                                               | `DECIMAL(11, 8)`                          |
-| `type`              | The type of the location, such as a designated bus stop or a general landmark.                    | `ENUM('stop', 'landmark')`                |
-| `status`            | The status of the entry’s visibility and authenticity (pending, approved, or rejected).           | `ENUM('pending', 'approved', 'rejected')` |
-| `contribution_id`   | The index to the contribution entry associated with this location from the `contributions` table. | `INT`                                     |
-| `updated_by`        | The index to the agent’s unique identifier from the `agents` table who last modified the entry.   | `INT`                                     |
-| `approved_by`       | The index to the admin’s unique identifier from the `admins` table who approved the entry.        | `INT`                                     |
-| `updated_at`        | The timestamp indicating the date and time of the approval from the admin.                        | `DATETIME`                                |
-| `departure_count`   | The number of times this location has been used as a departure point to find routes.              | `INT DEFAULT 0`                           |
-| `destination_count` | The number of times this location has been used as a destination point to find routes.            | `INT DEFAULT 0`                           |
+| Layer      | Technology                                             |
+| ---------- | ------------------------------------------------------ |
+| Frontend   | HTML5, CSS3 (custom design system), Vanilla JavaScript |
+| Backend    | PHP 7.4+                                               |
+| Database   | MySQL 5.7+ / MariaDB 10.3+                             |
+| Maps       | Leaflet 1.9.4 + OpenStreetMap tiles                    |
+| Road Paths | OSRM (public demo: `router.project-osrm.org`)          |
+| Icons      | Feather Icons                                          |
+| Font       | Inter (Google Fonts CDN)                               |
+| Server     | Apache via XAMPP                                       |
 
 ---
 
-### 2. `vehicles`
+## Database Schema (9 Tables)
 
-Stores all the data related to the vehicles or yatayats registered in our system.
+### 1. `admins`
 
-| TITLE             | DESCRIPTION                                                                                                                                                                   | DATA-TYPE                                 |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `vehicle_id`      | Stores the unique identifier of the vehicle entry.                                                                                                                            | `INT AUTO_INCREMENT`                      |
-| `name`            | The name of the vehicle or the yatayat company.                                                                                                                               | `VARCHAR(255)`                            |
-| `description`     | A short description of the yatayat or vehicle (approx. 5 to 10 words).                                                                                                        | `TEXT`                                    |
-| `image_path`      | The file path to the image showing the vehicle or the yatayat for user identification.                                                                                        | `VARCHAR(255)`                            |
-| `status`          | The status of the entry’s visibility and authenticity (pending, approved, or rejected).                                                                                       | `ENUM('pending', 'approved', 'rejected')` |
-| `contribution_id` | The index to the contribution entry associated with this vehicle from the `contributions` table.                                                                              | `INT`                                     |
-| `updated_by`      | The index to the agent’s unique identifier from the `agents` table who last updated the entry.                                                                                | `INT`                                     |
-| `approved_by`     | The index to the admin’s unique identifier from the `admins` table who approved the entry.                                                                                    | `INT`                                     |
-| `updated_at`      | The timestamp indicating the date and time of the approval from the admin.                                                                                                    | `DATETIME`                                |
-| `used_routes`     | A JSON array of the routes that this vehicle moves in along with the number of vehicles in that route. Example: `[{"route_id": 1, "count": 6}, {"route_id": 3, "count": 4}]`. | `JSON`                                    |
-| `starts_at`       | The time at which this vehicle service starts operating (e.g., 6:00 AM).                                                                                                      | `TIME`                                    |
-| `stops_at`        | The time at which this vehicle service stops operating (e.g., 9:00 PM).                                                                                                       | `TIME`                                    |
-| `current_lat`     | The real-time GPS latitude of the vehicle, updated by the onboard GPS module. NULL if tracking is inactive.                                                                   | `DECIMAL(10, 8) DEFAULT NULL`             |
-| `current_lng`     | The real-time GPS longitude of the vehicle, updated by the onboard GPS module. NULL if tracking is inactive.                                                                  | `DECIMAL(11, 8) DEFAULT NULL`             |
-| `current_speed`   | The current speed of the vehicle in km/h as reported by the GPS module. NULL if tracking is inactive.                                                                         | `DECIMAL(5, 1) DEFAULT NULL`              |
-| `gps_updated_at`  | The timestamp of the last GPS position update from the vehicle's tracking device.                                                                                             | `DATETIME DEFAULT NULL`                   |
+System administrators who approve/reject contributions.
+
+| Column   | Type                           | Description      |
+| -------- | ------------------------------ | ---------------- |
+| admin_id | INT AUTO_INCREMENT PK          | Unique ID        |
+| name     | VARCHAR(255)                   | Full name        |
+| email    | VARCHAR(255) UNIQUE            | Login email      |
+| password | VARCHAR(255)                   | bcrypt hash      |
+| role     | ENUM('superadmin','moderator') | Permission level |
+| status   | ENUM('active','inactive')      | Account status   |
+
+### 2. `agents`
+
+Volunteers who collect and submit field data.
+
+| Column              | Type                            | Description        |
+| ------------------- | ------------------------------- | ------------------ |
+| agent_id            | INT PK                          | Unique ID          |
+| name                | VARCHAR(255)                    | Full name          |
+| email               | VARCHAR(255)                    | Login email        |
+| password            | VARCHAR(255)                    | bcrypt hash        |
+| contributions_count | INT DEFAULT 0                   | Total submissions  |
+| accuracy_score      | DECIMAL(5,2)                    | Data quality score |
+| status              | ENUM(active/suspended/inactive) | Account status     |
+
+### 3. `contributions`
+
+Tracks every agent submission with approval workflow.
+
+| Column           | Type                                  | Description            |
+| ---------------- | ------------------------------------- | ---------------------- |
+| contribution_id  | INT PK                                | Unique ID              |
+| agent_id         | INT FK                                | Submitting agent       |
+| type             | ENUM('location','vehicle','route')    | What was submitted     |
+| status           | ENUM('pending','approved','rejected') | Review status          |
+| notes            | TEXT                                  | Agent notes            |
+| rejection_reason | TEXT                                  | Admin rejection reason |
+
+### 4. `locations`
+
+Bus stops and landmarks with GPS coordinates.
+
+| Column            | Type                            | Description                |
+| ----------------- | ------------------------------- | -------------------------- |
+| location_id       | INT PK                          | Unique ID                  |
+| name              | VARCHAR(255)                    | Stop name (e.g. "Kalanki") |
+| latitude          | DECIMAL(10,8)                   | GPS latitude               |
+| longitude         | DECIMAL(11,8)                   | GPS longitude              |
+| type              | ENUM('stop','landmark')         | Location category          |
+| status            | ENUM(pending/approved/rejected) | Review status              |
+| departure_count   | INT DEFAULT 0                   | Times used as trip start   |
+| destination_count | INT DEFAULT 0                   | Times used as trip end     |
+
+### 5. `routes`
+
+Named bus routes with ordered stop sequences.
+
+| Column        | Type                            | Description                         |
+| ------------- | ------------------------------- | ----------------------------------- |
+| route_id      | INT PK                          | Unique ID                           |
+| name          | VARCHAR(255)                    | Route name (e.g. "Kalanki-Buspark") |
+| location_list | JSON                            | Ordered array of stop objects       |
+| fare_base     | DECIMAL(8,2)                    | Base fare in NPR                    |
+| fare_per_km   | DECIMAL(8,2)                    | Per-kilometer rate in NPR           |
+| status        | ENUM(pending/approved/rejected) | Review status                       |
+
+### 6. `vehicles`
+
+Buses, microbuses, and tempos with images and live GPS.
+
+| Column          | Type                            | Description                 |
+| --------------- | ------------------------------- | --------------------------- |
+| vehicle_id      | INT PK                          | Unique ID                   |
+| name            | VARCHAR(255)                    | Vehicle/company name        |
+| image_path      | VARCHAR(255)                    | Uploaded photo filename     |
+| electric        | TINYINT(1)                      | Is electric vehicle         |
+| used_routes     | JSON                            | Array of assigned route IDs |
+| latitude        | TEXT                            | Live GPS latitude           |
+| longitude       | TEXT                            | Live GPS longitude          |
+| velocity        | TEXT                            | Current speed (km/h)        |
+| gps_active      | TINYINT(1)                      | Currently sending GPS data  |
+| last_gps_update | DATETIME                        | Last GPS ping timestamp     |
+| starts_at       | TIME                            | Service start time          |
+| stops_at        | TIME                            | Service end time            |
+| status          | ENUM(pending/approved/rejected) | Review status               |
+
+### 7. `trips`
+
+Logged user journeys with feedback.
+
+| Column              | Type                                   | Description            |
+| ------------------- | -------------------------------------- | ---------------------- |
+| trip_id             | INT PK                                 | Unique ID              |
+| session_id          | VARCHAR(64)                            | Anonymous user session |
+| route_id            | INT FK                                 | Route used             |
+| vehicle_id          | INT FK                                 | Vehicle used           |
+| boarding_stop_id    | INT FK                                 | Where user boarded     |
+| destination_stop_id | INT FK                                 | Where user got off     |
+| fare_paid           | DECIMAL(8,2)                           | Fare amount            |
+| carbon_saved        | DECIMAL(8,4)                           | CO₂ savings (kg)       |
+| rating              | TINYINT                                | 1-5 stars              |
+| accuracy_feedback   | ENUM(accurate/slightly_off/inaccurate) | Route accuracy         |
+| review              | TEXT                                   | User comments          |
+
+### 8. `alerts`
+
+Route-specific warnings and emergencies.
+
+| Column   | Type                                   | Description    |
+| -------- | -------------------------------------- | -------------- |
+| alert_id | INT PK                                 | Unique ID      |
+| route_id | INT FK                                 | Affected route |
+| title    | VARCHAR(255)                           | Alert headline |
+| severity | ENUM('low','medium','high','critical') | Severity level |
+| status   | ENUM('active','resolved','expired')    | Current state  |
+
+### 9. `suggestions`
+
+Community-submitted improvement ideas.
+
+| Column        | Type                                                          | Description   |
+| ------------- | ------------------------------------------------------------- | ------------- |
+| suggestion_id | INT PK                                                        | Unique ID     |
+| type          | ENUM('missing_stop','route_correction','new_route','general') | Category      |
+| title         | VARCHAR(255)                                                  | Brief title   |
+| description   | TEXT                                                          | Details       |
+| status        | ENUM('pending','reviewed','implemented','dismissed')          | Review status |
 
 ---
 
-### 3. `routes`
+## Technical Routing Philosophy
 
-Stores all the data regarding the bus routes, which are sequences of mapped locations.
-
-| TITLE             | DESCRIPTION                                                                                                                                                              | DATA-TYPE                                 |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
-| `route_id`        | Stores the unique identifier of the route entry.                                                                                                                         | `INT AUTO_INCREMENT`                      |
-| `name`            | The name of the route in a format indicating start and end points (e.g., Greenland - Sundhara).                                                                          | `VARCHAR(255)`                            |
-| `description`     | A short description of the specific route, usually between 5 to 10 words.                                                                                                | `TEXT`                                    |
-| `image_path`      | The file path to the image representing the route map or the visual layout of the route.                                                                                 | `VARCHAR(255)`                            |
-| `status`          | The status of the entry’s visibility and authenticity (pending, approved, or rejected).                                                                                  | `ENUM('pending', 'approved', 'rejected')` |
-| `contribution_id` | The index to the contribution entry associated with this route from the `contributions` table.                                                                           | `INT`                                     |
-| `updated_by`      | The index to the agent’s unique identifier from the `agents` table who created or updated the route.                                                                     | `INT`                                     |
-| `approved_by`     | The index to the admin’s unique identifier from the `admins` table who verified the route.                                                                               | `INT`                                     |
-| `updated_at`      | The timestamp indicating the date and time of the approval from the admin.                                                                                               | `DATETIME`                                |
-| `location_list`   | A JSON array of the locations that this route moves along with the index of the location. Example: `[{"index": 1, "location_id": 10}, {"index": 2, "location_id": 15}]`. | `JSON`                                    |
-
----
-
-### 4. `contributions`
-
-Stores the history and status of all data proposals made by agents.
-
-| TITLE                 | DESCRIPTION                                                                                                       | DATA-TYPE                                 |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `contribution_id`     | Stores the unique identifier of the contribution request.                                                         | `INT AUTO_INCREMENT`                      |
-| `type`                | The type of contribution, which can be a vehicle, a route, or a location.                                         | `ENUM('vehicle', 'route', 'location')`    |
-| `associated_entry_id` | The index of the entry in the related table (vehicle, route, or location) which this contribution corresponds to. | `INT`                                     |
-| `proposed_by`         | The index to the agent’s unique identifier from the `agents` table who made the proposal.                         | `INT`                                     |
-| `accepted_by`         | The index to the admin’s unique identifier from the `admins` table who responded to the proposal.                 | `INT`                                     |
-| `status`              | The status of the contribution request (accepted, rejected, or pending).                                          | `ENUM('pending', 'accepted', 'rejected')` |
-| `proposed_at`         | The timestamp marking the creation of the contribution request.                                                   | `DATETIME`                                |
-| `responded_at`        | The timestamp marking the rejection or approval of the request by an admin.                                       | `DATETIME`                                |
-| `rejection_reason`    | The detailed reason for rejection if the admin decided to reject the request.                                     | `TEXT`                                    |
-
----
-
-### 5. `agents`
-
-Stores all the data related to the volunteers (agents) who collect and feed data into the system.
-
-| TITLE                   | DESCRIPTION                                                                                                                                                       | DATA-TYPE            |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| `agent_id`              | Stores the unique identifier of the agent.                                                                                                                        | `INT AUTO_INCREMENT` |
-| `name`                  | The full name of the registered agent.                                                                                                                            | `VARCHAR(255)`       |
-| `email`                 | The official email address of the agent for communication and login.                                                                                              | `VARCHAR(255)`       |
-| `phone_number`          | The primary phone number of the agent.                                                                                                                            | `VARCHAR(20)`        |
-| `image_path`            | The file path to the agent's profile picture image.                                                                                                               | `VARCHAR(255)`       |
-| `joined_at`             | The timestamp indicating when the agent account was created.                                                                                                      | `DATETIME`           |
-| `password_hash`         | The secure hash of the agent's login password.                                                                                                                    | `VARCHAR(255)`       |
-| `contributions_summary` | A JSON array containing the count of contributions made to the system for vehicles, locations, and routes. Example: `{"vehicle": 5, "location": 10, "route": 3}`. | `JSON`               |
-| `last_login`            | The timestamp indicating the date and time of the agent's last login.                                                                                             | `DATETIME`           |
-
----
-
-### 6. `admins`
-
-Stores all the data related to the administrators who manage the system and verify data.
-
-| TITLE           | DESCRIPTION                                                           | DATA-TYPE            |
-| --------------- | --------------------------------------------------------------------- | -------------------- |
-| `admin_id`      | Stores the unique identifier of the admin.                            | `INT AUTO_INCREMENT` |
-| `name`          | The full name of the administrator.                                   | `VARCHAR(255)`       |
-| `email`         | The email address of the admin for system access.                     | `VARCHAR(255)`       |
-| `phone_number`  | The contact phone number of the administrator.                        | `VARCHAR(20)`        |
-| `image_path`    | The file path to the admin's profile picture image.                   | `VARCHAR(255)`       |
-| `joined_at`     | The timestamp indicating when the admin account was created.          | `DATETIME`           |
-| `password_hash` | The secure hash of the admin's login password.                        | `VARCHAR(255)`       |
-| `last_login`    | The timestamp indicating the date and time of the admin's last login. | `DATETIME`           |
-
----
-
-### 7. `alerts`
-
-Stores data about smart emergency alerts issued by the administration due to route disturbances.
-
-| TITLE             | DESCRIPTION                                                                                              | DATA-TYPE            |
-| ----------------- | -------------------------------------------------------------------------------------------------------- | -------------------- |
-| `alert_id`        | Stores the unique identifier of the issued emergency alert.                                              | `INT AUTO_INCREMENT` |
-| `name`            | The title or name of the alert (e.g., Strike in Sundhara).                                               | `VARCHAR(255)`       |
-| `description`     | A short description providing details about the alert and the reason for the disturbance.                | `TEXT`               |
-| `issued_by`       | The index to the admin’s unique identifier from the `admins` table who created the alert.                | `INT`                |
-| `routes_affected` | A JSON array containing the IDs of the routes affected by this specific issue. Example: `[3, 5, 9, 12]`. | `JSON`               |
-| `reported_at`     | The timestamp indicating when the alert was first created.                                               | `DATETIME`           |
-| `expires_at`      | The timestamp indicating the expected time that the issue will be resolved and the alert will expire.    | `DATETIME`           |
-
----
-
-### 8. `suggestions`
-
-Stores user feedback, complaints, and suggestions regarding rides and app accuracy.
-
-| TITLE                | DESCRIPTION                                                                                   | DATA-TYPE                                                       |
-| -------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `suggestion_id`      | Stores the unique identifier of the suggestion or feedback entry.                             | `INT AUTO_INCREMENT`                                            |
-| `type`               | The type of feedback provided (complaint, suggestion, correction, or appreciation).           | `ENUM('complaint', 'suggestion', 'correction', 'appreciation')` |
-| `message`            | The detailed message or feedback provided by the end user.                                    | `TEXT`                                                          |
-| `rating`             | The numerical user rating for the trip or the route accuracy (ranging from 1 to 5).           | `INT`                                                           |
-| `related_route_id`   | The index to the specific route related to this feedback if one was provided.                 | `INT`                                                           |
-| `related_vehicle_id` | The index to the specific vehicle related to this feedback if one was provided.               | `INT`                                                           |
-| `ip_address`         | The IP address of the client device that submitted the feedback.                              | `VARCHAR(45)`                                                   |
-| `status`             | The current status of the feedback entry (pending, reviewed, or resolved).                    | `ENUM('pending', 'reviewed', 'resolved')`                       |
-| `reviewed_by`        | The index to the admin’s unique identifier from the `admins` table who reviewed the feedback. | `INT`                                                           |
-| `submitted_at`       | The timestamp marking when the feedback was submitted.                                        | `DATETIME`                                                      |
-| `reviewed_at`        | The timestamp marking when the admin completed the review of the feedback.                    | `DATETIME`                                                      |
-
----
-
-### 9. `trips`
-
-Logs trip searches and route queries for system analysis and improvement.
-
-| TITLE                     | DESCRIPTION                                                                       | DATA-TYPE            |
-| ------------------------- | --------------------------------------------------------------------------------- | -------------------- |
-| `trip_id`                 | Stores the unique identifier of the recorded trip query.                          | `INT AUTO_INCREMENT` |
-| `ip_address`              | The IP address of the client device that performed the search.                    | `VARCHAR(45)`        |
-| `start_location_id`       | The index of the starting point location from the `locations` table.              | `INT`                |
-| `destination_location_id` | The index of the destination point location from the `locations` table.           | `INT`                |
-| `routes_used`             | A JSON array of the routes suggested or used for the trip. Example: `[3, 2, 12]`. | `JSON`               |
-| `queried_at`              | The timestamp indicating the time that the user searched for that specific route. | `DATETIME`           |
+1. **Route logic is database-driven** — routing decisions come from stored `location_list` sequences, not computed road paths.
+2. **OSRM is visual only** — used to render realistic road-following polylines between two consecutive stops.
+3. **Live tracking is GPS-dependent** — only vehicles actively sending GPS data appear on the map.
+4. **Fare follows Nepal rules** — multiples of 5, minimum 20 NPR, student/elderly discounts.
+5. **Everything requires approval** — no user-submitted data appears publicly until admin approves it.

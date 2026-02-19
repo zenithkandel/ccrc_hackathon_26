@@ -1,708 +1,601 @@
 /**
- * ═══════════════════════════════════════════════════════════
- * Sawari — Map & Route Display (Enhanced)
- * ═══════════════════════════════════════════════════════════
- *
- * Leaflet map, markers, polylines, route result rendering,
- * user location marker, and feedback modal.
+ * SAWARI — Map Controller
+ * 
+ * Handles Leaflet map initialization, tile layers, markers,
+ * polyline rendering, and map interaction events.
  */
 
 const SawariMap = (function () {
     'use strict';
 
-    const CONFIG = window.SAWARI_MAP_CONFIG || {};
+    const BASE = document.querySelector('meta[name="base-url"]').content;
+    const KATHMANDU = [27.7172, 85.3240];
+    const DEFAULT_ZOOM = 13;
+    const STOP_ZOOM = 15;
 
-    let map = null;
-    let stopsLayer = null;
-    let resultLayers = null;
-    let trackedVehiclesLayer = null;
-    let trackedMarkers = {};       // { vehicle_id: L.marker }
-    let trackingInterval = null;
-    let startMarker = null;
-    let endMarker = null;
-    let userLocMarker = null;
-    let currentRouteData = null;
-    let touristMode = false;
+    // Leaflet map instance
+    let map;
 
-    const icons = { start: null, end: null, stop: null, landmark: null, userLoc: null, bus: null };
+    // Layer groups
+    let stopMarkersLayer;
+    let routeLayerGroup;
+    let userMarkersLayer;
+    let alertLayerGroup;
 
-    const ROUTE_COLORS = [
-        '#2563eb', '#dc2626', '#16a34a', '#d97706',
-        '#7c3aed', '#0891b2', '#be185d', '#4f46e5'
-    ];
+    // User-placed markers for Point A / Point B
+    let markerA = null;
+    let markerB = null;
 
-    // ─── Initialize ─────────────────────────────────────────
+    // All approved stops [{ location_id, name, lat, lng, type }]
+    let allStops = [];
+
+    // State: which point are we setting next? ('a' or 'b')
+    let nextPoint = 'a';
+
+    // Pin-pick mode target (null, 'a', or 'b')
+    let pinPickTarget = null;
+
+    // My Location state
+    let myLocationMarker = null;
+    let myLocationCircle = null;
+    let myLocationWatcher = null;
+
+    // Custom icons — unique SVG-based markers
+    const iconA = L.divIcon({
+        className: 'marker-icon-a',
+        html: '<div class="marker-pin marker-pin-origin"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 1.892.402 3.13 1.5 4.5L12 22l6.5-7.5c1.098-1.37 1.5-2.608 1.5-4.5a8 8 0 0 0-8-8z"/></svg></div>',
+        iconSize: [32, 40],
+        iconAnchor: [16, 40],
+        popupAnchor: [0, -40]
+    });
+
+    const iconB = L.divIcon({
+        className: 'marker-icon-b',
+        html: '<div class="marker-pin marker-pin-dest"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>',
+        iconSize: [32, 40],
+        iconAnchor: [16, 40],
+        popupAnchor: [0, -40]
+    });
+
+    const iconStop = L.divIcon({
+        className: 'marker-icon-stop',
+        html: '<div class="marker-dot marker-dot-stop"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></div>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+    });
+
+    /* ──────────────────────────────────────────────
+     *  Init
+     * ────────────────────────────────────────────── */
     function init() {
-        if (!document.getElementById('map')) return;
+        map = L.map('map', {
+            center: KATHMANDU,
+            zoom: DEFAULT_ZOOM,
+            zoomControl: false
+        });
 
-        map = L.map('map', { zoomControl: false }).setView(
-            [CONFIG.defaultLat || 27.7172, CONFIG.defaultLng || 85.3240],
-            CONFIG.defaultZoom || 13
-        );
+        // Zoom control — bottom right
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        L.control.zoom({ position: 'topright' }).addTo(map);
-
+        // OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
             maxZoom: 19
         }).addTo(map);
 
-        stopsLayer = L.layerGroup().addTo(map);
-        resultLayers = L.layerGroup().addTo(map);
-        trackedVehiclesLayer = L.layerGroup().addTo(map);
+        // Layer groups
+        stopMarkersLayer = L.layerGroup().addTo(map);
+        routeLayerGroup = L.layerGroup().addTo(map);
+        userMarkersLayer = L.layerGroup().addTo(map);
+        alertLayerGroup = L.layerGroup().addTo(map);
 
-        createIcons();
+        // Map click handler — set Point A or B
+        map.on('click', onMapClick);
+
+        // Load approved stops
         loadStops();
-        loadTrackedVehicles();
-        startVehicleTracking();
-        initUI();
+
+        // Locate user
+        document.getElementById('locate-btn').addEventListener('click', locateUser);
     }
 
-    // ─── Custom Marker Icons ────────────────────────────────
-    function createIcons() {
-        icons.start = L.divIcon({
-            className: 'sawari-marker',
-            html: '<div class="marker-pin marker-start"><span>A</span></div>',
-            iconSize: [32, 42],
-            iconAnchor: [16, 42],
-            popupAnchor: [0, -44]
-        });
-
-        icons.end = L.divIcon({
-            className: 'sawari-marker',
-            html: '<div class="marker-pin marker-end"><span>B</span></div>',
-            iconSize: [32, 42],
-            iconAnchor: [16, 42],
-            popupAnchor: [0, -44]
-        });
-
-        icons.stop = L.divIcon({
-            className: 'sawari-marker',
-            html: '<div class="marker-dot marker-dot-stop"></div>',
-            iconSize: [12, 12],
-            iconAnchor: [6, 6]
-        });
-
-        icons.landmark = L.divIcon({
-            className: 'sawari-marker',
-            html: '<div class="marker-dot marker-dot-landmark"></div>',
-            iconSize: [12, 12],
-            iconAnchor: [6, 6]
-        });
-
-        icons.userLoc = L.divIcon({
-            className: 'sawari-marker',
-            html: '<div class="marker-user-loc"><div class="marker-user-pulse"></div><div class="marker-user-dot"></div></div>',
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
-        });
-
-        icons.bus = L.divIcon({
-            className: 'sawari-marker sawari-bus-marker',
-            html: '<div class="marker-bus"><i class="fa-solid fa-bus"></i></div>',
-            iconSize: [32, 32],
-            iconAnchor: [16, 16],
-            popupAnchor: [0, -18]
-        });
-    }
-
-    // ─── Live Vehicle Tracking ──────────────────────────────
-    function loadTrackedVehicles() {
-        SawariUtils.apiFetch('api/vehicles/tracking.php')
-            .then(function (data) {
-                if (!data || !data.vehicles) return;
-                updateVehicleMarkers(data.vehicles);
-            })
-            .catch(function () { });
-    }
-
-    function startVehicleTracking() {
-        if (trackingInterval) clearInterval(trackingInterval);
-        trackingInterval = setInterval(loadTrackedVehicles, 10000);
-    }
-
-    function updateVehicleMarkers(vehicles) {
-        // Track which vehicles are still present
-        var activeIds = {};
-
-        vehicles.forEach(function (v) {
-            activeIds[v.vehicle_id] = true;
-            var lat = parseFloat(v.current_lat);
-            var lng = parseFloat(v.current_lng);
-            var speed = v.current_speed !== null ? parseFloat(v.current_speed) : 0;
-            var updatedAt = v.gps_updated_at || '';
-            var timeParts = updatedAt.split(' ');
-            var timeStr = timeParts.length > 1 ? timeParts[1].substring(0, 5) : '';
-
-            var popupHtml =
-                '<div class="bus-tracking-popup">' +
-                '<strong>' + SawariUtils.escapeHTML(v.name) + '</strong>' +
-                '<div class="bus-popup-detail">' +
-                '<span><i class="fa-solid fa-gauge-high"></i> ' + speed.toFixed(1) + ' km/h</span>' +
-                '<span><i class="fa-solid fa-clock"></i> ' + SawariUtils.escapeHTML(timeStr) + '</span>' +
-                '</div>' +
-                '</div>';
-
-            if (trackedMarkers[v.vehicle_id]) {
-                // Update existing marker position smoothly
-                var marker = trackedMarkers[v.vehicle_id];
-                marker.setLatLng([lat, lng]);
-                marker.setPopupContent(popupHtml);
-            } else {
-                // Create new marker
-                var marker = L.marker([lat, lng], {
-                    icon: icons.bus,
-                    zIndexOffset: 500
-                })
-                    .bindPopup(popupHtml);
-                trackedVehiclesLayer.addLayer(marker);
-                trackedMarkers[v.vehicle_id] = marker;
-            }
-        });
-
-        // Remove markers for vehicles no longer being tracked
-        Object.keys(trackedMarkers).forEach(function (id) {
-            if (!activeIds[id]) {
-                trackedVehiclesLayer.removeLayer(trackedMarkers[id]);
-                delete trackedMarkers[id];
-            }
-        });
-    }
-
-    // ─── Load All Approved Stops ────────────────────────────
+    /* ──────────────────────────────────────────────
+     *  Load all approved stops and display markers
+     * ────────────────────────────────────────────── */
     function loadStops() {
-        SawariUtils.apiFetch('api/locations/read.php?status=approved&limit=500')
-            .then(function (data) {
-                if (!data || !data.data) return;
-                data.data.forEach(function (loc) {
-                    var icon = loc.type === 'landmark' ? icons.landmark : icons.stop;
-                    var marker = L.marker([loc.latitude, loc.longitude], { icon: icon })
-                        .bindPopup(
-                            '<div class="stop-popup">' +
-                            '<strong>' + SawariUtils.escapeHTML(loc.name) + '</strong>' +
-                            '<span class="stop-popup-type">' + loc.type + '</span>' +
-                            '</div>'
-                        );
-                    stopsLayer.addLayer(marker);
-                });
+        fetch(BASE + '/api/locations.php?action=approved')
+            .then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
             })
-            .catch(function () { });
-    }
-
-    // ─── UI Bindings ────────────────────────────────────────
-    function initUI() {
-        var closeBtn = document.getElementById('resultsPanelClose');
-        if (closeBtn) closeBtn.addEventListener('click', closeResults);
-
-        var alertClose = document.getElementById('alertBannerClose');
-        if (alertClose) {
-            alertClose.addEventListener('click', function () {
-                document.getElementById('alertBanner').style.display = 'none';
+            .then(data => {
+                if (!data.success) return;
+                allStops = data.locations.map(l => ({
+                    location_id: parseInt(l.location_id),
+                    name: l.name,
+                    lat: parseFloat(l.latitude),
+                    lng: parseFloat(l.longitude),
+                    type: l.type
+                }));
+                renderStopMarkers();
+            })
+            .catch(err => {
+                console.error('Failed to load stops:', err);
+                showToast('Could not load bus stops. Check your connection.', 'warning');
             });
-        }
-
-        initFeedbackModal();
-        initTouristMode();
     }
 
-    // ─── Markers ────────────────────────────────────────────
-    function setStartMarker(lat, lng, name) {
-        if (startMarker) map.removeLayer(startMarker);
-        startMarker = L.marker([lat, lng], { icon: icons.start })
-            .addTo(map)
-            .bindPopup('<strong>Start:</strong> ' + SawariUtils.escapeHTML(name || 'Your Location'));
+    function renderStopMarkers() {
+        stopMarkersLayer.clearLayers();
+        allStops.forEach(s => {
+            const m = L.marker([s.lat, s.lng], { icon: iconStop })
+                .bindPopup(`<strong>${escHtml(s.name)}</strong><br><span style="font-size:12px;color:#64748B;">${s.type}</span>`);
+            stopMarkersLayer.addLayer(m);
+        });
     }
 
-    function setEndMarker(lat, lng, name) {
-        if (endMarker) map.removeLayer(endMarker);
-        endMarker = L.marker([lat, lng], { icon: icons.end })
-            .addTo(map)
-            .bindPopup('<strong>Destination:</strong> ' + SawariUtils.escapeHTML(name || 'Destination'));
-    }
+    /* ──────────────────────────────────────────────
+     *  Map click → set Point A or B
+     * ────────────────────────────────────────────── */
+    function onMapClick(e) {
+        const { lat, lng } = e.latlng;
 
-    function setUserLocationMarker(lat, lng) {
-        if (userLocMarker) map.removeLayer(userLocMarker);
-        userLocMarker = L.marker([lat, lng], { icon: icons.userLoc, zIndexOffset: 1000 })
-            .addTo(map)
-            .bindPopup('You are here');
-        map.setView([lat, lng], 15);
-    }
-
-    function fitToPoints(points) {
-        if (points.length === 0) return;
-        var bounds = L.latLngBounds(points.map(function (p) { return [p[0], p[1]]; }));
-        map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15 });
-    }
-
-    // ─── Loading ────────────────────────────────────────────
-    function showLoading() {
-        var el = document.getElementById('mapLoading');
-        if (el) el.style.display = 'flex';
-    }
-    function hideLoading() {
-        var el = document.getElementById('mapLoading');
-        if (el) el.style.display = 'none';
-    }
-
-    // ─── Display Route Results (Enhanced) ───────────────────
-    function displayResults(data) {
-        currentRouteData = data;
-        resultLayers.clearLayers();
-
-        // Remove the user-location marker so it doesn't duplicate with result markers
-        if (userLocMarker) { map.removeLayer(userLocMarker); userLocMarker = null; }
-
-        var panel = document.getElementById('resultsPanel');
-        var body = document.getElementById('resultsPanelBody');
-        var footer = document.getElementById('resultsPanelFooter');
-
-        if (!data || !data.success) {
-            body.innerHTML =
-                '<div class="no-route">' +
-                '<div class="no-route-icon"><i class="fa-duotone fa-solid fa-face-frown-open" style="font-size:48px;color:#94a3b8;"></i></div>' +
-                '<h3>No Route Found</h3>' +
-                '<p>' + SawariUtils.escapeHTML(data && data.message ? data.message : 'Could not find a route between these locations.') + '</p>' +
-                '</div>';
-            footer.style.display = 'none';
-            panel.classList.add('active');
+        if (pinPickTarget) {
+            const which = pinPickTarget;
+            cancelPinPick();
+            reverseGeocode(lat, lng).then(name => {
+                if (which === 'a') {
+                    setPointA(lat, lng, name);
+                    nextPoint = 'b';
+                } else {
+                    setPointB(lat, lng, name);
+                    nextPoint = 'a';
+                }
+            });
             return;
         }
 
-        var result = data;
-        var html = '';
+        reverseGeocode(lat, lng).then(name => {
+            if (nextPoint === 'a') {
+                setPointA(lat, lng, name);
+                nextPoint = 'b';
+            } else {
+                setPointB(lat, lng, name);
+                nextPoint = 'a';
+            }
+        });
+    }
 
-        // ── Alerts
-        if (result.summary && result.summary.alerts && result.summary.alerts.length > 0) {
-            html += '<div class="result-alerts">';
-            result.summary.alerts.forEach(function (alert) {
-                html += '<div class="result-alert">' +
-                    '<i class="fa-sharp-duotone fa-solid fa-triangle-exclamation"></i>' +
-                    '<div><strong>' + SawariUtils.escapeHTML(alert.name) + '</strong>' +
-                    (alert.description ? '<br><small>' + SawariUtils.escapeHTML(alert.description) + '</small>' : '') +
-                    '</div></div>';
+    function setPointA(lat, lng, name) {
+        if (markerA) userMarkersLayer.removeLayer(markerA);
+        markerA = L.marker([lat, lng], { icon: iconA, draggable: true })
+            .bindPopup('Start: ' + escHtml(name))
+            .addTo(userMarkersLayer);
+
+        markerA.on('dragend', function () {
+            const pos = markerA.getLatLng();
+            reverseGeocode(pos.lat, pos.lng).then(name => {
+                if (window.SawariSearch) {
+                    SawariSearch.setInputA(pos.lat, pos.lng, name);
+                }
+                markerA.setPopupContent('Start: ' + escHtml(name));
             });
-            html += '</div>';
+        });
+
+        // Update input
+        const inputA = document.getElementById('input-a');
+        inputA.value = name;
+        inputA.dataset.lat = lat;
+        inputA.dataset.lng = lng;
+        document.getElementById('clear-a').style.display = '';
+        checkFindRouteReady();
+    }
+
+    function setPointB(lat, lng, name) {
+        if (markerB) userMarkersLayer.removeLayer(markerB);
+        markerB = L.marker([lat, lng], { icon: iconB, draggable: true })
+            .bindPopup('Destination: ' + escHtml(name))
+            .addTo(userMarkersLayer);
+
+        markerB.on('dragend', function () {
+            const pos = markerB.getLatLng();
+            reverseGeocode(pos.lat, pos.lng).then(name => {
+                if (window.SawariSearch) {
+                    SawariSearch.setInputB(pos.lat, pos.lng, name);
+                }
+                markerB.setPopupContent('Destination: ' + escHtml(name));
+            });
+        });
+
+        const inputB = document.getElementById('input-b');
+        inputB.value = name;
+        inputB.dataset.lat = lat;
+        inputB.dataset.lng = lng;
+        document.getElementById('clear-b').style.display = '';
+        checkFindRouteReady();
+    }
+
+    function clearPointA() {
+        if (markerA) {
+            userMarkersLayer.removeLayer(markerA);
+            markerA = null;
         }
+        const inputA = document.getElementById('input-a');
+        inputA.value = '';
+        delete inputA.dataset.lat;
+        delete inputA.dataset.lng;
+        document.getElementById('clear-a').style.display = 'none';
+        nextPoint = 'a';
+        checkFindRouteReady();
+    }
 
-        // ── Summary cards
-        if (result.summary) {
-            var s = result.summary;
-            html += '<div class="summary-grid">';
-            html += summaryCard('Distance', (s.total_distance_km || 0).toFixed(1) + ' km', '#2563eb',
-                '<i class="fa-duotone fa-solid fa-location-dot"></i>');
-            html += summaryCard('Fare', 'NPR ' + (s.total_fare || 0), '#16a34a',
-                '<i class="fa-duotone fa-solid fa-dollar-sign"></i>');
-            html += summaryCard('Duration', '~' + (s.estimated_duration_min || 0) + ' min', '#d97706',
-                '<i class="fa-duotone fa-solid fa-clock"></i>');
-            html += summaryCard('Transfers', (s.transfers || 0).toString(), '#7c3aed',
-                '<i class="fa-duotone fa-solid fa-arrows-rotate"></i>');
-            html += '</div>';
+    function clearPointB() {
+        if (markerB) {
+            userMarkersLayer.removeLayer(markerB);
+            markerB = null;
         }
+        const inputB = document.getElementById('input-b');
+        inputB.value = '';
+        delete inputB.dataset.lat;
+        delete inputB.dataset.lng;
+        document.getElementById('clear-b').style.display = 'none';
+        nextPoint = 'b';
+        checkFindRouteReady();
+    }
 
-        // ── Segments timeline
-        if (result.segments && result.segments.length > 0) {
-            html += '<div class="segments-timeline">';
-            var colorIdx = 0;
+    /* ──────────────────────────────────────────────
+     *  Enable/disable "Find Route" button
+     * ────────────────────────────────────────────── */
+    function checkFindRouteReady() {
+        const btn = document.getElementById('find-route-btn');
+        const inputA = document.getElementById('input-a');
+        const inputB = document.getElementById('input-b');
+        btn.disabled = !(inputA.dataset.lat && inputB.dataset.lat);
+    }
 
-            result.segments.forEach(function (seg, i) {
-                if (seg.type === 'walking') {
-                    html += walkingSegmentHTML(seg);
-                    if (seg.geometry) drawWalkingLine(seg.geometry);
-                    else if (seg.from && seg.to) drawWalkingLine([[seg.from.lat, seg.from.lng], [seg.to.lat, seg.to.lng]]);
+    /* ──────────────────────────────────────────────
+     *  Reverse Geocoding (Nominatim)
+     * ────────────────────────────────────────────── */
+    function reverseGeocode(lat, lng) {
+        return fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1`, {
+            headers: { 'Accept-Language': 'en' }
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data && data.display_name) {
+                    const parts = data.display_name.split(',').slice(0, 3);
+                    return parts.map(p => p.trim()).join(', ');
+                }
+                return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            })
+            .catch(() => `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    }
 
-                    // Add user location / destination markers for walking segments
-                    if (seg.from && seg.from.name === 'Your Location') {
-                        addUserMarker(seg.from.lat, seg.from.lng, 'Your Location');
+    /* ──────────────────────────────────────────────
+     *  Pin-Pick Mode
+     * ────────────────────────────────────────────── */
+    function startPinPick(which) {
+        pinPickTarget = which;
+        document.getElementById('map').classList.add('pin-pick-active');
+        const banner = document.getElementById('pin-pick-banner');
+        const text = document.getElementById('pin-pick-text');
+        text.textContent = which === 'a'
+            ? 'Tap the map to set your starting point'
+            : 'Tap the map to set your destination';
+        banner.style.display = '';
+        feather.replace({ 'stroke-width': 1.75 });
+
+        // Highlight active pin button
+        document.querySelectorAll('.pin-pick-btn').forEach(b => b.classList.remove('active'));
+        const btn = document.getElementById('pin-' + which);
+        if (btn) btn.classList.add('active');
+
+        // On mobile, collapse search to show more map
+        if (window.innerWidth <= 640) {
+            const panel = document.getElementById('search-panel');
+            if (!panel.classList.contains('collapsed')) {
+                panel.classList.add('collapsed');
+                const collapseBtn = document.getElementById('search-collapse-btn');
+                const icon = collapseBtn.querySelector('[data-feather], svg');
+                if (icon) {
+                    const newIcon = document.createElement('i');
+                    newIcon.setAttribute('data-feather', 'chevron-down');
+                    newIcon.style.width = '18px';
+                    newIcon.style.height = '18px';
+                    icon.replaceWith(newIcon);
+                    feather.replace({ 'stroke-width': 1.75 });
+                }
+            }
+        }
+    }
+
+    function cancelPinPick() {
+        pinPickTarget = null;
+        document.getElementById('map').classList.remove('pin-pick-active');
+        document.getElementById('pin-pick-banner').style.display = 'none';
+        document.querySelectorAll('.pin-pick-btn').forEach(b => b.classList.remove('active'));
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Swap Points A ↔ B
+     * ────────────────────────────────────────────── */
+    function swapPoints() {
+        const inputA = document.getElementById('input-a');
+        const inputB = document.getElementById('input-b');
+
+        const aVal = inputA.value;
+        const aLat = inputA.dataset.lat;
+        const aLng = inputA.dataset.lng;
+        const bVal = inputB.value;
+        const bLat = inputB.dataset.lat;
+        const bLng = inputB.dataset.lng;
+
+        // Clear both
+        clearPointA();
+        clearPointB();
+
+        // Set swapped
+        if (bLat && bLng) {
+            setPointA(parseFloat(bLat), parseFloat(bLng), bVal);
+        }
+        if (aLat && aLng) {
+            setPointB(parseFloat(aLat), parseFloat(aLng), aVal);
+        }
+    }
+
+    /* ──────────────────────────────────────────────
+     *  My Location (persistent blue dot)
+     * ────────────────────────────────────────────── */
+    function toggleMyLocation(show) {
+        if (show) {
+            if (!navigator.geolocation) {
+                showToast('Geolocation is not supported by your browser.', 'warning');
+                return;
+            }
+            myLocationWatcher = navigator.geolocation.watchPosition(
+                pos => {
+                    const { latitude, longitude, accuracy } = pos.coords;
+                    const latlng = [latitude, longitude];
+
+                    if (myLocationMarker) {
+                        myLocationMarker.setLatLng(latlng);
+                        myLocationCircle.setLatLng(latlng);
+                        myLocationCircle.setRadius(Math.min(accuracy, 500));
+                    } else {
+                        const myIcon = L.divIcon({
+                            className: 'my-location-marker',
+                            html: '<div class="my-location-dot"><div class="my-location-pulse"></div></div>',
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        });
+                        myLocationMarker = L.marker(latlng, { icon: myIcon, interactive: false, zIndexOffset: 1000 }).addTo(map);
+                        myLocationCircle = L.circle(latlng, {
+                            radius: Math.min(accuracy, 500),
+                            color: '#3B82F6',
+                            fillColor: '#3B82F6',
+                            fillOpacity: 0.08,
+                            weight: 1,
+                            interactive: false
+                        }).addTo(map);
+                        map.setView(latlng, 15);
                     }
-                    if (seg.to && seg.to.name === 'Your Destination') {
-                        addUserMarker(seg.to.lat, seg.to.lng, 'Your Destination');
-                    }
-
-                } else if (seg.type === 'riding') {
-                    var color = ROUTE_COLORS[colorIdx % ROUTE_COLORS.length];
-                    colorIdx++;
-                    html += ridingSegmentHTML(seg, color);
-                    if (seg.path_coordinates) drawRidingLine(seg.path_coordinates, color);
-                    else if (seg.from && seg.to) drawRidingLine([[seg.from.lat, seg.from.lng], [seg.to.lat, seg.to.lng]], color);
-
-                    // Add stop markers for riding segments
-                    if (seg.from) addStopMarker(seg.from.lat, seg.from.lng, seg.from.name, color);
-                    if (seg.to) addStopMarker(seg.to.lat, seg.to.lng, seg.to.name, color);
-
-                } else if (seg.type === 'transfer') {
-                    html += transferSegmentHTML(seg);
-                }
-            });
-
-            html += '</div>';
-        }
-
-        // ── Carbon card
-        if (result.summary && result.summary.total_distance_km) {
-            html += carbonCardHTML(result.summary.total_distance_km);
-        }
-
-        // ── Tourist tips
-        if (touristMode) html += buildTouristTips(result);
-
-        body.innerHTML = html;
-        footer.style.display = '';
-        panel.classList.add('active');
-
-        // Expand/collapse segment details
-        body.querySelectorAll('.seg-expand-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var details = btn.closest('.seg-card').querySelector('.seg-details');
-                if (details) {
-                    var expanded = details.style.display !== 'none';
-                    details.style.display = expanded ? 'none' : 'block';
-                    btn.classList.toggle('expanded', !expanded);
-                }
-            });
-        });
-
-        collectAndFitBounds(result);
-    }
-
-    // ─── Segment HTML Builders ──────────────────────────────
-
-    function summaryCard(label, value, color, iconSvg) {
-        return '<div class="summary-card">' +
-            '<div class="summary-card-icon" style="color:' + color + '">' + iconSvg + '</div>' +
-            '<div class="summary-card-value" style="color:' + color + '">' + value + '</div>' +
-            '<div class="summary-card-label">' + label + '</div></div>';
-    }
-
-    function walkingSegmentHTML(seg) {
-        var fromName = SawariUtils.escapeHTML(seg.from.name);
-        var toName = SawariUtils.escapeHTML(seg.to.name);
-        var isFromUser = (seg.from.name === 'Your Location');
-        var isToUser = (seg.to.name === 'Your Destination');
-
-        var title = isFromUser
-            ? 'Walk to ' + toName + ' bus stop'
-            : isToUser
-                ? 'Walk to your destination'
-                : 'Walk to ' + toName;
-
-        return '<div class="seg-card seg-walking">' +
-            '<div class="seg-timeline-dot seg-dot-walk"><i class="fa-duotone fa-solid fa-person-walking"></i></div>' +
-            '<div class="seg-card-body">' +
-            '<div class="seg-header">' +
-            '<div class="seg-title">' + title + '</div>' +
-            '</div>' +
-            '<div class="seg-walk-summary">' +
-            '<span class="seg-walk-stat"><i class="fa-solid fa-location-dot"></i> ' + (seg.distance_m || 0) + 'm</span>' +
-            (seg.duration_min ? '<span class="seg-walk-stat"><i class="fa-solid fa-clock"></i> ~' + seg.duration_min + ' min</span>' : '') +
-            '</div>' +
-            '<div class="seg-route-line seg-walk-line">' +
-            '<span class="seg-stop-name"><strong>' + fromName + '</strong></span>' +
-            '<span class="seg-arrow">↓</span>' +
-            '<span class="seg-stop-name"><strong>' + toName + '</strong></span></div>' +
-            (seg.directions ? '<div class="seg-directions">' + SawariUtils.escapeHTML(seg.directions) + '</div>' : '') +
-            '</div></div>';
-    }
-
-    function ridingSegmentHTML(seg, color) {
-        var vehicleName = seg.vehicle ? SawariUtils.escapeHTML(seg.vehicle.name) : '';
-        var vehicleImage = (seg.vehicle && seg.vehicle.image) ? seg.vehicle.image : '';
-
-        // --- Vehicle identification card (always visible, prominent) ---
-        var vehicleCard = '';
-        if (seg.vehicle) {
-            vehicleCard = '<div class="seg-vehicle-card">';
-            if (vehicleImage) {
-                vehicleCard += '<img class="seg-vehicle-img" src="' + CONFIG.baseUrl + '/' + SawariUtils.escapeHTML(vehicleImage) + '" alt="' + vehicleName + '" onerror="this.style.display=\'none\'">';
+                },
+                () => {
+                    showToast('Could not track your location.', 'warning');
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+            );
+        } else {
+            if (myLocationWatcher !== null) {
+                navigator.geolocation.clearWatch(myLocationWatcher);
+                myLocationWatcher = null;
             }
-            vehicleCard += '<div class="seg-vehicle-info">' +
-                '<div class="seg-vehicle-label">Board this bus</div>' +
-                '<div class="seg-vehicle-name">' + vehicleName + '</div>';
-            if (seg.vehicle.starts_at && seg.vehicle.stops_at) {
-                vehicleCard += '<div class="seg-vehicle-hours"><i class="fa-solid fa-clock"></i> ' + seg.vehicle.starts_at + ' – ' + seg.vehicle.stops_at + '</div>';
+            if (myLocationMarker) {
+                map.removeLayer(myLocationMarker);
+                myLocationMarker = null;
             }
-            vehicleCard += '</div></div>';
-        }
-
-        var html = '<div class="seg-card seg-riding">' +
-            '<div class="seg-timeline-dot seg-dot-ride" style="background:' + color + '"><i class="fa-solid fa-bus" style="color:#fff;"></i></div>' +
-            '<div class="seg-card-body">' +
-            '<div class="seg-header">' +
-            '<div class="seg-title">' + SawariUtils.escapeHTML(seg.route_name || 'Bus') + '</div>' +
-            '<button class="seg-expand-btn" title="Show details"><i class="fa-solid fa-chevron-down"></i></button>' +
-            '</div>' +
-            vehicleCard;
-
-        // Conductor instruction — always visible
-        if (seg.conductor_instruction) {
-            html += '<div class="seg-conductor-visible"><i class="fa-solid fa-circle-info"></i>' +
-                '<span>' + SawariUtils.escapeHTML(seg.conductor_instruction) + '</span></div>';
-        }
-
-        html += '<div class="seg-route-line" style="border-left-color:' + color + '">' +
-            '<span class="seg-stop-dot" style="background:' + color + '"></span>' +
-            '<span class="seg-stop-name"><strong>Board at: ' + SawariUtils.escapeHTML(seg.from.name) + '</strong></span>';
-
-        // Intermediate stops
-        if (seg.stops_in_between && seg.stops_in_between.length > 0) {
-            seg.stops_in_between.forEach(function (s) {
-                html += '<span class="seg-stop-dot seg-stop-dot-sm" style="background:' + color + '"></span>' +
-                    '<span class="seg-stop-name seg-stop-via">' + SawariUtils.escapeHTML(s) + '</span>';
-            });
-        }
-
-        html += '<span class="seg-stop-dot" style="background:' + color + '"></span>' +
-            '<span class="seg-stop-name"><strong>Drop off at: ' + SawariUtils.escapeHTML(seg.to.name) + '</strong></span>' +
-            '</div>';
-
-        if (seg.fare) {
-            html += '<span class="seg-fare" style="background:' + color + '15;color:' + color + '">NPR ' + seg.fare + '</span>';
-        }
-
-        // Collapsible details (secondary info only)
-        html += '<div class="seg-details" style="display:none">';
-        if (seg.vehicle) {
-            html += '<div class="seg-detail-row"><span class="seg-detail-label">Vehicle</span><span>' + vehicleName + '</span></div>';
-        }
-        html += '</div>'; // end details
-
-        html += '</div></div>'; // end card
-        return html;
-    }
-
-    function transferSegmentHTML(seg) {
-        return '<div class="seg-card seg-transfer">' +
-            '<div class="seg-timeline-dot seg-dot-transfer"><i class="fa-duotone fa-solid fa-arrows-rotate"></i></div>' +
-            '<div class="seg-card-body">' +
-            '<div class="seg-title">Transfer</div>' +
-            (seg.instruction ? '<div class="seg-transfer-info">' + SawariUtils.escapeHTML(seg.instruction) + '</div>' : '') +
-            (seg.wait_time_estimate ? '<div class="seg-wait">Est. wait: ' + SawariUtils.escapeHTML(seg.wait_time_estimate) + '</div>' : '') +
-            '</div></div>';
-    }
-
-    function carbonCardHTML(distKm) {
-        var co2Public = (0.089 * distKm).toFixed(2);
-        var co2Bike = (0.103 * distKm).toFixed(2);
-        var co2Car = (0.192 * distKm).toFixed(2);
-        var savings = (co2Car - co2Public).toFixed(2);
-
-        return '<div class="carbon-card">' +
-            '<div class="carbon-header"><i class="fa-duotone fa-solid fa-leaf" style="color:#16a34a;"></i> Carbon Footprint</div>' +
-            '<div class="carbon-bars">' +
-            carbonBar('Public Transport', co2Public, 30, '#16a34a', true) +
-            carbonBar('Bike / Rideshare', co2Bike, 40, '#d97706', false) +
-            carbonBar('Car / Taxi', co2Car, 60, '#dc2626', false) +
-            '</div>' +
-            '<div class="carbon-save">You save <strong>' + savings + ' kg CO₂</strong> by choosing public transport!</div>' +
-            '</div>';
-    }
-
-    function carbonBar(label, value, width, color, highlight) {
-        return '<div class="carbon-bar-row' + (highlight ? ' carbon-chosen' : '') + '">' +
-            '<span class="carbon-bar-label">' + label + '</span>' +
-            '<div class="carbon-bar-track"><div class="carbon-bar-fill" style="width:' + width + '%;background:' + color + '"></div></div>' +
-            '<span class="carbon-bar-value">' + value + ' kg</span></div>';
-    }
-
-    // ─── Draw Lines ─────────────────────────────────────────
-    function drawWalkingLine(coords) {
-        if (!coords || coords.length < 2) return;
-        var ll = coords.map(function (c) { return Array.isArray(c) ? c : [c.lat, c.lng]; });
-        resultLayers.addLayer(L.polyline(ll, { color: '#6b7280', weight: 4, dashArray: '6, 10', opacity: 0.7 }));
-    }
-
-    function drawRidingLine(coords, color) {
-        if (!coords || coords.length < 2) return;
-        var ll = coords.map(function (c) { return Array.isArray(c) ? c : [c.lat, c.lng]; });
-        // Border line (thicker, darker)
-        resultLayers.addLayer(L.polyline(ll, { color: '#fff', weight: 8, opacity: 0.9 }));
-        // Main colored line
-        resultLayers.addLayer(L.polyline(ll, { color: color || '#2563eb', weight: 5, opacity: 0.95 }));
-    }
-
-    function addStopMarker(lat, lng, name, color) {
-        var icon = L.divIcon({
-            className: 'sawari-marker',
-            html: '<div class="marker-route-stop" style="border-color:' + color + ';background:#fff"></div>',
-            iconSize: [14, 14],
-            iconAnchor: [7, 7]
-        });
-        var m = L.marker([lat, lng], { icon: icon }).bindPopup(SawariUtils.escapeHTML(name));
-        resultLayers.addLayer(m);
-    }
-
-    function addUserMarker(lat, lng, label) {
-        var icon = L.divIcon({
-            className: 'sawari-marker',
-            html: '<div class="marker-user-loc"><i class="fa-solid fa-circle" style="color:#6366f1;font-size:16px;text-shadow:0 0 3px #fff;"></i></div>',
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
-        });
-        var m = L.marker([lat, lng], { icon: icon }).bindPopup(SawariUtils.escapeHTML(label));
-        resultLayers.addLayer(m);
-    }
-
-    function collectAndFitBounds(result) {
-        var points = [];
-        if (startMarker) { var ll = startMarker.getLatLng(); points.push([ll.lat, ll.lng]); }
-        if (endMarker) { var ll2 = endMarker.getLatLng(); points.push([ll2.lat, ll2.lng]); }
-        if (result.segments) {
-            result.segments.forEach(function (seg) {
-                if (seg.from && seg.from.lat) points.push([seg.from.lat, seg.from.lng]);
-                if (seg.to && seg.to.lat) points.push([seg.to.lat, seg.to.lng]);
-                if (seg.path_coordinates) {
-                    seg.path_coordinates.forEach(function (c) { points.push(Array.isArray(c) ? c : [c.lat, c.lng]); });
-                }
-            });
-        }
-        if (points.length > 0) fitToPoints(points);
-    }
-
-    // ─── Close Results ──────────────────────────────────────
-    function closeResults() {
-        var panel = document.getElementById('resultsPanel');
-        if (panel) panel.classList.remove('active');
-        resultLayers.clearLayers();
-        currentRouteData = null;
-    }
-
-    // ─── Feedback Modal ─────────────────────────────────────
-    function initFeedbackModal() {
-        var btnFeedback = document.getElementById('btnFeedback');
-        var modal = document.getElementById('feedbackModal');
-        var form = document.getElementById('feedbackForm');
-        if (!btnFeedback || !modal || !form) return;
-
-        btnFeedback.addEventListener('click', function () {
-            if (currentRouteData && currentRouteData.segments) {
-                var rIds = [], vIds = [];
-                currentRouteData.segments.forEach(function (seg) {
-                    if (seg.route_id) rIds.push(seg.route_id);
-                    if (seg.vehicle && seg.vehicle.vehicle_id) vIds.push(seg.vehicle.vehicle_id);
-                });
-                document.getElementById('feedbackRouteId').value = rIds[0] || '';
-                document.getElementById('feedbackVehicleId').value = vIds[0] || '';
-            }
-            modal.style.display = 'flex';
-        });
-
-        modal.querySelectorAll('[data-close-modal]').forEach(function (btn) {
-            btn.addEventListener('click', function () { modal.style.display = 'none'; });
-        });
-        modal.addEventListener('click', function (e) { if (e.target === modal) modal.style.display = 'none'; });
-
-        var stars = document.querySelectorAll('#starRating .star');
-        var ratingInput = document.getElementById('feedbackRating');
-        stars.forEach(function (star) {
-            star.addEventListener('click', function () {
-                var rating = parseInt(this.getAttribute('data-rating'));
-                ratingInput.value = rating;
-                stars.forEach(function (s) { s.classList.toggle('active', parseInt(s.getAttribute('data-rating')) <= rating); });
-            });
-        });
-
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
-            var fd = new URLSearchParams();
-            fd.append('type', document.getElementById('feedbackType').value);
-            fd.append('message', document.getElementById('feedbackMessage').value);
-            var r = document.getElementById('feedbackRating').value;
-            if (r) fd.append('rating', r);
-            var ri = document.getElementById('feedbackRouteId').value;
-            if (ri) fd.append('related_route_id', ri);
-            var vi = document.getElementById('feedbackVehicleId').value;
-            if (vi) fd.append('related_vehicle_id', vi);
-
-            var btn = document.getElementById('btnSubmitFeedback');
-            btn.disabled = true; btn.textContent = 'Submitting...';
-
-            SawariUtils.apiFetch('api/suggestions/create.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: fd.toString()
-            }).then(function () {
-                SawariUtils.showToast('Thank you for your feedback!', 'success');
-                modal.style.display = 'none'; form.reset();
-                stars.forEach(function (s) { s.classList.remove('active'); });
-                ratingInput.value = '';
-            }).catch(function () {
-                SawariUtils.showToast('Failed to submit feedback', 'error');
-            }).finally(function () { btn.disabled = false; btn.textContent = 'Submit'; });
-        });
-    }
-
-    // ─── Tourist Mode ───────────────────────────────────────
-    function initTouristMode() {
-        var btn = document.getElementById('btnTouristToggle');
-        if (!btn) return;
-        btn.addEventListener('click', function () {
-            touristMode = !touristMode;
-            btn.classList.toggle('active', touristMode);
-            document.body.classList.toggle('tourist-mode', touristMode);
-            if (currentRouteData && currentRouteData.success) displayResults(currentRouteData);
-        });
-    }
-
-    function buildTouristTips(result) {
-        var tips = window.SAWARI_TOURIST_TIPS;
-        if (!tips) return '';
-        var destName = '';
-        if (result && result.segments) {
-            for (var i = 0; i < result.segments.length; i++) {
-                if (result.segments[i].type === 'riding' && result.segments[i].to) {
-                    destName = result.segments[i].to.name; break;
-                }
+            if (myLocationCircle) {
+                map.removeLayer(myLocationCircle);
+                myLocationCircle = null;
             }
         }
-
-        var html = '<div class="tourist-tips-card">';
-        html += '<div class="tourist-tips-title">Tourist Help Guide</div>';
-
-        html += tipSection('Boarding the Bus', tips.boarding.map(function (t) {
-            return '<div class="tourist-phrase"><span class="phrase-nepali">"' +
-                SawariUtils.escapeHTML(t.nepali.replace('[Destination]', destName || 'your stop')) + '"</span>' +
-                '<span class="phrase-english">' + SawariUtils.escapeHTML(t.english.replace('[Destination]', destName || 'your stop')) + '</span></div>';
-        }).join(''));
-
-        html += tipSection('Getting Off', tips.alighting.map(function (t) {
-            return '<div class="tourist-phrase"><span class="phrase-nepali">"' + SawariUtils.escapeHTML(t.nepali) + '"</span>' +
-                '<span class="phrase-english">' + SawariUtils.escapeHTML(t.english) + '</span></div>';
-        }).join(''));
-
-        html += tipSection('Payment Tips', '<ul class="tip-list">' + tips.payment.map(function (t) {
-            return '<li>' + SawariUtils.escapeHTML(t) + '</li>';
-        }).join('') + '</ul>');
-
-        html += tipSection('Safety', '<ul class="tip-list">' + tips.precautions.map(function (t) {
-            return '<li>' + SawariUtils.escapeHTML(t) + '</li>';
-        }).join('') + '</ul>');
-
-        html += tipSection('Good to Know', '<ul class="tip-list">' + tips.general.map(function (t) {
-            return '<li>' + SawariUtils.escapeHTML(t) + '</li>';
-        }).join('') + '</ul>');
-
-        html += '</div>';
-        return html;
     }
 
-    function tipSection(title, content) {
-        return '<div class="tip-section"><div class="tip-heading">' + title + '</div>' + content + '</div>';
+    /* ──────────────────────────────────────────────
+     *  Geolocation (one-shot, sets Point A)
+     * ────────────────────────────────────────────── */
+    function locateUser() {
+        if (!navigator.geolocation) {
+            showToast('Geolocation is not supported by your browser.', 'warning');
+            return;
+        }
+
+        const btn = document.getElementById('locate-btn');
+        btn.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                const { latitude, longitude } = pos.coords;
+                map.setView([latitude, longitude], STOP_ZOOM);
+                setPointA(latitude, longitude, 'My Location');
+                nextPoint = 'b';
+                btn.disabled = false;
+            },
+            err => {
+                showToast('Could not get your location. Please allow location access.', 'warning');
+                btn.disabled = false;
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
     }
 
-    // ─── Public API ─────────────────────────────────────────
+    /* ──────────────────────────────────────────────
+     *  Route display helpers — used by routing.js
+     * ────────────────────────────────────────────── */
+
+    /** Clear any drawn route polylines */
+    function clearRouteDisplay() {
+        routeLayerGroup.clearLayers();
+    }
+
+    /** 
+     * Draw a polyline on the map using a GeoJSON LineString from OSRM.
+     * @param {Array} coords — [[lng,lat], ...] from OSRM geometry
+     * @param {string} color — CSS color
+     * @param {number} weight — line width
+     * @param {string} dashArray — e.g. '5,10' for walking paths
+     * @returns {L.Polyline}
+     */
+    function drawPolyline(coords, color, weight, dashArray) {
+        // OSRM returns [lng,lat], Leaflet needs [lat,lng]
+        const latlngs = coords.map(c => [c[1], c[0]]);
+        const line = L.polyline(latlngs, {
+            color: color,
+            weight: weight || 4,
+            opacity: 0.8,
+            dashArray: dashArray || null
+        }).addTo(routeLayerGroup);
+        return line;
+    }
+
+    /**
+     * Draw a simple straight-line polyline.
+     * @param {Array} points — [[lat,lng], ...]
+     * @param {string} color
+     * @param {number} weight
+     * @param {string} dashArray
+     */
+    function drawStraightLine(points, color, weight, dashArray) {
+        const line = L.polyline(points, {
+            color: color,
+            weight: weight || 3,
+            opacity: 0.6,
+            dashArray: dashArray || '6,8'
+        }).addTo(routeLayerGroup);
+        return line;
+    }
+
+    /**
+     * Add a circle marker at a stop with a popup.
+     */
+    function addRouteStopMarker(lat, lng, name, cssClass) {
+        // Choose icon based on marker type
+        let iconHtml, size, anchor;
+        if (cssClass === 'marker-stop-boarding') {
+            iconHtml = '<div class="marker-pin marker-pin-board"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></div>';
+            size = [28, 36]; anchor = [14, 36];
+        } else if (cssClass === 'marker-stop-destination') {
+            iconHtml = '<div class="marker-pin marker-pin-dest"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>';
+            size = [28, 36]; anchor = [14, 36];
+        } else if (cssClass === 'marker-stop-transfer') {
+            iconHtml = '<div class="marker-pin marker-pin-transfer"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>';
+            size = [28, 36]; anchor = [14, 36];
+        } else {
+            // Regular intermediate stop — small dot
+            iconHtml = '<div class="marker-dot marker-dot-intermediate"></div>';
+            size = [10, 10]; anchor = [5, 5];
+        }
+        const icon = L.divIcon({
+            className: cssClass || 'marker-stop',
+            html: iconHtml,
+            iconSize: size,
+            iconAnchor: anchor
+        });
+        const m = L.marker([lat, lng], { icon })
+            .bindPopup(`<strong>${escHtml(name)}</strong>`)
+            .addTo(routeLayerGroup);
+        return m;
+    }
+
+    /**
+     * Fit map bounds to show the entire route.
+     */
+    function fitRouteBounds(allPoints) {
+        if (allPoints.length === 0) return;
+        const bounds = L.latLngBounds(allPoints);
+        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Toast notifications (simple)
+     * ────────────────────────────────────────────── */
+    function showToast(message, type) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        // Map common aliases
+        const typeMap = { 'error': 'danger', 'success': 'success', 'warning': 'warning', 'info': 'info' };
+        const cssType = typeMap[type] || 'info';
+        const t = document.createElement('div');
+        t.className = 'toast toast-' + cssType;
+        t.innerHTML = `<span>${escHtml(message)}</span>`;
+        container.appendChild(t);
+        setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; }, 3500);
+        setTimeout(() => { t.remove(); }, 4000);
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Utility
+     * ────────────────────────────────────────────── */
+    function escHtml(str) {
+        const d = document.createElement('div');
+        d.textContent = str || '';
+        return d.innerHTML;
+    }
+
+    function getMap() { return map; }
+    function getStops() { return allStops; }
+    function getAlertLayer() { return alertLayerGroup; }
+
+    /** Toggle a named layer on/off */
+    function toggleLayer(name, visible) {
+        const layerMap = {
+            stops: stopMarkersLayer,
+            routes: routeLayerGroup,
+            alerts: alertLayerGroup
+        };
+        const layer = layerMap[name];
+        if (layer) {
+            if (visible) { if (!map.hasLayer(layer)) map.addLayer(layer); }
+            else { if (map.hasLayer(layer)) map.removeLayer(layer); }
+        }
+        // Vehicles handled via SawariTracking
+        if (name === 'vehicles') {
+            if (window.SawariTracking) {
+                if (visible) SawariTracking.start();
+                else SawariTracking.stop();
+            }
+        }
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Public API
+     * ────────────────────────────────────────────── */
     return {
-        init: init,
-        setStartMarker: setStartMarker,
-        setEndMarker: setEndMarker,
-        setUserLocationMarker: setUserLocationMarker,
-        displayResults: displayResults,
-        showLoading: showLoading,
-        hideLoading: hideLoading,
-        closeResults: closeResults,
-        fitToPoints: fitToPoints,
-        getMap: function () { return map; }
+        init,
+        getMap,
+        getStops,
+        getAlertLayer,
+        toggleLayer,
+        setPointA,
+        setPointB,
+        clearPointA,
+        clearPointB,
+        clearRouteDisplay,
+        drawPolyline,
+        drawStraightLine,
+        addRouteStopMarker,
+        fitRouteBounds,
+        showToast,
+        checkFindRouteReady,
+        escHtml,
+        startPinPick,
+        cancelPinPick,
+        swapPoints,
+        toggleMyLocation,
+        reverseGeocode,
+        BASE
     };
 })();
 
-document.addEventListener('DOMContentLoaded', function () {
-    SawariMap.init();
-});
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', SawariMap.init);
