@@ -18,11 +18,14 @@ require_once __DIR__ . '/../../includes/agent-header.php';
 
     <!-- Map -->
     <div class="card">
-        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--space-2);">
+        <div class="card-header"
+            style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--space-2);">
             <h3 class="card-title">Pin Location on Map</h3>
             <div style="display:flex;align-items:center;gap:var(--space-3);">
-                <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:var(--text-xs);color:var(--color-neutral-600);user-select:none;">
-                    <input type="checkbox" id="toggle-existing" style="accent-color:var(--color-primary-600);width:16px;height:16px;cursor:pointer;">
+                <label
+                    style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:var(--text-xs);color:var(--color-neutral-600);user-select:none;">
+                    <input type="checkbox" id="toggle-existing"
+                        style="accent-color:var(--color-primary-600);width:16px;height:16px;cursor:pointer;">
                     Show existing stops
                 </label>
                 <button class="btn btn-ghost btn-sm" id="gps-btn" title="Use my GPS location">
@@ -174,8 +177,11 @@ require_once __DIR__ . '/../../includes/agent-header.php';
                         iconAnchor: [6, 6]
                     });
 
+                    var escapeName = loc.name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                    var escapeType = loc.type.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
                     L.marker([lat, lng], { icon: icon, interactive: true })
-                        .bindPopup('<div style="font-size:13px;"><strong>' + Sawari.escHtml(loc.name) + '</strong><br><span style="color:#64748B;font-size:11px;">' + loc.type + '</span></div>')
+                        .bindPopup('<div style="font-size:13px;"><strong>' + escapeName + '</strong><br><span style="color:#64748B;font-size:11px;">' + escapeType + '</span></div>')
                         .addTo(existingLayer);
                 });
             });
