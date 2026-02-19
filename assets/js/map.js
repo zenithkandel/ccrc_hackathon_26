@@ -318,11 +318,14 @@ const SawariMap = (function () {
     function showToast(message, type) {
         const container = document.getElementById('toast-container');
         if (!container) return;
+        // Map common aliases
+        const typeMap = { 'error': 'danger', 'success': 'success', 'warning': 'warning', 'info': 'info' };
+        const cssType = typeMap[type] || 'info';
         const t = document.createElement('div');
-        t.className = 'toast toast-' + (type || 'info');
+        t.className = 'toast toast-' + cssType;
         t.innerHTML = `<span>${escHtml(message)}</span>`;
         container.appendChild(t);
-        setTimeout(() => { t.classList.add('toast-exit'); }, 3500);
+        setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; }, 3500);
         setTimeout(() => { t.remove(); }, 4000);
     }
 
