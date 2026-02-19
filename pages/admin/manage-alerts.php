@@ -8,7 +8,7 @@
 require_once __DIR__ . '/../../includes/auth-admin.php';
 
 $pageTitle = 'Manage Alerts';
-$currentPage = 'manage-alerts';
+$currentPage = 'alerts';
 $pageActions = '<button class="btn btn-primary btn-sm" onclick="openCreateAlert()"><i data-feather="plus" style="width:14px;height:14px;"></i> New Alert</button>';
 require_once __DIR__ . '/../../includes/admin-header.php';
 ?>

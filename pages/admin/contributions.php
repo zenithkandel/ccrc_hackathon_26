@@ -16,8 +16,8 @@ require_once __DIR__ . '/../../includes/admin-header.php';
 <!-- Filters -->
 <div class="filters-bar">
     <div class="search-bar" style="flex:1;max-width:240px;">
-        <i data-feather="search" class="search-bar-icon"></i>
-        <input type="text" class="search-bar-input" id="search-input" placeholder="Search...">
+        <i data-feather="search" class="search-icon"></i>
+        <input type="text" class="form-input" id="search-input" placeholder="Search...">
     </div>
     <select class="form-select" id="filter-status" style="width:auto;">
         <option value="pending" selected>Pending</option>

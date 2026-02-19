@@ -8,7 +8,7 @@
 require_once __DIR__ . '/../../includes/auth-admin.php';
 
 $pageTitle = 'Manage Vehicles';
-$currentPage = 'manage-vehicles';
+$currentPage = 'vehicles';
 $pageActions = '<button class="btn btn-primary btn-sm" onclick="openCreateVehicle()"><i data-feather="plus" style="width:14px;height:14px;"></i> Add Vehicle</button>';
 require_once __DIR__ . '/../../includes/admin-header.php';
 ?>
@@ -16,8 +16,8 @@ require_once __DIR__ . '/../../includes/admin-header.php';
 <!-- Filters -->
 <div class="filters-bar">
     <div class="search-bar" style="flex:1;max-width:320px;">
-        <i data-feather="search" class="search-bar-icon"></i>
-        <input type="text" class="search-bar-input" id="search-input" placeholder="Search vehicles...">
+        <i data-feather="search" class="search-icon"></i>
+        <input type="text" class="form-input" id="search-input" placeholder="Search vehicles...">
     </div>
     <select class="form-select" id="filter-status" style="width:auto;">
         <option value="">All Statuses</option>

@@ -8,15 +8,15 @@
 require_once __DIR__ . '/../../includes/auth-admin.php';
 
 $pageTitle = 'Manage Agents';
-$currentPage = 'manage-agents';
+$currentPage = 'agents';
 require_once __DIR__ . '/../../includes/admin-header.php';
 ?>
 
 <!-- Filters -->
 <div class="filters-bar">
     <div class="search-bar" style="flex:1;max-width:320px;">
-        <i data-feather="search" class="search-bar-icon"></i>
-        <input type="text" class="search-bar-input" id="search-input" placeholder="Search agents...">
+        <i data-feather="search" class="search-icon"></i>
+        <input type="text" class="form-input" id="search-input" placeholder="Search agents...">
     </div>
     <select class="form-select" id="filter-status" style="width:auto;">
         <option value="">All Statuses</option>

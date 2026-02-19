@@ -9,7 +9,7 @@
 require_once __DIR__ . '/../../includes/auth-admin.php';
 
 $pageTitle = 'Manage Routes';
-$currentPage = 'manage-routes';
+$currentPage = 'routes';
 $pageActions = '<button class="btn btn-primary btn-sm" onclick="openCreateRoute()"><i data-feather="plus" style="width:14px;height:14px;"></i> Add Route</button>';
 require_once __DIR__ . '/../../includes/admin-header.php';
 ?>
@@ -17,8 +17,8 @@ require_once __DIR__ . '/../../includes/admin-header.php';
 <!-- Filters -->
 <div class="filters-bar">
     <div class="search-bar" style="flex:1;max-width:320px;">
-        <i data-feather="search" class="search-bar-icon"></i>
-        <input type="text" class="search-bar-input" id="search-input" placeholder="Search routes...">
+        <i data-feather="search" class="search-icon"></i>
+        <input type="text" class="form-input" id="search-input" placeholder="Search routes...">
     </div>
     <select class="form-select" id="filter-status" style="width:auto;">
         <option value="">All Statuses</option>
@@ -230,8 +230,8 @@ require_once __DIR__ . '/../../includes/admin-header.php';
             '<div class="form-group">' +
                 '<label class="form-label">Stops — search and add locations in order</label>' +
                 '<div class="search-bar" style="margin-bottom:var(--space-2);">' +
-                    '<i data-feather="search" class="search-bar-icon"></i>' +
-                    '<input type="text" class="search-bar-input" id="stop-search" placeholder="Search approved locations...">' +
+                    '<i data-feather="search" class="search-icon"></i>' +
+                    '<input type="text" class="form-input" id="stop-search" placeholder="Search approved locations...">' +
                 '</div>' +
                 '<div id="stop-search-results" style="max-height:120px;overflow-y:auto;margin-bottom:var(--space-2);"></div>' +
                 '<div id="selected-stops" class="route-stops-list"></div>' +

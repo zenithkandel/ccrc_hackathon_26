@@ -231,7 +231,6 @@
     background: var(--color-white);
     border: 1px solid var(--color-neutral-200);
     border-radius: var(--radius-xl);
-    overflow: hidden;
     transition: box-shadow var(--transition-normal);
 }
 
@@ -1118,7 +1117,8 @@
         z-index: calc(var(--z-sidebar) - 1);
     }
 
-    .sidebar-backdrop.visible {
+    .sidebar-backdrop.visible,
+    .sidebar-backdrop.active {
         display: block;
     }
 }
@@ -1150,7 +1150,8 @@
     transition: all var(--transition-base);
 }
 
-.dropdown-menu.open {
+.dropdown-menu.open,
+.dropdown-menu.active {
     opacity: 1;
     visibility: visible;
     transform: translateY(var(--space-1));
