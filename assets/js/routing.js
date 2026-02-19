@@ -19,7 +19,7 @@ const SawariRouting = (function () {
     const COLOR_TRANSFER = '#D97706'; // amber
 
     // DOM refs
-    let findBtn, resultPanel, resultContent, loadingOverlay;
+    let findBtn, resultPanel, resultContent, resultPeek, loadingOverlay;
 
     // Current results (so user can switch between options)
     let currentResults = null;
@@ -41,17 +41,10 @@ const SawariRouting = (function () {
         findBtn = document.getElementById('find-route-btn');
         resultPanel = document.getElementById('result-panel');
         resultContent = document.getElementById('result-content');
+        resultPeek = document.getElementById('result-panel-peek');
         loadingOverlay = document.getElementById('loading-overlay');
 
         findBtn.addEventListener('click', onFindRoute);
-
-        // Result panel handle — toggle close
-        const handle = resultPanel.querySelector('.result-panel-handle');
-        if (handle) {
-            handle.addEventListener('click', () => {
-                resultPanel.classList.toggle('open');
-            });
-        }
     }
 
     /* ──────────────────────────────────────────────
@@ -367,8 +360,18 @@ const SawariRouting = (function () {
             </div>`;
 
         resultContent.innerHTML = html;
+        updatePeekSummary(result, 'direct');
         resultPanel.classList.add('open');
+        resultPanel.classList.add('expanded');
         feather.replace({ 'stroke-width': 1.75 });
+
+        // On mobile, collapse search panel when results show
+        if (window.innerWidth <= 640) {
+            const sp = document.getElementById('search-panel');
+            if (sp && !sp.classList.contains('collapsed')) {
+                document.getElementById('search-collapse-btn').click();
+            }
+        }
 
         // Attach start trip handler
         const startBtn = document.getElementById('start-trip-btn');
@@ -501,8 +504,18 @@ const SawariRouting = (function () {
             </div>`;
 
         resultContent.innerHTML = html;
+        updatePeekSummary(result, 'transfer');
         resultPanel.classList.add('open');
+        resultPanel.classList.add('expanded');
         feather.replace({ 'stroke-width': 1.75 });
+
+        // On mobile, collapse search panel when results show
+        if (window.innerWidth <= 640) {
+            const sp = document.getElementById('search-panel');
+            if (sp && !sp.classList.contains('collapsed')) {
+                document.getElementById('search-collapse-btn').click();
+            }
+        }
 
         // Attach start trip handler
         const startBtn = document.getElementById('start-trip-btn');
@@ -656,6 +669,40 @@ const SawariRouting = (function () {
             loadingOverlay.style.display = show ? 'flex' : 'none';
         }
         findBtn.disabled = show;
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Peek summary (for contractable result panel)
+     * ────────────────────────────────────────────── */
+    function updatePeekSummary(result, type) {
+        if (!resultPeek) return;
+        const esc = SawariMap.escHtml;
+        let html = '';
+
+        if (type === 'direct') {
+            const vehicle = result.vehicles && result.vehicles.length > 0 ? result.vehicles[0] : null;
+            const name = vehicle ? esc(vehicle.name) : esc(result.route_name);
+            const fare = result.fare !== null ? 'Rs. ' + roundFare(result.fare) : '';
+            const stops = result.stop_count || (result.intermediate_stops ? result.intermediate_stops.length : 0);
+            html = `<div class="peek-row">
+                <div class="peek-info">
+                    <span class="peek-name">${name}</span>
+                    <span class="peek-detail">${stops} stops • ${formatDistance(result.distance_km)}</span>
+                </div>
+                <div class="peek-fare">${fare}</div>
+            </div>`;
+        } else if (type === 'transfer') {
+            const totalFare = result.total_fare !== null ? 'Rs. ' + roundFare(result.total_fare) : '';
+            html = `<div class="peek-row">
+                <div class="peek-info">
+                    <span class="peek-name">${esc(result.leg1.route_name)} → ${esc(result.leg2.route_name)}</span>
+                    <span class="peek-detail">Transfer at ${esc(result.transfer_stop.name)}</span>
+                </div>
+                <div class="peek-fare">${totalFare}</div>
+            </div>`;
+        }
+
+        resultPeek.innerHTML = html;
     }
 
     /* ──────────────────────────────────────────────

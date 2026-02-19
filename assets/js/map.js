@@ -20,6 +20,7 @@ const SawariMap = (function () {
     let stopMarkersLayer;
     let routeLayerGroup;
     let userMarkersLayer;
+    let alertLayerGroup;
 
     // User-placed markers for Point A / Point B
     let markerA = null;
@@ -78,6 +79,7 @@ const SawariMap = (function () {
         stopMarkersLayer = L.layerGroup().addTo(map);
         routeLayerGroup = L.layerGroup().addTo(map);
         userMarkersLayer = L.layerGroup().addTo(map);
+        alertLayerGroup = L.layerGroup().addTo(map);
 
         // Map click handler — set Point A or B
         map.on('click', onMapClick);
@@ -364,6 +366,28 @@ const SawariMap = (function () {
 
     function getMap() { return map; }
     function getStops() { return allStops; }
+    function getAlertLayer() { return alertLayerGroup; }
+
+    /** Toggle a named layer on/off */
+    function toggleLayer(name, visible) {
+        const layerMap = {
+            stops: stopMarkersLayer,
+            routes: routeLayerGroup,
+            alerts: alertLayerGroup
+        };
+        const layer = layerMap[name];
+        if (layer) {
+            if (visible) { if (!map.hasLayer(layer)) map.addLayer(layer); }
+            else { if (map.hasLayer(layer)) map.removeLayer(layer); }
+        }
+        // Vehicles handled via SawariTracking
+        if (name === 'vehicles') {
+            if (window.SawariTracking) {
+                if (visible) SawariTracking.start();
+                else SawariTracking.stop();
+            }
+        }
+    }
 
     /* ──────────────────────────────────────────────
      *  Public API
@@ -372,6 +396,8 @@ const SawariMap = (function () {
         init,
         getMap,
         getStops,
+        getAlertLayer,
+        toggleLayer,
         setPointA,
         setPointB,
         clearPointA,

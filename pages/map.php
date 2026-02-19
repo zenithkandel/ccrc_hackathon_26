@@ -92,7 +92,8 @@ require_once __DIR__ . '/../api/config.php';
                     <button class="btn btn-ghost btn-icon btn-sm" id="locate-btn" title="My Location">
                         <i data-feather="crosshair" style="width:18px;height:18px;"></i>
                     </button>
-                    <button class="btn btn-ghost btn-icon btn-sm search-panel-collapse-btn" id="search-collapse-btn" title="Collapse">
+                    <button class="btn btn-ghost btn-icon btn-sm search-panel-collapse-btn" id="search-collapse-btn"
+                        title="Collapse">
                         <i data-feather="chevron-up" style="width:18px;height:18px;"></i>
                     </button>
                 </div>
@@ -100,48 +101,49 @@ require_once __DIR__ . '/../api/config.php';
 
             <!-- Search Inputs (collapsible body) -->
             <div class="search-panel-body" id="search-panel-body">
-            <div class="search-panel-inputs">
-                <div class="search-panel-input-row">
-                    <div class="search-panel-dot search-panel-dot-a"></div>
-                    <div style="flex:1;position:relative;">
-                        <input type="text" class="form-input" id="input-a" placeholder="Starting point"
-                            autocomplete="off">
-                        <div class="search-results" id="results-a"></div>
+                <div class="search-panel-inputs">
+                    <div class="search-panel-input-row">
+                        <div class="search-panel-dot search-panel-dot-a"></div>
+                        <div style="flex:1;position:relative;">
+                            <input type="text" class="form-input" id="input-a" placeholder="Starting point"
+                                autocomplete="off">
+                            <div class="search-results" id="results-a"></div>
+                        </div>
+                        <button class="btn btn-ghost btn-icon btn-sm" id="clear-a" title="Clear" style="display:none;">
+                            <i data-feather="x" style="width:14px;height:14px;"></i>
+                        </button>
                     </div>
-                    <button class="btn btn-ghost btn-icon btn-sm" id="clear-a" title="Clear" style="display:none;">
-                        <i data-feather="x" style="width:14px;height:14px;"></i>
+
+                    <div style="display:flex;align-items:center;gap:var(--space-3);">
+                        <div class="search-panel-connector"></div>
+                    </div>
+
+                    <div class="search-panel-input-row">
+                        <div class="search-panel-dot search-panel-dot-b"></div>
+                        <div style="flex:1;position:relative;">
+                            <input type="text" class="form-input" id="input-b" placeholder="Where to?"
+                                autocomplete="off">
+                            <div class="search-results" id="results-b"></div>
+                        </div>
+                        <button class="btn btn-ghost btn-icon btn-sm" id="clear-b" title="Clear" style="display:none;">
+                            <i data-feather="x" style="width:14px;height:14px;"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="search-panel-actions">
+                    <button class="btn btn-primary btn-block" id="find-route-btn" disabled>
+                        <i data-feather="navigation" style="width:16px;height:16px;"></i>
+                        Find Route
                     </button>
                 </div>
 
-                <div style="display:flex;align-items:center;gap:var(--space-3);">
-                    <div class="search-panel-connector"></div>
-                </div>
-
-                <div class="search-panel-input-row">
-                    <div class="search-panel-dot search-panel-dot-b"></div>
-                    <div style="flex:1;position:relative;">
-                        <input type="text" class="form-input" id="input-b" placeholder="Where to?" autocomplete="off">
-                        <div class="search-results" id="results-b"></div>
-                    </div>
-                    <button class="btn btn-ghost btn-icon btn-sm" id="clear-b" title="Clear" style="display:none;">
-                        <i data-feather="x" style="width:14px;height:14px;"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="search-panel-actions">
-                <button class="btn btn-primary btn-block" id="find-route-btn" disabled>
-                    <i data-feather="navigation" style="width:16px;height:16px;"></i>
-                    Find Route
-                </button>
-            </div>
-
-            <!-- Map click hint -->
-            <p id="map-hint"
-                style="font-size:var(--text-xs);color:var(--color-neutral-400);margin:var(--space-3) 0 0;text-align:center;">
-                Or click on the map to set points
-            </p>
+                <!-- Map click hint -->
+                <p id="map-hint"
+                    style="font-size:var(--text-xs);color:var(--color-neutral-400);margin:var(--space-3) 0 0;text-align:center;">
+                    Or click on the map to set points
+                </p>
             </div><!-- /search-panel-body -->
         </div>
 
@@ -292,6 +294,91 @@ require_once __DIR__ . '/../api/config.php';
     <script src="<?= BASE_URL ?>/assets/js/tracking.js"></script>
     <script>
         feather.replace({ 'stroke-width': 1.75 });
+
+        /* ===== Settings panel toggle ===== */
+        (function () {
+            const btn = document.getElementById('settings-btn');
+            const dropdown = document.getElementById('settings-dropdown');
+            let open = false;
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                open = !open;
+                dropdown.classList.toggle('open', open);
+                btn.classList.toggle('active', open);
+            });
+
+            document.addEventListener('click', (e) => {
+                if (open && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+                    open = false;
+                    dropdown.classList.remove('open');
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Toggle handlers
+            document.getElementById('toggle-stops').addEventListener('change', function () {
+                SawariMap.toggleLayer('stops', this.checked);
+            });
+            document.getElementById('toggle-vehicles').addEventListener('change', function () {
+                SawariMap.toggleLayer('vehicles', this.checked);
+            });
+            document.getElementById('toggle-alerts').addEventListener('change', function () {
+                SawariMap.toggleLayer('alerts', this.checked);
+            });
+            document.getElementById('toggle-routes').addEventListener('change', function () {
+                SawariMap.toggleLayer('routes', this.checked);
+            });
+        })();
+
+        /* ===== Search panel collapse (mobile) ===== */
+        (function () {
+            const panel = document.getElementById('search-panel');
+            const body = document.getElementById('search-panel-body');
+            const collapseBtn = document.getElementById('search-collapse-btn');
+            let collapsed = false;
+
+            collapseBtn.addEventListener('click', () => {
+                collapsed = !collapsed;
+                panel.classList.toggle('collapsed', collapsed);
+                const icon = collapseBtn.querySelector('[data-feather], svg');
+                if (icon) {
+                    // Replace the icon
+                    const newIcon = document.createElement('i');
+                    newIcon.setAttribute('data-feather', collapsed ? 'chevron-down' : 'chevron-up');
+                    newIcon.style.width = '18px';
+                    newIcon.style.height = '18px';
+                    icon.replaceWith(newIcon);
+                    feather.replace({ 'stroke-width': 1.75 });
+                }
+            });
+        })();
+
+        /* ===== Result panel peek/expand (mobile) ===== */
+        (function () {
+            const panel = document.getElementById('result-panel');
+            const handle = document.getElementById('result-panel-handle');
+
+            handle.addEventListener('click', () => {
+                if (panel.classList.contains('open')) {
+                    if (panel.classList.contains('expanded')) {
+                        // Expanded → peek
+                        panel.classList.remove('expanded');
+                    } else {
+                        // Peek → close
+                        panel.classList.remove('open');
+                    }
+                }
+            });
+
+            // Tap peek area to expand
+            const peek = document.getElementById('result-panel-peek');
+            peek.addEventListener('click', () => {
+                if (panel.classList.contains('open') && !panel.classList.contains('expanded')) {
+                    panel.classList.add('expanded');
+                }
+            });
+        })();
 
         /* Feedback modal logic */
         (function () {

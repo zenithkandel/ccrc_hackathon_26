@@ -285,8 +285,8 @@ const SawariSearch = (function () {
      * Fetches each route's first stop and places a warning marker there.
      */
     function showAlertMarkers(alerts) {
-        const map = SawariMap.getMap();
-        if (!map) return;
+        const alertLayer = SawariMap.getAlertLayer();
+        if (!alertLayer) return;
 
         alerts.forEach(alert => {
             if (!alert.route_id) return;
@@ -322,7 +322,7 @@ const SawariSearch = (function () {
 
                     L.marker([parseFloat(firstStop.latitude), parseFloat(firstStop.longitude)], { icon })
                         .bindPopup(`<div style="font-family:var(--font-sans);"><strong style="color:${color};">⚠ ${SawariMap.escHtml(alert.title)}</strong><br><span style="font-size:12px;">${SawariMap.escHtml(alert.description || '')}</span>${alert.route_name ? '<br><span style="font-size:11px;color:#64748B;">Route: ' + SawariMap.escHtml(alert.route_name) + '</span>' : ''}</div>`)
-                        .addTo(map);
+                        .addTo(alertLayer);
                 })
                 .catch(() => { });
         });
