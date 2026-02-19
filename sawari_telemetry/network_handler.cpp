@@ -2,27 +2,16 @@
  * ============================================================================
  * SAWARI Bus Telemetry Device - Network Handler Implementation
  * ============================================================================
- * 
+ *
  * WiFi connectivity management using WiFiManager library (tzapu/WiFiManager).
- * 
- * WiFiManager Flow:
- *   1. On boot, WiFiManager checks for saved WiFi credentials in flash.
- *   2. If credentials exist, it attempts to connect to the saved network.
- *   3. If connection fails (or no credentials), it starts an access point
- *      named "SAWARI_SETUP" with a captive portal at 192.168.4.1.
- *   4. The user connects to the AP from their phone/laptop, selects their
- *      WiFi network, enters the password, and the device connects.
- *   5. Credentials are saved in flash for subsequent boots.
- * 
- * HTTP Communication:
- *   - Uses ESP32 HTTPClient to POST JSON telemetry to the server API.
- *   - Includes timeout handling and error logging.
- *   - Returns success/failure so the caller can decide to queue or discard.
- * 
- * Auto-Reconnect:
- *   - If WiFi drops during operation, the handler attempts reconnection
- *     at regular intervals (WIFI_RECONNECT_INTERVAL).
- *   - Data continues to be queued offline during disconnection.
+ *
+ * Features:
+ *   - Auto-connect to saved credentials on boot
+ *   - On-demand captive portal via button press (non-blocking)
+ *   - Auto-close portal when WiFi connects
+ *   - 10-second WiFi availability check interval
+ *   - Offline mode fallback with automatic reconnection
+ *   - HTTP POST telemetry with timeout handling
  * ============================================================================
  */
 
@@ -32,41 +21,34 @@
 #include <HTTPClient.h>
 #include <WiFiManager.h>
 
-// --- Reconnection timing state ---
+// --- WiFiManager instance (persistent for on-demand portal) ---
+static WiFiManager _wm;
+
+// --- State ---
 static unsigned long _lastReconnectAttempt = 0;
 static bool _wasConnected = false;
+static bool _portalActive = false;
 
 /**
  * Initialize WiFi using WiFiManager with captive portal support.
- * 
  * This call is BLOCKING during AP mode — it waits for the user to
  * configure WiFi via the captive portal, up to AP_TIMEOUT seconds.
- * After timeout, execution continues (device operates in offline mode).
  */
 bool networkInit() {
-    WiFiManager wm;
-
-    // Timeout for the captive portal (seconds).
-    // After this, setup() continues regardless of WiFi status
-    // so GPS and offline queuing can still operate.
-    wm.setConfigPortalTimeout(AP_TIMEOUT);
-
-    // Set connection timeout for attempts to saved network
-    wm.setConnectTimeout(15);
-
-    // Clean any previously incomplete connections
-    wm.setCleanConnect(true);
+    _wm.setConfigPortalTimeout(AP_TIMEOUT);
+    _wm.setConnectTimeout(15);
+    _wm.setCleanConnect(true);
 
     Serial.println(F("[NETWORK] Starting WiFiManager..."));
     Serial.print(F("[NETWORK] AP Name: "));
     Serial.println(AP_NAME);
 
-    // autoConnect tries saved credentials first.
-    // If that fails, starts AP with captive portal.
-    bool connected = wm.autoConnect(AP_NAME);
+    bool connected = _wm.autoConnect(AP_NAME);
 
     if (connected) {
         Serial.println(F("[NETWORK] WiFi connected successfully"));
+        Serial.print(F("[NETWORK] SSID: "));
+        Serial.println(WiFi.SSID());
         Serial.print(F("[NETWORK] IP Address: "));
         Serial.println(WiFi.localIP());
         Serial.print(F("[NETWORK] RSSI: "));
@@ -75,7 +57,7 @@ bool networkInit() {
         _wasConnected = true;
     } else {
         Serial.println(F("[NETWORK] WiFi connection failed / portal timed out"));
-        Serial.println(F("[NETWORK] Operating in offline mode (GPS + queue active)"));
+        Serial.println(F("[NETWORK] Operating in offline mode"));
     }
 
     return connected;
@@ -90,13 +72,11 @@ bool networkIsConnected() {
 
 /**
  * Periodically attempt WiFi reconnection if disconnected.
- * Uses cooldown interval to prevent rapid reconnect spam which
- * can destabilize the WiFi stack.
+ * Called every WIFI_CHECK_INTERVAL (10 seconds).
  */
 void networkCheckReconnect() {
     bool currentlyConnected = networkIsConnected();
 
-    // Log state transitions for debugging
     if (_wasConnected && !currentlyConnected) {
         Serial.println(F("[NETWORK] WiFi connection LOST — switching to offline mode"));
         _wasConnected = false;
@@ -108,14 +88,11 @@ void networkCheckReconnect() {
         return;
     }
 
-    // If disconnected, attempt reconnect at regular intervals
-    if (!currentlyConnected) {
+    if (!currentlyConnected && !_portalActive) {
         unsigned long now = millis();
         if (now - _lastReconnectAttempt >= WIFI_RECONNECT_INTERVAL) {
             _lastReconnectAttempt = now;
             Serial.println(F("[NETWORK] Attempting WiFi reconnect..."));
-
-            // WiFi.reconnect() tries to reconnect to the last-used AP
             WiFi.disconnect();
             WiFi.reconnect();
         }
@@ -123,13 +100,74 @@ void networkCheckReconnect() {
 }
 
 /**
+ * Start the WiFiManager captive portal on demand (non-blocking mode).
+ * Called when the user presses the BOOT button.
+ */
+bool networkStartPortal() {
+    if (_portalActive) {
+        Serial.println(F("[NETWORK] Portal already active"));
+        return true;
+    }
+
+    Serial.println(F("[NETWORK] Starting on-demand WiFi portal..."));
+    Serial.print(F("[NETWORK] AP Name: "));
+    Serial.println(AP_NAME);
+
+    // Use non-blocking portal so GPS and other tasks continue running
+    _wm.setConfigPortalBlocking(false);
+    _wm.setConfigPortalTimeout(AP_TIMEOUT);
+
+    _wm.startConfigPortal(AP_NAME);
+    _portalActive = true;
+
+    Serial.println(F("[NETWORK] Portal started at 192.168.4.1"));
+    return true;
+}
+
+/**
+ * Process portal requests — call in loop while portal is active.
+ * Returns true if WiFi got connected through the portal.
+ */
+bool networkPortalLoop() {
+    if (!_portalActive) return false;
+
+    _wm.process();
+
+    // Check if we got connected during portal
+    if (networkIsConnected()) {
+        Serial.println(F("[NETWORK] WiFi connected via portal!"));
+        Serial.print(F("[NETWORK] SSID: "));
+        Serial.println(WiFi.SSID());
+        Serial.print(F("[NETWORK] IP: "));
+        Serial.println(WiFi.localIP());
+        _wasConnected = true;
+        networkStopPortal();
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Stop the captive portal.
+ */
+void networkStopPortal() {
+    if (_portalActive) {
+        _wm.stopConfigPortal();
+        _portalActive = false;
+        Serial.println(F("[NETWORK] WiFi portal stopped"));
+    }
+}
+
+/**
+ * Check if the captive portal is currently active.
+ */
+bool networkIsPortalActive() {
+    return _portalActive;
+}
+
+/**
  * Send a JSON payload to the API endpoint via HTTP POST.
- * 
- * Sets Content-Type to application/json and uses the configured
- * HTTP_TIMEOUT for the request. Returns true only on 2xx responses.
- * 
- * @param json  Complete JSON string to POST
- * @return true if server responded with HTTP 2xx
  */
 bool networkSendData(const String& json) {
     if (!networkIsConnected()) {
@@ -142,11 +180,9 @@ bool networkSendData(const String& json) {
     http.addHeader("Content-Type", "application/json");
     http.setTimeout(HTTP_TIMEOUT);
 
-    // Send HTTP POST request
     int httpCode = http.POST(json);
 
     if (httpCode > 0) {
-        // HTTP response received
         if (httpCode >= 200 && httpCode < 300) {
             Serial.print(F("[NETWORK] POST success (HTTP "));
             Serial.print(httpCode);
@@ -154,14 +190,12 @@ bool networkSendData(const String& json) {
             http.end();
             return true;
         } else {
-            // Server responded with non-success code
             Serial.print(F("[NETWORK] POST failed (HTTP "));
             Serial.print(httpCode);
             Serial.print(F("): "));
-            Serial.println(http.getString().substring(0, 100));  // Truncate response
+            Serial.println(http.getString().substring(0, 100));
         }
     } else {
-        // Connection-level error (timeout, DNS failure, etc.)
         Serial.print(F("[NETWORK] POST error: "));
         Serial.println(http.errorToString(httpCode));
     }
@@ -181,12 +215,28 @@ String networkGetIP() {
 }
 
 /**
+ * Get the portal AP IP address.
+ */
+String networkGetPortalIP() {
+    return "192.168.4.1";
+}
+
+/**
  * Get WiFi signal strength in dBm.
- * Used for visual signal bars on OLED display.
  */
 int networkGetRSSI() {
     if (networkIsConnected()) {
         return WiFi.RSSI();
     }
-    return -100;  // Return very weak signal if not connected
+    return -100;
+}
+
+/**
+ * Get the SSID of the currently connected WiFi network.
+ */
+String networkGetSSID() {
+    if (networkIsConnected()) {
+        return WiFi.SSID();
+    }
+    return "";
 }
