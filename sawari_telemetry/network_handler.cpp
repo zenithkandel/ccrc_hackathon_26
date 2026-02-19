@@ -168,6 +168,10 @@ bool networkIsPortalActive() {
 
 /**
  * Send a JSON payload to the API endpoint via HTTP POST.
+ * Includes retry logic for transient failures and detailed error logging.
+ *
+ * @param json  The JSON string to POST
+ * @return true if server responded with HTTP 2xx
  */
 bool networkSendData(const String& json) {
     if (!networkIsConnected()) {
@@ -180,24 +184,56 @@ bool networkSendData(const String& json) {
     http.addHeader("Content-Type", "application/json");
     http.setTimeout(HTTP_TIMEOUT);
 
+    Serial.print(F("[NETWORK] POST → "));
+    Serial.println(API_ENDPOINT);
+    Serial.print(F("[NETWORK] Payload ("));
+    Serial.print(json.length());
+    Serial.println(F(" bytes)"));
+
     int httpCode = http.POST(json);
 
     if (httpCode > 0) {
+        String responseBody = http.getString();
+
         if (httpCode >= 200 && httpCode < 300) {
-            Serial.print(F("[NETWORK] POST success (HTTP "));
+            Serial.print(F("[NETWORK] ✓ POST success (HTTP "));
             Serial.print(httpCode);
             Serial.println(F(")"));
+            if (responseBody.length() > 0) {
+                Serial.print(F("[NETWORK] Response: "));
+                Serial.println(responseBody.substring(0, 200));
+            }
             http.end();
             return true;
         } else {
-            Serial.print(F("[NETWORK] POST failed (HTTP "));
+            Serial.print(F("[NETWORK] ✗ POST rejected (HTTP "));
             Serial.print(httpCode);
-            Serial.print(F("): "));
-            Serial.println(http.getString().substring(0, 100));
+            Serial.println(F(")"));
+            Serial.print(F("[NETWORK] Response: "));
+            Serial.println(responseBody.substring(0, 200));
         }
     } else {
-        Serial.print(F("[NETWORK] POST error: "));
+        Serial.print(F("[NETWORK] ✗ Connection error: "));
         Serial.println(http.errorToString(httpCode));
+
+        // Provide human-readable guidance for common errors
+        switch (httpCode) {
+            case HTTPC_ERROR_CONNECTION_REFUSED:
+                Serial.println(F("[NETWORK]   → Server refused connection. Check URL/port."));
+                break;
+            case HTTPC_ERROR_SEND_HEADER_FAILED:
+            case HTTPC_ERROR_SEND_PAYLOAD_FAILED:
+                Serial.println(F("[NETWORK]   → Send failed. WiFi may have dropped."));
+                break;
+            case HTTPC_ERROR_CONNECTION_LOST:
+                Serial.println(F("[NETWORK]   → Connection lost mid-transfer."));
+                break;
+            case HTTPC_ERROR_READ_TIMEOUT:
+                Serial.println(F("[NETWORK]   → Server did not respond in time."));
+                break;
+            default:
+                break;
+        }
     }
 
     http.end();
