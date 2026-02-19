@@ -32,6 +32,14 @@ const SawariMap = (function () {
     // State: which point are we setting next? ('a' or 'b')
     let nextPoint = 'a';
 
+    // Pin-pick mode target (null, 'a', or 'b')
+    let pinPickTarget = null;
+
+    // My Location state
+    let myLocationMarker = null;
+    let myLocationCircle = null;
+    let myLocationWatcher = null;
+
     // Custom icons — unique SVG-based markers
     const iconA = L.divIcon({
         className: 'marker-icon-a',
@@ -132,13 +140,30 @@ const SawariMap = (function () {
     function onMapClick(e) {
         const { lat, lng } = e.latlng;
 
-        if (nextPoint === 'a') {
-            setPointA(lat, lng, 'Selected location');
-            nextPoint = 'b';
-        } else {
-            setPointB(lat, lng, 'Selected location');
-            nextPoint = 'a';
+        if (pinPickTarget) {
+            const which = pinPickTarget;
+            cancelPinPick();
+            reverseGeocode(lat, lng).then(name => {
+                if (which === 'a') {
+                    setPointA(lat, lng, name);
+                    nextPoint = 'b';
+                } else {
+                    setPointB(lat, lng, name);
+                    nextPoint = 'a';
+                }
+            });
+            return;
         }
+
+        reverseGeocode(lat, lng).then(name => {
+            if (nextPoint === 'a') {
+                setPointA(lat, lng, name);
+                nextPoint = 'b';
+            } else {
+                setPointB(lat, lng, name);
+                nextPoint = 'a';
+            }
+        });
     }
 
     function setPointA(lat, lng, name) {
@@ -149,10 +174,12 @@ const SawariMap = (function () {
 
         markerA.on('dragend', function () {
             const pos = markerA.getLatLng();
-            // Update input if search.js is available
-            if (window.SawariSearch) {
-                SawariSearch.setInputA(pos.lat, pos.lng, 'Dropped pin');
-            }
+            reverseGeocode(pos.lat, pos.lng).then(name => {
+                if (window.SawariSearch) {
+                    SawariSearch.setInputA(pos.lat, pos.lng, name);
+                }
+                markerA.setPopupContent('Start: ' + escHtml(name));
+            });
         });
 
         // Update input
@@ -172,9 +199,12 @@ const SawariMap = (function () {
 
         markerB.on('dragend', function () {
             const pos = markerB.getLatLng();
-            if (window.SawariSearch) {
-                SawariSearch.setInputB(pos.lat, pos.lng, 'Dropped pin');
-            }
+            reverseGeocode(pos.lat, pos.lng).then(name => {
+                if (window.SawariSearch) {
+                    SawariSearch.setInputB(pos.lat, pos.lng, name);
+                }
+                markerB.setPopupContent('Destination: ' + escHtml(name));
+            });
         });
 
         const inputB = document.getElementById('input-b');
@@ -224,7 +254,155 @@ const SawariMap = (function () {
     }
 
     /* ──────────────────────────────────────────────
-     *  Geolocation
+     *  Reverse Geocoding (Nominatim)
+     * ────────────────────────────────────────────── */
+    function reverseGeocode(lat, lng) {
+        return fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1`, {
+            headers: { 'Accept-Language': 'en' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data && data.display_name) {
+                const parts = data.display_name.split(',').slice(0, 3);
+                return parts.map(p => p.trim()).join(', ');
+            }
+            return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        })
+        .catch(() => `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Pin-Pick Mode
+     * ────────────────────────────────────────────── */
+    function startPinPick(which) {
+        pinPickTarget = which;
+        document.getElementById('map').classList.add('pin-pick-active');
+        const banner = document.getElementById('pin-pick-banner');
+        const text = document.getElementById('pin-pick-text');
+        text.textContent = which === 'a'
+            ? 'Tap the map to set your starting point'
+            : 'Tap the map to set your destination';
+        banner.style.display = '';
+        feather.replace({ 'stroke-width': 1.75 });
+
+        // Highlight active pin button
+        document.querySelectorAll('.pin-pick-btn').forEach(b => b.classList.remove('active'));
+        const btn = document.getElementById('pin-' + which);
+        if (btn) btn.classList.add('active');
+
+        // On mobile, collapse search to show more map
+        if (window.innerWidth <= 640) {
+            const panel = document.getElementById('search-panel');
+            if (!panel.classList.contains('collapsed')) {
+                panel.classList.add('collapsed');
+                const collapseBtn = document.getElementById('search-collapse-btn');
+                const icon = collapseBtn.querySelector('[data-feather], svg');
+                if (icon) {
+                    const newIcon = document.createElement('i');
+                    newIcon.setAttribute('data-feather', 'chevron-down');
+                    newIcon.style.width = '18px';
+                    newIcon.style.height = '18px';
+                    icon.replaceWith(newIcon);
+                    feather.replace({ 'stroke-width': 1.75 });
+                }
+            }
+        }
+    }
+
+    function cancelPinPick() {
+        pinPickTarget = null;
+        document.getElementById('map').classList.remove('pin-pick-active');
+        document.getElementById('pin-pick-banner').style.display = 'none';
+        document.querySelectorAll('.pin-pick-btn').forEach(b => b.classList.remove('active'));
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Swap Points A ↔ B
+     * ────────────────────────────────────────────── */
+    function swapPoints() {
+        const inputA = document.getElementById('input-a');
+        const inputB = document.getElementById('input-b');
+
+        const aVal = inputA.value;
+        const aLat = inputA.dataset.lat;
+        const aLng = inputA.dataset.lng;
+        const bVal = inputB.value;
+        const bLat = inputB.dataset.lat;
+        const bLng = inputB.dataset.lng;
+
+        // Clear both
+        clearPointA();
+        clearPointB();
+
+        // Set swapped
+        if (bLat && bLng) {
+            setPointA(parseFloat(bLat), parseFloat(bLng), bVal);
+        }
+        if (aLat && aLng) {
+            setPointB(parseFloat(aLat), parseFloat(aLng), aVal);
+        }
+    }
+
+    /* ──────────────────────────────────────────────
+     *  My Location (persistent blue dot)
+     * ────────────────────────────────────────────── */
+    function toggleMyLocation(show) {
+        if (show) {
+            if (!navigator.geolocation) {
+                showToast('Geolocation is not supported by your browser.', 'warning');
+                return;
+            }
+            myLocationWatcher = navigator.geolocation.watchPosition(
+                pos => {
+                    const { latitude, longitude, accuracy } = pos.coords;
+                    const latlng = [latitude, longitude];
+
+                    if (myLocationMarker) {
+                        myLocationMarker.setLatLng(latlng);
+                        myLocationCircle.setLatLng(latlng);
+                        myLocationCircle.setRadius(Math.min(accuracy, 500));
+                    } else {
+                        const myIcon = L.divIcon({
+                            className: 'my-location-marker',
+                            html: '<div class="my-location-dot"><div class="my-location-pulse"></div></div>',
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        });
+                        myLocationMarker = L.marker(latlng, { icon: myIcon, interactive: false, zIndexOffset: 1000 }).addTo(map);
+                        myLocationCircle = L.circle(latlng, {
+                            radius: Math.min(accuracy, 500),
+                            color: '#3B82F6',
+                            fillColor: '#3B82F6',
+                            fillOpacity: 0.08,
+                            weight: 1,
+                            interactive: false
+                        }).addTo(map);
+                        map.setView(latlng, 15);
+                    }
+                },
+                () => {
+                    showToast('Could not track your location.', 'warning');
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+            );
+        } else {
+            if (myLocationWatcher !== null) {
+                navigator.geolocation.clearWatch(myLocationWatcher);
+                myLocationWatcher = null;
+            }
+            if (myLocationMarker) {
+                map.removeLayer(myLocationMarker);
+                myLocationMarker = null;
+            }
+            if (myLocationCircle) {
+                map.removeLayer(myLocationCircle);
+                myLocationCircle = null;
+            }
+        }
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Geolocation (one-shot, sets Point A)
      * ────────────────────────────────────────────── */
     function locateUser() {
         if (!navigator.geolocation) {
@@ -410,6 +588,11 @@ const SawariMap = (function () {
         showToast,
         checkFindRouteReady,
         escHtml,
+        startPinPick,
+        cancelPinPick,
+        swapPoints,
+        toggleMyLocation,
+        reverseGeocode,
         BASE
     };
 })();

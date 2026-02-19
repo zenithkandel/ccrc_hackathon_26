@@ -44,6 +44,17 @@ require_once __DIR__ . '/../api/config.php';
     <!-- ===== Map Container ===== -->
     <div class="map-container" id="map"></div>
 
+    <!-- ===== Pin-Pick Mode Banner ===== -->
+    <div class="pin-pick-banner" id="pin-pick-banner" style="display:none;">
+        <div class="pin-pick-banner-content">
+            <i data-feather="crosshair" style="width:16px;height:16px;flex-shrink:0;"></i>
+            <span id="pin-pick-text">Tap the map to set your starting point</span>
+            <button class="btn btn-ghost btn-icon btn-xs" id="pin-pick-cancel" title="Cancel">
+                <i data-feather="x" style="width:14px;height:14px;"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- ===== Settings Panel (top-right gear) ===== -->
     <div class="settings-fab" id="settings-fab">
         <button class="settings-fab-btn" id="settings-btn" title="Map settings">
@@ -51,6 +62,11 @@ require_once __DIR__ . '/../api/config.php';
         </button>
         <div class="settings-dropdown" id="settings-dropdown">
             <div class="settings-dropdown-header">Map Layers</div>
+            <label class="settings-toggle">
+                <input type="checkbox" id="toggle-my-location">
+                <span class="settings-toggle-slider"></span>
+                <span class="settings-toggle-label">My Location</span>
+            </label>
             <label class="settings-toggle">
                 <input type="checkbox" id="toggle-stops" checked>
                 <span class="settings-toggle-slider"></span>
@@ -113,13 +129,19 @@ require_once __DIR__ . '/../api/config.php';
                                 autocomplete="off">
                             <div class="search-results" id="results-a"></div>
                         </div>
+                        <button class="btn btn-ghost btn-icon btn-sm pin-pick-btn" id="pin-a" title="Pick on map">
+                            <i data-feather="map-pin" style="width:15px;height:15px;"></i>
+                        </button>
                         <button class="btn btn-ghost btn-icon btn-sm" id="clear-a" title="Clear" style="display:none;">
                             <i data-feather="x" style="width:14px;height:14px;"></i>
                         </button>
                     </div>
 
-                    <div style="display:flex;align-items:center;gap:var(--space-3);">
+                    <div class="search-panel-swap-row">
                         <div class="search-panel-connector"></div>
+                        <button class="btn btn-ghost btn-icon btn-xs swap-btn" id="swap-btn" title="Swap A ↔ B">
+                            <i data-feather="repeat" style="width:14px;height:14px;"></i>
+                        </button>
                     </div>
 
                     <div class="search-panel-input-row">
@@ -129,6 +151,9 @@ require_once __DIR__ . '/../api/config.php';
                                 autocomplete="off">
                             <div class="search-results" id="results-b"></div>
                         </div>
+                        <button class="btn btn-ghost btn-icon btn-sm pin-pick-btn" id="pin-b" title="Pick on map">
+                            <i data-feather="map-pin" style="width:15px;height:15px;"></i>
+                        </button>
                         <button class="btn btn-ghost btn-icon btn-sm" id="clear-b" title="Clear" style="display:none;">
                             <i data-feather="x" style="width:14px;height:14px;"></i>
                         </button>
@@ -146,7 +171,7 @@ require_once __DIR__ . '/../api/config.php';
                 <!-- Map click hint -->
                 <p id="map-hint"
                     style="font-size:var(--text-xs);color:var(--color-neutral-400);margin:var(--space-3) 0 0;text-align:center;">
-                    Or click on the map to set points
+                    Use <i data-feather="map-pin" style="width:12px;height:12px;vertical-align:middle;"></i> to pick on map, or type to search
                 </p>
             </div><!-- /search-panel-body -->
         </div>
@@ -352,6 +377,17 @@ require_once __DIR__ . '/../api/config.php';
             document.getElementById('toggle-routes').addEventListener('change', function () {
                 SawariMap.toggleLayer('routes', this.checked);
             });
+            document.getElementById('toggle-my-location').addEventListener('change', function () {
+                SawariMap.toggleMyLocation(this.checked);
+            });
+        })();
+
+        /* ===== Pin-pick mode & swap ===== */
+        (function () {
+            document.getElementById('pin-a').addEventListener('click', () => SawariMap.startPinPick('a'));
+            document.getElementById('pin-b').addEventListener('click', () => SawariMap.startPinPick('b'));
+            document.getElementById('pin-pick-cancel').addEventListener('click', () => SawariMap.cancelPinPick());
+            document.getElementById('swap-btn').addEventListener('click', () => SawariMap.swapPoints());
         })();
 
         /* ===== Search panel collapse (mobile) ===== */

@@ -99,68 +99,213 @@ const SawariSearch = (function () {
     }
 
     function onFocus(which) {
+        const input = which === 'a' ? inputA : inputB;
         const container = which === 'a' ? resultsA : resultsB;
+
+        // If input is empty, show "Use current location" quick option
+        if (!input.value.trim()) {
+            showQuickOptions(which);
+            return;
+        }
+
         // If there are already results, show them
         if (container.children.length > 0) {
             container.classList.add('open');
         }
     }
 
+    /**
+     * Show quick-pick options when input is focused but empty.
+     */
+    function showQuickOptions(which) {
+        const container = which === 'a' ? resultsA : resultsB;
+        container.innerHTML = '';
+
+        // "Use current location" option
+        const locItem = document.createElement('div');
+        locItem.className = 'search-result-item search-result-location';
+        locItem.innerHTML = `
+            <i data-feather="navigation" style="width:16px;height:16px;color:var(--color-primary-500);flex-shrink:0;"></i>
+            <div>
+                <div style="font-size:var(--text-sm);color:var(--color-primary-600);font-weight:500;">Use current location</div>
+                <div style="font-size:var(--text-xs);color:var(--color-neutral-400);">GPS</div>
+            </div>
+        `;
+        locItem.addEventListener('click', () => useCurrentLocation(which));
+        container.appendChild(locItem);
+
+        // "Pick on map" option
+        const pinItem = document.createElement('div');
+        pinItem.className = 'search-result-item search-result-location';
+        pinItem.innerHTML = `
+            <i data-feather="map-pin" style="width:16px;height:16px;color:var(--color-accent-600);flex-shrink:0;"></i>
+            <div>
+                <div style="font-size:var(--text-sm);color:var(--color-accent-600);font-weight:500;">Pick on map</div>
+                <div style="font-size:var(--text-xs);color:var(--color-neutral-400);">Tap to place pin</div>
+            </div>
+        `;
+        pinItem.addEventListener('click', () => {
+            closeResults(which);
+            SawariMap.startPinPick(which);
+        });
+        container.appendChild(pinItem);
+
+        container.classList.add('open');
+        feather.replace({ 'stroke-width': 1.75 });
+    }
+
+    /**
+     * Use device GPS to set a point.
+     */
+    function useCurrentLocation(which) {
+        if (!navigator.geolocation) {
+            SawariMap.showToast('Geolocation not supported by your browser.', 'warning');
+            return;
+        }
+        closeResults(which);
+        SawariMap.showToast('Getting your location...', 'info');
+
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                const { latitude, longitude } = pos.coords;
+                if (which === 'a') {
+                    SawariMap.setPointA(latitude, longitude, 'My Location');
+                } else {
+                    SawariMap.setPointB(latitude, longitude, 'My Location');
+                }
+                SawariMap.getMap().setView([latitude, longitude], 15);
+            },
+            () => {
+                SawariMap.showToast('Could not get your location. Please allow location access.', 'warning');
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    }
+
     /* ──────────────────────────────────────────────
-     *  Search API call
+     *  Search — DB first, Nominatim fallback
      * ────────────────────────────────────────────── */
     function searchLocations(query, which) {
-        fetch(BASE + '/api/locations.php?action=search&q=' + encodeURIComponent(query))
+        // 1. Search our local database first
+        const dbPromise = fetch(BASE + '/api/locations.php?action=search&q=' + encodeURIComponent(query))
             .then(r => {
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 return r.json();
             })
-            .then(data => {
-                if (!data.success || !data.locations) return;
-                renderResults(data.locations, which);
-            })
-            .catch(err => {
-                console.error('Search error:', err);
-            });
+            .then(data => (data.success && data.locations) ? data.locations : [])
+            .catch(() => []);
+
+        dbPromise.then(dbResults => {
+            // If we have enough DB results, just show them
+            if (dbResults.length >= 3) {
+                renderResults(dbResults, [], which);
+                return;
+            }
+
+            // 2. Also search Nominatim for broader results (bounded to Nepal)
+            const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&countrycodes=np&viewbox=80.0,26.3,88.2,30.5&bounded=1`;
+
+            fetch(nominatimUrl, { headers: { 'Accept-Language': 'en' } })
+                .then(r => r.json())
+                .then(onlineResults => {
+                    const mapped = onlineResults.map(r => ({
+                        name: r.display_name.split(',').slice(0, 2).join(', ').trim(),
+                        latitude: r.lat,
+                        longitude: r.lon,
+                        type: r.type || 'place',
+                        source: 'online',
+                        full_name: r.display_name
+                    }));
+                    renderResults(dbResults, mapped, which);
+                })
+                .catch(() => {
+                    renderResults(dbResults, [], which);
+                });
+        });
     }
 
     /* ──────────────────────────────────────────────
-     *  Render search results dropdown
+     *  Render search results (grouped: DB + online)
      * ────────────────────────────────────────────── */
-    function renderResults(locations, which) {
+    function renderResults(dbLocations, onlineLocations, which) {
         const container = which === 'a' ? resultsA : resultsB;
         container.innerHTML = '';
 
-        if (locations.length === 0) {
-            container.innerHTML = '<div style="padding:var(--space-4);text-align:center;font-size:var(--text-sm);color:var(--color-neutral-400);">No locations found</div>';
+        if (dbLocations.length === 0 && onlineLocations.length === 0) {
+            container.innerHTML = `
+                <div style="padding:var(--space-4);text-align:center;">
+                    <div style="font-size:var(--text-sm);color:var(--color-neutral-400);margin-bottom:var(--space-2);">No locations found</div>
+                    <div class="search-result-item search-result-location" id="pick-from-map-${which}" style="justify-content:center;">
+                        <i data-feather="map-pin" style="width:14px;height:14px;color:var(--color-accent-600);"></i>
+                        <span style="font-size:var(--text-sm);color:var(--color-accent-600);font-weight:500;">Pick on map instead</span>
+                    </div>
+                </div>`;
             container.classList.add('open');
+            // Bind pick-on-map click
+            document.getElementById('pick-from-map-' + which).addEventListener('click', () => {
+                closeResults(which);
+                SawariMap.startPinPick(which);
+            });
+            feather.replace({ 'stroke-width': 1.75 });
             return;
         }
 
-        locations.forEach((loc, idx) => {
-            const item = document.createElement('div');
-            item.className = 'search-result-item';
-            item.dataset.index = idx;
-            item.dataset.id = loc.location_id;
-            item.dataset.lat = loc.latitude;
-            item.dataset.lng = loc.longitude;
-            item.dataset.name = loc.name;
+        // DB results group
+        if (dbLocations.length > 0) {
+            const header = document.createElement('div');
+            header.className = 'search-result-group';
+            header.textContent = 'Bus Stops';
+            container.appendChild(header);
 
-            const typeIcon = loc.type === 'landmark' ? 'map-pin' : 'circle';
-            item.innerHTML = `
-                <i data-feather="${typeIcon}" style="width:16px;height:16px;color:var(--color-neutral-400);flex-shrink:0;"></i>
-                <div>
-                    <div style="font-size:var(--text-sm);color:var(--color-neutral-800);">${SawariMap.escHtml(loc.name)}</div>
-                    <div style="font-size:var(--text-xs);color:var(--color-neutral-400);">${SawariMap.escHtml(loc.type)}</div>
-                </div>
-            `;
+            dbLocations.forEach((loc, idx) => {
+                const item = createResultItem(loc, which, idx, 'db');
+                container.appendChild(item);
+            });
+        }
 
-            item.addEventListener('click', () => selectResult(loc, which));
-            container.appendChild(item);
-        });
+        // Online results group
+        if (onlineLocations.length > 0) {
+            const header = document.createElement('div');
+            header.className = 'search-result-group';
+            header.textContent = 'Other Places';
+            container.appendChild(header);
+
+            onlineLocations.forEach((loc, idx) => {
+                const item = createResultItem(loc, which, dbLocations.length + idx, 'online');
+                container.appendChild(item);
+            });
+        }
 
         container.classList.add('open');
         feather.replace({ 'stroke-width': 1.75 });
+    }
+
+    /**
+     * Create a single result item element.
+     */
+    function createResultItem(loc, which, idx, source) {
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
+        item.dataset.index = idx;
+        item.dataset.lat = loc.latitude;
+        item.dataset.lng = loc.longitude;
+        item.dataset.name = loc.name;
+
+        const isOnline = source === 'online';
+        const typeIcon = isOnline ? 'globe' : (loc.type === 'landmark' ? 'map-pin' : 'circle');
+        const typeBadge = isOnline ? loc.type : loc.type;
+
+        item.innerHTML = `
+            <i data-feather="${typeIcon}" style="width:16px;height:16px;color:var(--color-neutral-400);flex-shrink:0;"></i>
+            <div style="min-width:0;flex:1;">
+                <div style="font-size:var(--text-sm);color:var(--color-neutral-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${SawariMap.escHtml(loc.name)}</div>
+                <div style="font-size:var(--text-xs);color:var(--color-neutral-400);">${SawariMap.escHtml(typeBadge)}${isOnline && loc.full_name ? ' · ' + SawariMap.escHtml(loc.full_name.split(',').slice(2, 4).join(',').trim()) : ''}</div>
+            </div>
+            ${isOnline ? '<span class="search-result-source">web</span>' : ''}
+        `;
+
+        item.addEventListener('click', () => selectResult(loc, which));
+        return item;
     }
 
     /* ──────────────────────────────────────────────
