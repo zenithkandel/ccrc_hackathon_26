@@ -53,9 +53,16 @@ require_once __DIR__ . '/../api/config.php';
                         style="font-size:var(--text-lg);font-weight:var(--font-bold);color:var(--color-neutral-900);letter-spacing:var(--tracking-tight);">Sawari</span>
                     <span class="badge badge-accent" style="font-size:10px;">Beta</span>
                 </div>
-                <button class="btn btn-ghost btn-icon btn-sm" id="locate-btn" title="My Location">
-                    <i data-feather="crosshair" style="width:18px;height:18px;"></i>
-                </button>
+                <div style="display:flex;gap:var(--space-1);">
+                    <button class="btn btn-ghost btn-icon btn-sm" id="tracking-toggle" title="Live tracking"
+                        style="position:relative;">
+                        <i data-feather="radio" style="width:18px;height:18px;"></i>
+                        <span id="tracking-count" class="tracking-badge" style="display:none;"></span>
+                    </button>
+                    <button class="btn btn-ghost btn-icon btn-sm" id="locate-btn" title="My Location">
+                        <i data-feather="crosshair" style="width:18px;height:18px;"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Search Inputs -->
@@ -137,6 +144,7 @@ require_once __DIR__ . '/../api/config.php';
     <script src="<?= BASE_URL ?>/assets/js/map.js"></script>
     <script src="<?= BASE_URL ?>/assets/js/search.js"></script>
     <script src="<?= BASE_URL ?>/assets/js/routing.js"></script>
+    <script src="<?= BASE_URL ?>/assets/js/tracking.js"></script>
     <script>
         feather.replace({ 'stroke-width': 1.75 });
     </script>

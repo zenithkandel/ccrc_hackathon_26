@@ -299,6 +299,85 @@
 }
 
 
+/* --- Live Tracking Styles --- */
+
+/* Tracking toggle button active state */
+.tracking-active {
+    color: var(--color-accent-600) !important;
+    background: var(--color-accent-50) !important;
+}
+
+/* Live vehicle count badge */
+.tracking-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 10px;
+    font-weight: var(--font-bold);
+    line-height: 16px;
+    text-align: center;
+    color: var(--color-white);
+    background: var(--color-accent-600);
+    border-radius: var(--radius-full);
+}
+
+/* Approaching stop — pulsing ring animation */
+.marker-vehicle-approaching {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+.marker-vehicle-pulse {
+    width: 16px;
+    height: 16px;
+    background: var(--color-accent-600);
+    border: 2px solid var(--color-white);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-md);
+    position: relative;
+}
+
+.marker-vehicle-pulse::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border: 2px solid var(--color-accent-400);
+    border-radius: var(--radius-full);
+    animation: vehiclePulse 1.5s ease-out infinite;
+}
+
+@keyframes vehiclePulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1.8);
+        opacity: 0;
+    }
+}
+
+/* Vehicle tooltip override */
+.vehicle-tooltip {
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    padding: var(--space-1) var(--space-2);
+    background: var(--color-neutral-800);
+    color: var(--color-white);
+    border: none;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.vehicle-tooltip::before {
+    border-top-color: var(--color-neutral-800);
+}
+
+
 /* --- Mobile Responsive --- */
 
 @media (max-width: 640px) {

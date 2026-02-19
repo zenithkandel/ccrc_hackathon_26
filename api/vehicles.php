@@ -317,13 +317,16 @@ switch ($action) {
         $lng = isset($_POST['longitude']) ? floatval($_POST['longitude']) : null;
         $vel = isset($_POST['velocity']) ? floatval($_POST['velocity']) : null;
 
-        if (!$vehicleId) jsonError('Vehicle ID required.');
-        if (!$lat || !$lng) jsonError('Latitude and longitude required.');
+        if (!$vehicleId)
+            jsonError('Vehicle ID required.');
+        if (!$lat || !$lng)
+            jsonError('Latitude and longitude required.');
 
         // Verify vehicle exists and is approved
         $check = $db->prepare("SELECT vehicle_id FROM vehicles WHERE vehicle_id = :id AND status = 'approved'");
         $check->execute([':id' => $vehicleId]);
-        if (!$check->fetch()) jsonError('Vehicle not found or not approved.', 404);
+        if (!$check->fetch())
+            jsonError('Vehicle not found or not approved.', 404);
 
         $stmt = $db->prepare("UPDATE vehicles
                               SET latitude = :lat, longitude = :lng, velocity = :vel,
@@ -403,7 +406,8 @@ switch ($action) {
     case 'gps_stop':
         $db = getDB();
         $vehicleId = postInt('vehicle_id');
-        if (!$vehicleId) jsonError('Vehicle ID required.');
+        if (!$vehicleId)
+            jsonError('Vehicle ID required.');
 
         $stmt = $db->prepare("UPDATE vehicles SET gps_active = 0 WHERE vehicle_id = :id");
         $stmt->execute([':id' => $vehicleId]);
@@ -421,14 +425,15 @@ switch ($action) {
  */
 function findApproachingStop(float $vLat, float $vLng, array $stops): ?array
 {
-    if (empty($stops)) return null;
+    if (empty($stops))
+        return null;
 
     $closestIdx = 0;
     $closestDist = PHP_FLOAT_MAX;
 
     // Find the closest stop to the vehicle
     foreach ($stops as $i => $s) {
-        $d = haversineVehicle($vLat, $vLng, (float)$s['latitude'], (float)$s['longitude']);
+        $d = haversineVehicle($vLat, $vLng, (float) $s['latitude'], (float) $s['longitude']);
         if ($d < $closestDist) {
             $closestDist = $d;
             $closestIdx = $i;
@@ -448,13 +453,13 @@ function findApproachingStop(float $vLat, float $vLng, array $stops): ?array
     }
 
     $approachStop = $stops[$approachIdx];
-    $distToApproach = haversineVehicle($vLat, $vLng, (float)$approachStop['latitude'], (float)$approachStop['longitude']);
+    $distToApproach = haversineVehicle($vLat, $vLng, (float) $approachStop['latitude'], (float) $approachStop['longitude']);
 
     return [
-        'location_id' => (int)$approachStop['location_id'],
+        'location_id' => (int) $approachStop['location_id'],
         'name' => $approachStop['name'],
-        'lat' => (float)$approachStop['latitude'],
-        'lng' => (float)$approachStop['longitude'],
+        'lat' => (float) $approachStop['latitude'],
+        'lng' => (float) $approachStop['longitude'],
         'distance_km' => round($distToApproach, 3),
         'stop_index' => $approachIdx,
         'is_last_stop' => ($approachIdx === count($stops) - 1)
