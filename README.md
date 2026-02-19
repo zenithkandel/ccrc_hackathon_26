@@ -34,7 +34,7 @@ Sawari is a web-based public transport navigation system for Kathmandu Valley, N
 ### 1. Clone / Copy to XAMPP
 
 ```
-Copy the project folder to: c:\xampp\htdocs\test_sawari\
+Copy the project folder to: c:\xampp\htdocs\CCRC\
 ```
 
 ### 2. Start XAMPP Services
@@ -47,10 +47,10 @@ Open phpMyAdmin (`http://localhost/phpmyadmin`) or use MySQL CLI:
 
 ```sql
 -- Run schema.sql to create the database and tables
-SOURCE c:/xampp/htdocs/test_sawari/schema.sql;
+SOURCE c:/xampp/htdocs/CCRC/schema.sql;
 
 -- Run indexes.sql for performance indexes
-SOURCE c:/xampp/htdocs/test_sawari/indexes.sql;
+SOURCE c:/xampp/htdocs/CCRC/indexes.sql;
 ```
 
 ### 4. Seed Sample Data
@@ -59,14 +59,14 @@ SOURCE c:/xampp/htdocs/test_sawari/indexes.sql;
 php seed.php
 ```
 
-Or visit: `http://localhost/test_sawari/seed.php`
+Or visit: `http://localhost/CCRC/seed.php`
 
 ### 5. Access the Application
 
-- **Landing Page:** http://localhost/test_sawari/
-- **Map / Route Finder:** http://localhost/test_sawari/pages/map.php
-- **Admin Login:** http://localhost/test_sawari/pages/auth/login.php
-- **Agent Registration:** http://localhost/test_sawari/pages/auth/register.php
+- **Landing Page:** http://localhost/CCRC/
+- **Map / Route Finder:** http://localhost/CCRC/pages/map.php
+- **Admin Login:** http://localhost/CCRC/pages/auth/login.php
+- **Agent Registration:** http://localhost/CCRC/pages/auth/register.php
 
 ## Default Accounts
 
@@ -82,7 +82,7 @@ Or visit: `http://localhost/test_sawari/seed.php`
 ## Project Structure
 
 ```
-test_sawari/
+CCRC/
 ├── algorithms/          # Route-finding engine
 │   ├── dijkstra.php     # Modified Dijkstra with transfer penalties
 │   ├── graph.php        # Transit graph construction
