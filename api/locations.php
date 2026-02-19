@@ -202,7 +202,7 @@ switch ($action) {
         $stmt->execute([':admin' => getAdminId(), ':id' => $id]);
 
         // Update linked contribution
-        $db->prepare("UPDATE contributions SET status = 'rejected', reviewed_by = :admin, reviewed_at = NOW(), admin_note = :reason
+        $db->prepare("UPDATE contributions SET status = 'rejected', reviewed_by = :admin, reviewed_at = NOW(), rejection_reason = :reason
                       WHERE contribution_id = (SELECT contribution_id FROM locations WHERE location_id = :id)")
             ->execute([':admin' => getAdminId(), ':id' => $id, ':reason' => $reason]);
 

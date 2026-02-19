@@ -157,8 +157,8 @@ require_once __DIR__ . '/../../includes/admin-header.php';
                 if (c.notes) {
                     body += '<div style="margin-bottom:var(--space-3);"><span class="text-muted" style="font-size:var(--text-xs);">Agent Notes</span><br>' + Sawari.escape(c.notes) + '</div>';
                 }
-                if (c.admin_note) {
-                    body += '<div style="margin-bottom:var(--space-3);"><span class="text-muted" style="font-size:var(--text-xs);">Admin Note</span><br>' + Sawari.escape(c.admin_note) + '</div>';
+                if (c.rejection_reason) {
+                    body += '<div style="margin-bottom:var(--space-3);"><span class="text-muted" style="font-size:var(--text-xs);">Rejection Reason</span><br>' + Sawari.escape(c.rejection_reason) + '</div>';
                 }
 
                 if (item) {

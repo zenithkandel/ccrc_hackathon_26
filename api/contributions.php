@@ -6,7 +6,7 @@
  *   list     – GET  – Paginated list with status/type/agent filters
  *   get      – GET  – Single contribution with linked item details
  *   approve  – POST – Approve contribution (updates linked item)
- *   reject   – POST – Reject with admin_note
+ *   reject   – POST – Reject with rejection_reason
  */
 
 require_once __DIR__ . '/config.php';
