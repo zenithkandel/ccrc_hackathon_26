@@ -5,9 +5,14 @@
  */
 
 const SawariUtils = (() => {
-    // Base URL (set from PHP, fallback for standalone use)
+    // Base URL — read from <meta name="base-url"> set by PHP header.
+    // Fallback: derive from the utils.js script tag's own src path.
     const BASE_URL = document.querySelector('meta[name="base-url"]')?.content
-        || window.location.origin + '/test_sawari';
+        || (() => {
+            const s = document.querySelector('script[src$="assets/js/utils.js"]');
+            if (s) return s.getAttribute('src').replace(/\/assets\/js\/utils\.js.*$/, '');
+            return '';
+        })();
 
     /**
      * Wrapper around fetch() with common defaults.

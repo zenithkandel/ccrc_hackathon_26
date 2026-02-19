@@ -27,6 +27,7 @@ $bodyClass = $bodyClass ?? '';
     <meta name="description"
         content="Sawari helps you navigate Nepal's public transportation system. Find bus routes, fares, and directions.">
     <meta name="theme-color" content="#2563eb">
+    <meta name="base-url" content="<?= BASE_URL ?>">
     <title><?= sanitize($pageTitle) ?></title>
 
     <!-- Font Awesome Premium v7.1.0 -->

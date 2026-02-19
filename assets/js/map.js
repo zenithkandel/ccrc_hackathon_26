@@ -11,7 +11,6 @@ const SawariMap = (function () {
     'use strict';
 
     const CONFIG = window.SAWARI_MAP_CONFIG || {};
-    const BASE_URL = CONFIG.baseUrl || '';
 
     let map = null;
     let stopsLayer = null;
@@ -95,7 +94,7 @@ const SawariMap = (function () {
 
     // ─── Load All Approved Stops ────────────────────────────
     function loadStops() {
-        SawariUtils.apiFetch(BASE_URL + '/api/locations/read.php?status=approved&limit=500')
+        SawariUtils.apiFetch('api/locations/read.php?status=approved&limit=500')
             .then(function (data) {
                 if (!data || !data.data) return;
                 data.data.forEach(function (loc) {
@@ -539,7 +538,7 @@ const SawariMap = (function () {
             var btn = document.getElementById('btnSubmitFeedback');
             btn.disabled = true; btn.textContent = 'Submitting...';
 
-            SawariUtils.apiFetch(BASE_URL + '/api/suggestions/create.php', {
+            SawariUtils.apiFetch('api/suggestions/create.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: fd.toString()

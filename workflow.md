@@ -232,7 +232,7 @@ Create the database connection file using **PDO** (not mysqli — PDO is more se
 
 **Define:**
 
-- `BASE_URL` — e.g., `http://localhost/test_sawari`
+- `BASE_URL` — auto-detected from `DOCUMENT_ROOT` (e.g., `/CCRC`)
 - `BASE_PATH` — absolute file system path to project root
 - `UPLOAD_DIR` — path to `assets/images/uploads/`
 - `MAX_UPLOAD_SIZE` — 5MB

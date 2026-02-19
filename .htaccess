@@ -18,7 +18,7 @@ Options -Indexes
 # Enable URL rewriting (if needed in future)
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /test_sawari/
+    # RewriteBase is auto-detected — no hardcoded path needed
 </IfModule>
 
 # Set default charset
