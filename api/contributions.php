@@ -205,6 +205,66 @@ switch ($action) {
         jsonSuccess('Contribution rejected.');
         break;
 
+    /* ══════════════════════════════════════════════════════
+     *  AGENT ENDPOINTS
+     * ══════════════════════════════════════════════════════ */
+
+    /* ── My Contributions (Agent) ────────────────────────── */
+    case 'my-list':
+        requireAgentAPI();
+        $db = getDB();
+
+        $where = ['c.agent_id = :agent_id'];
+        $params = [':agent_id' => getAgentId()];
+
+        $status = getString('status');
+        if ($status && in_array($status, ['pending', 'approved', 'rejected'])) {
+            $where[] = 'c.status = :status';
+            $params[':status'] = $status;
+        }
+
+        $type = getString('type');
+        if ($type && in_array($type, ['location', 'vehicle', 'route'])) {
+            $where[] = 'c.type = :type';
+            $params[':type'] = $type;
+        }
+
+        $whereSQL = 'WHERE ' . implode(' AND ', $where);
+
+        $countStmt = $db->prepare("SELECT COUNT(*) FROM contributions c $whereSQL");
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+        $pagination = paginate($total);
+
+        $sql = "SELECT c.*
+                FROM contributions c
+                $whereSQL
+                ORDER BY c.created_at DESC
+                LIMIT :offset, :limit";
+
+        $stmt = $db->prepare($sql);
+        foreach ($params as $k => $val) {
+            $stmt->bindValue($k, $val);
+        }
+        $stmt->bindValue(':offset', $pagination['offset'], PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $pagination['per_page'], PDO::PARAM_INT);
+        $stmt->execute();
+        $contributions = $stmt->fetchAll();
+
+        // Fetch linked item name
+        foreach ($contributions as &$cont) {
+            $cont['item_name'] = '—';
+            $tbl = $cont['type'] === 'location' ? 'locations' : ($cont['type'] === 'vehicle' ? 'vehicles' : 'routes');
+            $s = $db->prepare("SELECT name FROM $tbl WHERE contribution_id = :cid LIMIT 1");
+            $s->execute([':cid' => $cont['contribution_id']]);
+            $row = $s->fetch();
+            if ($row) $cont['item_name'] = $row['name'];
+        }
+        unset($cont);
+
+        jsonResponse(['success' => true, 'contributions' => $contributions, 'pagination' => $pagination]);
+        break;
+
     default:
         jsonError('Unknown action.', 400);
 }

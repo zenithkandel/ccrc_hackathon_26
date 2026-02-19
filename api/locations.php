@@ -254,9 +254,12 @@ switch ($action) {
         $desc = postString('description');
         $notes = postString('notes');
 
-        if (!$name) jsonError('Name is required.');
-        if (!$lat || !$lng) jsonError('Location coordinates are required.');
-        if (!in_array($type, ['stop', 'landmark'])) jsonError('Invalid location type.');
+        if (!$name)
+            jsonError('Name is required.');
+        if (!$lat || !$lng)
+            jsonError('Location coordinates are required.');
+        if (!in_array($type, ['stop', 'landmark']))
+            jsonError('Invalid location type.');
 
         $db->beginTransaction();
         try {
@@ -269,9 +272,12 @@ switch ($action) {
             $lStmt = $db->prepare("INSERT INTO locations (name, description, latitude, longitude, type, status, contribution_id, updated_by)
                                    VALUES (:name, :desc, :lat, :lng, :type, 'pending', :cid, :agent)");
             $lStmt->execute([
-                ':name' => $name, ':desc' => $desc,
-                ':lat' => $lat, ':lng' => $lng,
-                ':type' => $type, ':cid' => $contribId,
+                ':name' => $name,
+                ':desc' => $desc,
+                ':lat' => $lat,
+                ':lng' => $lng,
+                ':type' => $type,
+                ':cid' => $contribId,
                 ':agent' => getAgentId()
             ]);
 
@@ -295,7 +301,8 @@ switch ($action) {
         $lng = isset($_GET['lng']) ? floatval($_GET['lng']) : null;
         $radius = isset($_GET['radius']) ? floatval($_GET['radius']) : 0.3; // km
 
-        if (!$lat || !$lng) jsonError('Coordinates required.');
+        if (!$lat || !$lng)
+            jsonError('Coordinates required.');
 
         // Haversine formula to find locations within radius (in km)
         $sql = "SELECT location_id, name, latitude, longitude, type, status,

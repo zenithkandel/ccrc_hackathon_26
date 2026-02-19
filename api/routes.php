@@ -245,11 +245,14 @@ switch ($action) {
         $farePerKm = isset($_POST['fare_per_km']) ? floatval($_POST['fare_per_km']) : null;
         $notes = postString('notes');
 
-        if (!$name) jsonError('Route name is required.');
-        if (!$locationList) jsonError('At least 2 stops are required.');
+        if (!$name)
+            jsonError('Route name is required.');
+        if (!$locationList)
+            jsonError('At least 2 stops are required.');
 
         $stops = json_decode($locationList, true);
-        if (!is_array($stops) || count($stops) < 2) jsonError('A route must have at least 2 stops.');
+        if (!is_array($stops) || count($stops) < 2)
+            jsonError('A route must have at least 2 stops.');
 
         $db->beginTransaction();
         try {
@@ -262,10 +265,13 @@ switch ($action) {
             $rStmt = $db->prepare("INSERT INTO routes (name, description, location_list, fare_base, fare_per_km, status, contribution_id, updated_by)
                                    VALUES (:name, :desc, :locs, :fare_base, :fare_km, 'pending', :cid, :agent)");
             $rStmt->execute([
-                ':name' => $name, ':desc' => $desc,
+                ':name' => $name,
+                ':desc' => $desc,
                 ':locs' => json_encode($stops),
-                ':fare_base' => $fareBase, ':fare_km' => $farePerKm,
-                ':cid' => $contribId, ':agent' => getAgentId()
+                ':fare_base' => $fareBase,
+                ':fare_km' => $farePerKm,
+                ':cid' => $contribId,
+                ':agent' => getAgentId()
             ]);
 
             // Update agent count

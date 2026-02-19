@@ -258,7 +258,8 @@ switch ($action) {
         $stops = postString('stops_at');
         $notes = postString('notes');
 
-        if (!$name) jsonError('Vehicle name is required.');
+        if (!$name)
+            jsonError('Vehicle name is required.');
 
         // Handle image
         $imagePath = null;
@@ -277,10 +278,14 @@ switch ($action) {
             $vStmt = $db->prepare("INSERT INTO vehicles (name, description, image_path, electric, starts_at, stops_at, status, contribution_id, updated_by)
                                    VALUES (:name, :desc, :img, :elec, :starts, :stops, 'pending', :cid, :agent)");
             $vStmt->execute([
-                ':name' => $name, ':desc' => $desc,
-                ':img' => $imagePath, ':elec' => $electric,
-                ':starts' => $starts ?: null, ':stops' => $stops ?: null,
-                ':cid' => $contribId, ':agent' => getAgentId()
+                ':name' => $name,
+                ':desc' => $desc,
+                ':img' => $imagePath,
+                ':elec' => $electric,
+                ':starts' => $starts ?: null,
+                ':stops' => $stops ?: null,
+                ':cid' => $contribId,
+                ':agent' => getAgentId()
             ]);
 
             // Update agent count
