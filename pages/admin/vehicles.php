@@ -111,6 +111,7 @@ $csrfToken = generateCSRFToken();
                                 <th>Status</th>
                                 <th>Operating Hours</th>
                                 <th># Routes</th>
+                                <th>GPS Tracking</th>
                                 <th>Updated By</th>
                                 <th>Actions</th>
                             </tr>
@@ -134,6 +135,22 @@ $csrfToken = generateCSRFToken();
                                         <?= $v['stops_at'] ? substr($v['stops_at'], 0, 5) : '—' ?>
                                     </td>
                                     <td><?= $routeCount ?></td>
+                                    <td style="font-size:0.8125rem;">
+                                        <?php if ($v['current_lat'] && $v['current_lng']): ?>
+                                            <span class="badge badge-approved"
+                                                title="<?= sanitize($v['current_lat']) ?>, <?= sanitize($v['current_lng']) ?>">
+                                                <i class="fa-solid fa-satellite-dish"></i> Live
+                                            </span>
+                                            <div style="color:var(--color-text-muted); font-size:0.75rem; margin-top:2px;">
+                                                <?= $v['current_speed'] !== null ? number_format((float) $v['current_speed'], 1) . ' km/h' : '' ?>
+                                                <?php if ($v['gps_updated_at']): ?>
+                                                    · <?= date('H:i', strtotime($v['gps_updated_at'])) ?>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <span style="color:var(--color-text-muted);">No GPS</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?= sanitize($v['updater_name'] ?? '—') ?></td>
                                     <td>
                                         <div class="actions">

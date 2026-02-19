@@ -361,6 +361,7 @@ $baseUrl = BASE_URL . '/pages/agent/vehicles.php' . ($filterParams ? '?' . $filt
         <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${SawariUtils.statusBadge(v.status)}</span></div>
         <div class="detail-row"><span class="detail-label">Hours</span><span class="detail-value">${v.starts_at && v.stops_at ? SawariUtils.escapeHTML(v.starts_at) + ' — ' + SawariUtils.escapeHTML(v.stops_at) : '—'}</span></div>
         <div class="detail-row"><span class="detail-label">Routes</span><span class="detail-value">${routesBadges}</span></div>
+        <div class="detail-row"><span class="detail-label">GPS Tracking</span><span class="detail-value">${v.current_lat && v.current_lng ? '<span class="badge badge-approved"><i class="fa-solid fa-satellite-dish"></i> Live</span> ' + (v.current_speed !== null ? parseFloat(v.current_speed).toFixed(1) + ' km/h' : '') : '<span style="color:var(--color-text-muted);">No GPS data</span>'}</span></div>
     `;
         AgentUtils.openFormModal('#viewVehicleModal');
     }

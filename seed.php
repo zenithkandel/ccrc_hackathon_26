@@ -542,10 +542,10 @@ $insertVehicle = $pdo->prepare('
 
 // Some vehicles have live GPS positions for demo purposes
 $gpsData = [
-    'Sajha Yatayat (Lagankhel – Budhanilkantha)' => ['lat' => 27.7140, 'lng' => 85.3190, 'speed' => 18.5],
-    'Mahanagar Yatayat (Ratnapark Ring Road)' => ['lat' => 27.6920, 'lng' => 85.3220, 'speed' => 22.0],
-    'Micro-bus (Ratnapark – Budhanilkantha)' => ['lat' => 27.7350, 'lng' => 85.3240, 'speed' => 15.0],
-    'Safa Tempo (Lagankhel – Ratnapark)' => ['lat' => 27.6780, 'lng' => 85.3160, 'speed' => 12.5],
+    'Sajha Yatayat Bus (Line 1 & 7)' => ['lat' => 27.7140, 'lng' => 85.3190, 'speed' => 18.5],
+    'Mahanagar Yatayat (Ring Road Bus)' => ['lat' => 27.6920, 'lng' => 85.3220, 'speed' => 22.0],
+    'Micro Bus (Ratnapark-Jorpati)' => ['lat' => 27.7350, 'lng' => 85.3240, 'speed' => 15.0],
+    'Safa Tempo (Lalitpur)' => ['lat' => 27.6780, 'lng' => 85.3160, 'speed' => 12.5],
 ];
 
 $vehicleIds = [];
