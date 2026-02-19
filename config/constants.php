@@ -6,8 +6,17 @@
  */
 
 // ─── Paths ───────────────────────────────────────────────
-define('BASE_URL', 'http://localhost/test_sawari');
 define('BASE_PATH', dirname(__DIR__)); // Points to project root
+
+// Auto-detect BASE_URL from server environment (works in any directory)
+if (php_sapi_name() !== 'cli' && !empty($_SERVER['DOCUMENT_ROOT'])) {
+    $docRoot = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']), '/');
+    $appRoot = rtrim(str_replace('\\', '/', BASE_PATH), '/');
+    define('BASE_URL', str_replace($docRoot, '', $appRoot));
+} else {
+    define('BASE_URL', ''); // CLI mode — no URL context
+}
+
 define('UPLOAD_DIR', BASE_PATH . '/assets/images/uploads');
 define('UPLOAD_URL', BASE_URL . '/assets/images/uploads');
 
