@@ -38,8 +38,9 @@ void gpsInit();
 void gpsUpdate();
 
 /**
- * Check whether the GPS has a valid location fix.
- * @return true if location data is valid and updated
+ * Check whether the GPS has a valid and recent location fix.
+ * Uses age-based freshness check (data must be < 5 seconds old).
+ * @return true if location data is valid and recent
  */
 bool gpsHasFix();
 
