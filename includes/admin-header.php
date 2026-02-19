@@ -66,6 +66,9 @@ $navSections = [
     <!-- CSRF token for JS -->
     <meta name="csrf-token" content="<?= e(csrfToken()) ?>">
     <meta name="base-url" content="<?= e(BASE_URL) ?>">
+
+    <!-- Admin JS (loaded early so Sawari namespace is available to inline scripts) -->
+    <script src="<?= BASE_URL ?>/assets/js/admin.js"></script>
 </head>
 
 <body>

@@ -259,19 +259,32 @@ var Sawari = Sawari || {};
         var toggle = document.getElementById('sidebar-toggle');
         var sidebar = document.getElementById('sidebar');
         var backdrop = document.getElementById('sidebar-backdrop');
+        var moreBtn = document.getElementById('bottom-nav-more');
 
         if (!toggle || !sidebar) return;
 
+        function openSidebar() {
+            sidebar.classList.add('open');
+            if (backdrop) backdrop.classList.add('active');
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            if (backdrop) backdrop.classList.remove('active');
+        }
+
         toggle.addEventListener('click', function () {
-            sidebar.classList.toggle('open');
-            if (backdrop) backdrop.classList.toggle('active');
+            if (sidebar.classList.contains('open')) closeSidebar(); else openSidebar();
         });
 
-        if (backdrop) {
-            backdrop.addEventListener('click', function () {
-                sidebar.classList.remove('open');
-                backdrop.classList.remove('active');
+        if (moreBtn) {
+            moreBtn.addEventListener('click', function () {
+                if (sidebar.classList.contains('open')) closeSidebar(); else openSidebar();
             });
+        }
+
+        if (backdrop) {
+            backdrop.addEventListener('click', closeSidebar);
         }
     }
 

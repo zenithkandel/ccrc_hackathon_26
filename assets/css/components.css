@@ -738,12 +738,16 @@
     inset: 0;
     background: rgba(15, 23, 42, 0.5);
     z-index: var(--z-modal);
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: var(--space-4);
-    animation: fadeIn var(--duration-base) var(--ease-out);
     backdrop-filter: blur(4px);
+}
+
+.modal-overlay.active {
+    display: flex;
+    animation: fadeIn var(--duration-base) var(--ease-out);
 }
 
 .modal-overlay.is-hidden {
@@ -1107,6 +1111,8 @@
     .main-content {
         margin-left: 0;
         padding: var(--space-4);
+        padding-bottom: calc(var(--space-4) + 64px);
+        /* room for bottom nav */
     }
 
     .sidebar-backdrop {
@@ -1120,6 +1126,72 @@
     .sidebar-backdrop.visible,
     .sidebar-backdrop.active {
         display: block;
+    }
+}
+
+
+/* ==========================================================================
+   MOBILE BOTTOM NAVIGATION
+   ========================================================================== */
+
+.bottom-nav {
+    display: none;
+}
+
+@media (max-width: 1023px) {
+    .bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        background: var(--color-white);
+        border-top: 1px solid var(--color-neutral-200);
+        z-index: var(--z-sticky);
+        align-items: stretch;
+        justify-content: space-around;
+        padding: 0;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .bottom-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        gap: 2px;
+        color: var(--color-neutral-400);
+        text-decoration: none;
+        font-size: 10px;
+        font-weight: var(--font-medium);
+        letter-spacing: 0.02em;
+        transition: color var(--transition-fast);
+        border: none;
+        background: none;
+        cursor: pointer;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .bottom-nav-item svg {
+        width: 22px;
+        height: 22px;
+        stroke-width: 1.75;
+    }
+
+    .bottom-nav-item:hover,
+    .bottom-nav-item:active {
+        color: var(--color-primary-600);
+    }
+
+    .bottom-nav-item.active {
+        color: var(--color-primary-600);
+    }
+
+    .bottom-nav-item.active svg {
+        stroke-width: 2.25;
     }
 }
 

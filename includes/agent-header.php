@@ -65,6 +65,9 @@ $navSections = [
     <meta name="base-url" content="<?= e(BASE_URL) ?>">
     <meta name="agent-id" content="<?= e((string) ($_SESSION['agent_id'] ?? '')) ?>">
 
+    <!-- Agent JS (loaded early so Sawari namespace is available to inline scripts) -->
+    <script src="<?= BASE_URL ?>/assets/js/agent.js"></script>
+
     <?= $extraHead ?>
 </head>
 
