@@ -1,0 +1,16 @@
+[
+    {
+        "received_at": "2026-02-19 18:49:16",
+        "vehicle_id": 1,
+        "vehicle_name": "Sajha Yatayat",
+        "latitude": 27.673159,
+        "longitude": 85.343842,
+        "speed": 1.8,
+        "direction": 0,
+        "altitude": 1208.1,
+        "satellites": 7,
+        "hdop": 2,
+        "gps_quality": "good",
+        "device_ts": "2026-02-19T09:06:53Z"
+    }
+]
