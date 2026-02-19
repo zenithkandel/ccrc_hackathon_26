@@ -140,6 +140,113 @@ require_once __DIR__ . '/../api/config.php';
         </div>
     </div>
 
+    <!-- ===== Feedback Modal ===== -->
+    <div id="feedback-modal" class="modal-overlay" style="display:none;">
+        <div class="feedback-modal-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4);">
+                <h3
+                    style="font-size:var(--text-lg);font-weight:var(--font-bold);color:var(--color-neutral-900);margin:0;">
+                    Rate Your Trip</h3>
+                <button class="btn btn-ghost btn-icon btn-sm" id="feedback-close">
+                    <i data-feather="x" style="width:18px;height:18px;"></i>
+                </button>
+            </div>
+
+            <input type="hidden" id="feedback-trip-id" value="">
+
+            <!-- Star Rating -->
+            <div style="margin-bottom:var(--space-4);">
+                <label
+                    style="font-size:var(--text-sm);font-weight:var(--font-medium);color:var(--color-neutral-700);display:block;margin-bottom:var(--space-2);">How
+                    was your ride?</label>
+                <div class="star-rating" id="star-rating">
+                    <span class="star" data-value="1">★</span>
+                    <span class="star" data-value="2">★</span>
+                    <span class="star" data-value="3">★</span>
+                    <span class="star" data-value="4">★</span>
+                    <span class="star" data-value="5">★</span>
+                </div>
+            </div>
+
+            <!-- Accuracy -->
+            <div style="margin-bottom:var(--space-4);">
+                <label
+                    style="font-size:var(--text-sm);font-weight:var(--font-medium);color:var(--color-neutral-700);display:block;margin-bottom:var(--space-2);">Route
+                    accuracy?</label>
+                <div style="display:flex;gap:var(--space-2);">
+                    <button class="btn btn-secondary btn-sm accuracy-btn" data-val="accurate">Accurate</button>
+                    <button class="btn btn-secondary btn-sm accuracy-btn" data-val="slightly_off">Slightly Off</button>
+                    <button class="btn btn-secondary btn-sm accuracy-btn" data-val="inaccurate">Inaccurate</button>
+                </div>
+            </div>
+
+            <!-- Review -->
+            <div style="margin-bottom:var(--space-4);">
+                <label
+                    style="font-size:var(--text-sm);font-weight:var(--font-medium);color:var(--color-neutral-700);display:block;margin-bottom:var(--space-2);">Comments
+                    (optional)</label>
+                <textarea id="feedback-review" class="form-input" rows="3" placeholder="Share your experience..."
+                    style="resize:vertical;"></textarea>
+            </div>
+
+            <button class="btn btn-primary btn-block" id="feedback-submit-btn">
+                <i data-feather="send" style="width:16px;height:16px;"></i>
+                Submit Feedback
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== Community Suggestion Modal ===== -->
+    <div id="suggestion-modal" class="modal-overlay" style="display:none;">
+        <div class="feedback-modal-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4);">
+                <h3
+                    style="font-size:var(--text-lg);font-weight:var(--font-bold);color:var(--color-neutral-900);margin:0;">
+                    Suggest an Improvement</h3>
+                <button class="btn btn-ghost btn-icon btn-sm" id="suggestion-close">
+                    <i data-feather="x" style="width:18px;height:18px;"></i>
+                </button>
+            </div>
+
+            <div style="margin-bottom:var(--space-4);">
+                <label
+                    style="font-size:var(--text-sm);font-weight:var(--font-medium);color:var(--color-neutral-700);display:block;margin-bottom:var(--space-2);">Type</label>
+                <select id="suggestion-type" class="form-input">
+                    <option value="missing_stop">Missing Bus Stop</option>
+                    <option value="route_correction">Route Correction</option>
+                    <option value="new_route">New Route</option>
+                    <option value="general">General Feedback</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom:var(--space-4);">
+                <label
+                    style="font-size:var(--text-sm);font-weight:var(--font-medium);color:var(--color-neutral-700);display:block;margin-bottom:var(--space-2);">Title</label>
+                <input type="text" id="suggestion-title" class="form-input" placeholder="Brief title">
+            </div>
+
+            <div style="margin-bottom:var(--space-4);">
+                <label
+                    style="font-size:var(--text-sm);font-weight:var(--font-medium);color:var(--color-neutral-700);display:block;margin-bottom:var(--space-2);">Description</label>
+                <textarea id="suggestion-desc" class="form-input" rows="3"
+                    placeholder="Describe the issue or suggestion..." style="resize:vertical;"></textarea>
+            </div>
+
+            <button class="btn btn-primary btn-block" id="suggestion-submit-btn">
+                <i data-feather="send" style="width:16px;height:16px;"></i>
+                Submit Suggestion
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== Bottom Toolbar (suggestion + info) ===== -->
+    <div class="map-bottom-toolbar">
+        <button class="btn btn-secondary btn-sm" id="suggestion-open-btn" title="Suggest an improvement">
+            <i data-feather="message-square" style="width:16px;height:16px;"></i>
+            Suggest
+        </button>
+    </div>
+
     <!-- Scripts -->
     <script src="<?= BASE_URL ?>/assets/js/map.js"></script>
     <script src="<?= BASE_URL ?>/assets/js/search.js"></script>
@@ -147,6 +254,125 @@ require_once __DIR__ . '/../api/config.php';
     <script src="<?= BASE_URL ?>/assets/js/tracking.js"></script>
     <script>
         feather.replace({ 'stroke-width': 1.75 });
+
+        /* Feedback modal logic */
+        (function () {
+            const BASE = document.querySelector('meta[name="base-url"]').content;
+            const modal = document.getElementById('feedback-modal');
+            const closeBtn = document.getElementById('feedback-close');
+            const submitBtn = document.getElementById('feedback-submit-btn');
+            let selectedRating = 0;
+            let selectedAccuracy = '';
+
+            // Star rating
+            document.querySelectorAll('#star-rating .star').forEach(star => {
+                star.addEventListener('click', () => {
+                    selectedRating = parseInt(star.dataset.value);
+                    document.querySelectorAll('#star-rating .star').forEach((s, i) => {
+                        s.classList.toggle('active', i < selectedRating);
+                    });
+                });
+            });
+
+            // Accuracy buttons
+            document.querySelectorAll('.accuracy-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.accuracy-btn').forEach(b => b.classList.remove('btn-primary'));
+                    document.querySelectorAll('.accuracy-btn').forEach(b => b.classList.add('btn-secondary'));
+                    btn.classList.remove('btn-secondary');
+                    btn.classList.add('btn-primary');
+                    selectedAccuracy = btn.dataset.val;
+                });
+            });
+
+            closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+
+            submitBtn.addEventListener('click', () => {
+                const tripId = document.getElementById('feedback-trip-id').value;
+                if (!tripId || !selectedRating) {
+                    SawariMap.showToast('Please select a rating.', 'warning');
+                    return;
+                }
+                const fd = new FormData();
+                fd.append('trip_id', tripId);
+                fd.append('rating', selectedRating);
+                fd.append('accuracy_feedback', selectedAccuracy);
+                fd.append('review', document.getElementById('feedback-review').value);
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submitting...';
+
+                fetch(BASE + '/api/trips.php?action=feedback', { method: 'POST', body: fd, credentials: 'same-origin' })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success) {
+                            SawariMap.showToast('Thank you for your feedback!', 'success');
+                            modal.style.display = 'none';
+                        } else {
+                            SawariMap.showToast(res.message || 'Failed to submit.', 'error');
+                        }
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i data-feather="send" style="width:16px;height:16px;"></i> Submit Feedback';
+                        feather.replace({ 'stroke-width': 1.75 });
+                    })
+                    .catch(() => {
+                        SawariMap.showToast('Network error.', 'error');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i data-feather="send" style="width:16px;height:16px;"></i> Submit Feedback';
+                        feather.replace({ 'stroke-width': 1.75 });
+                    });
+            });
+
+            /* Suggestion modal logic */
+            const sugModal = document.getElementById('suggestion-modal');
+            const sugOpen = document.getElementById('suggestion-open-btn');
+            const sugClose = document.getElementById('suggestion-close');
+            const sugSubmit = document.getElementById('suggestion-submit-btn');
+
+            sugOpen.addEventListener('click', () => { sugModal.style.display = 'flex'; });
+            sugClose.addEventListener('click', () => { sugModal.style.display = 'none'; });
+            sugModal.addEventListener('click', (e) => { if (e.target === sugModal) sugModal.style.display = 'none'; });
+
+            sugSubmit.addEventListener('click', () => {
+                const title = document.getElementById('suggestion-title').value.trim();
+                const desc = document.getElementById('suggestion-desc').value.trim();
+                const type = document.getElementById('suggestion-type').value;
+
+                if (!title) { SawariMap.showToast('Title is required.', 'warning'); return; }
+                if (!desc) { SawariMap.showToast('Description is required.', 'warning'); return; }
+
+                const fd = new FormData();
+                fd.append('title', title);
+                fd.append('description', desc);
+                fd.append('type', type);
+
+                sugSubmit.disabled = true;
+                sugSubmit.textContent = 'Submitting...';
+
+                fetch(BASE + '/api/suggestions.php?action=submit', { method: 'POST', body: fd, credentials: 'same-origin' })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success) {
+                            SawariMap.showToast('Suggestion submitted. Thank you!', 'success');
+                            sugModal.style.display = 'none';
+                            document.getElementById('suggestion-title').value = '';
+                            document.getElementById('suggestion-desc').value = '';
+                        } else {
+                            SawariMap.showToast(res.message || 'Failed.', 'error');
+                        }
+                        sugSubmit.disabled = false;
+                        sugSubmit.innerHTML = '<i data-feather="send" style="width:16px;height:16px;"></i> Submit Suggestion';
+                        feather.replace({ 'stroke-width': 1.75 });
+                    })
+                    .catch(() => {
+                        SawariMap.showToast('Network error.', 'error');
+                        sugSubmit.disabled = false;
+                        sugSubmit.innerHTML = '<i data-feather="send" style="width:16px;height:16px;"></i> Submit Suggestion';
+                        feather.replace({ 'stroke-width': 1.75 });
+                    });
+            });
+        })();
     </script>
 </body>
 

@@ -391,4 +391,239 @@
     .result-panel {
         max-height: 65vh;
     }
+
+    .feedback-modal-card {
+        width: 95vw;
+        max-width: none;
+        margin: var(--space-4);
+    }
+
+    .map-bottom-toolbar {
+        bottom: var(--space-3);
+        right: var(--space-3);
+    }
+
+    .carbon-card,
+    .tourist-tips {
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
+
+
+/* --- Modal Overlay --- */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: var(--z-modal, 3000);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn var(--duration-fast) var(--ease-out);
+}
+
+.feedback-modal-card {
+    background: var(--color-white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-2xl, 0 25px 50px rgba(0,0,0,.15));
+    padding: var(--space-6);
+    width: 420px;
+    max-width: calc(100vw - var(--space-8));
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp var(--duration-slow) var(--ease-out);
+}
+
+
+/* --- Star Rating --- */
+
+.star-rating {
+    display: flex;
+    gap: var(--space-1);
+}
+
+.star-rating .star {
+    font-size: 28px;
+    color: var(--color-neutral-300);
+    cursor: pointer;
+    transition: color var(--transition-fast);
+    user-select: none;
+}
+
+.star-rating .star:hover,
+.star-rating .star.active {
+    color: #FACC15;
+}
+
+.star-rating .star:hover ~ .star {
+    color: var(--color-neutral-300);
+}
+
+
+/* --- Carbon Emission Card --- */
+
+.carbon-card {
+    background: var(--color-success-50);
+    border: 1px solid var(--color-success-100);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin: var(--space-4) 0;
+}
+
+.carbon-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--color-success-700);
+    margin-bottom: var(--space-3);
+}
+
+.carbon-card-body {
+    font-size: var(--text-xs);
+    color: var(--color-neutral-600);
+}
+
+.carbon-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-1) 0;
+}
+
+.carbon-saved {
+    margin-top: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-white);
+    border-radius: var(--radius-md);
+    font-size: var(--text-xs);
+    color: var(--color-success-600);
+    text-align: center;
+}
+
+
+/* --- Tourist Tips --- */
+
+.tourist-tips {
+    background: var(--color-primary-50);
+    border: 1px solid var(--color-primary-100);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin: var(--space-4) 0;
+}
+
+.tourist-tips-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--color-primary-700);
+    margin-bottom: var(--space-3);
+}
+
+.tourist-tips-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.tourist-tips-list li {
+    font-size: var(--text-xs);
+    color: var(--color-neutral-600);
+    line-height: var(--leading-relaxed);
+    padding-left: var(--space-4);
+    position: relative;
+}
+
+.tourist-tips-list li::before {
+    content: '•';
+    position: absolute;
+    left: var(--space-1);
+    color: var(--color-primary-400);
+    font-weight: bold;
+}
+
+
+/* --- Wait Time Hint --- */
+
+.wait-time-hint {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    margin: var(--space-3) 0;
+    font-size: var(--text-xs);
+    color: var(--color-neutral-500);
+    background: var(--color-neutral-50);
+    border-radius: var(--radius-md);
+}
+
+
+/* --- Bottom Toolbar (suggestion button) --- */
+
+.map-bottom-toolbar {
+    position: absolute;
+    bottom: var(--space-4);
+    right: var(--space-4);
+    z-index: var(--z-map-controls);
+    display: flex;
+    gap: var(--space-2);
+}
+
+
+/* --- Marker styles: boarding, destination, transfer, alert --- */
+
+.marker-stop-boarding {
+    background: var(--color-primary-500);
+    border: 2px solid var(--color-white);
+    border-radius: var(--radius-full);
+    width: 14px;
+    height: 14px;
+    box-shadow: var(--shadow-sm);
+}
+
+.marker-stop-destination {
+    background: var(--color-accent-600);
+    border: 2px solid var(--color-white);
+    border-radius: var(--radius-full);
+    width: 14px;
+    height: 14px;
+    box-shadow: var(--shadow-sm);
+}
+
+.marker-stop-transfer {
+    background: var(--color-warning-500);
+    border: 2px solid var(--color-white);
+    border-radius: var(--radius-full);
+    width: 14px;
+    height: 14px;
+    box-shadow: var(--shadow-sm);
+}
+
+.marker-alert {
+    z-index: 800;
+}
+
+
+/* --- Animations --- */
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }

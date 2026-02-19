@@ -259,7 +259,7 @@ const SawariSearch = (function () {
                 const text = document.getElementById('alert-text');
                 if (!banner || !text) return;
 
-                // Show most severe alert
+                // Show most severe alert in banner
                 const alert = data.alerts[0];
                 let msg = alert.title;
                 if (alert.route_name) {
@@ -268,8 +268,59 @@ const SawariSearch = (function () {
                 text.textContent = msg;
                 banner.style.display = '';
                 banner.title = alert.description || '';
+
+                // Show alert indicators on map for route-specific alerts
+                showAlertMarkers(data.alerts);
             })
             .catch(err => console.error('Alerts load error:', err));
+    }
+
+    /**
+     * Show alert markers on the map for route-specific alerts.
+     * Fetches each route's first stop and places a warning marker there.
+     */
+    function showAlertMarkers(alerts) {
+        const map = SawariMap.getMap();
+        if (!map) return;
+
+        alerts.forEach(alert => {
+            if (!alert.route_id) return;
+
+            // Fetch route info to get first stop coords
+            fetch(BASE + '/api/routes.php?action=get&id=' + alert.route_id)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success || !data.route || !data.route.location_list) return;
+
+                    const stops = typeof data.route.location_list === 'string'
+                        ? JSON.parse(data.route.location_list)
+                        : data.route.location_list;
+
+                    if (!stops || stops.length === 0) return;
+
+                    // Place alert marker at first stop of affected route
+                    const firstStop = stops[0];
+                    const severityColors = {
+                        critical: '#DC2626',
+                        high: '#EA580C',
+                        medium: '#D97706',
+                        low: '#6B7280'
+                    };
+                    const color = severityColors[alert.severity] || '#D97706';
+
+                    const icon = L.divIcon({
+                        className: 'marker-alert',
+                        html: `<div style="width:24px;height:24px;background:${color};border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:14px;color:#fff;font-weight:bold;">!</div>`,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    });
+
+                    L.marker([parseFloat(firstStop.latitude), parseFloat(firstStop.longitude)], { icon })
+                        .bindPopup(`<div style="font-family:var(--font-sans);"><strong style="color:${color};">⚠ ${SawariMap.escHtml(alert.title)}</strong><br><span style="font-size:12px;">${SawariMap.escHtml(alert.description || '')}</span>${alert.route_name ? '<br><span style="font-size:11px;color:#64748B;">Route: ' + SawariMap.escHtml(alert.route_name) + '</span>' : ''}</div>`)
+                        .addTo(map);
+                })
+                .catch(() => { });
+        });
     }
 
     /* ──────────────────────────────────────────────

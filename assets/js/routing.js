@@ -25,6 +25,15 @@ const SawariRouting = (function () {
     let currentResults = null;
     let currentType = null;
 
+    // Active trip (for feedback flow)
+    let activeTripId = null;
+    let activeTripData = null;
+
+    // Carbon constants: avg car = 0.21 kg CO2/km, bus = 0.089 kg CO2/km
+    const CO2_CAR_PER_KM = 0.21;
+    const CO2_BUS_PER_KM = 0.089;
+    const CO2_ELECTRIC_BUS_PER_KM = 0.02;
+
     /* ──────────────────────────────────────────────
      *  Init
      * ────────────────────────────────────────────── */
@@ -333,9 +342,49 @@ const SawariRouting = (function () {
                 </div>`;
         }
 
+        // Wait time estimate
+        html += renderWaitTime(stops.length);
+
+        // Carbon card
+        const isElectric = vehicle && (vehicle.electric === '1' || vehicle.electric === 1);
+        html += renderCarbonCard(result.distance_km || 0, isElectric);
+
+        // Tourist tips (collapsible)
+        html += renderTouristTips();
+
+        // Start trip button
+        html += `
+            <div style="display:flex;gap:var(--space-3);margin-top:var(--space-4);">
+                <button class="btn btn-primary btn-block" id="start-trip-btn">
+                    <i data-feather="play" style="width:16px;height:16px;"></i>
+                    Start Trip
+                </button>
+            </div>`;
+
         resultContent.innerHTML = html;
         resultPanel.classList.add('open');
         feather.replace({ 'stroke-width': 1.75 });
+
+        // Attach start trip handler
+        const startBtn = document.getElementById('start-trip-btn');
+        if (startBtn) {
+            startBtn.addEventListener('click', () => {
+                logTrip(result, 'direct');
+                startBtn.textContent = 'Trip Started!';
+                startBtn.disabled = true;
+                startBtn.classList.remove('btn-primary');
+                startBtn.classList.add('btn-success');
+                // Show feedback button after 5 seconds
+                setTimeout(() => {
+                    startBtn.outerHTML = `<button class="btn btn-accent btn-block" id="feedback-trip-btn">
+                        <i data-feather="star" style="width:16px;height:16px;"></i>
+                        Rate This Trip
+                    </button>`;
+                    feather.replace({ 'stroke-width': 1.75 });
+                    document.getElementById('feedback-trip-btn').addEventListener('click', promptFeedback);
+                }, 5000);
+            });
+        }
 
         // If there are multiple options, render tabs
         if (currentResults && currentResults.length > 1) {
@@ -427,9 +476,48 @@ const SawariRouting = (function () {
                 </div>`;
         }
 
+        // Wait time estimate
+        html += renderWaitTime((result.leg1.intermediate_stops || []).length);
+
+        // Carbon card
+        const isElec1 = v1 && (v1.electric === '1' || v1.electric === 1);
+        html += renderCarbonCard(result.total_distance || 0, isElec1);
+
+        // Tourist tips
+        html += renderTouristTips();
+
+        // Start trip button
+        html += `
+            <div style="display:flex;gap:var(--space-3);margin-top:var(--space-4);">
+                <button class="btn btn-primary btn-block" id="start-trip-btn">
+                    <i data-feather="play" style="width:16px;height:16px;"></i>
+                    Start Trip
+                </button>
+            </div>`;
+
         resultContent.innerHTML = html;
         resultPanel.classList.add('open');
         feather.replace({ 'stroke-width': 1.75 });
+
+        // Attach start trip handler
+        const startBtn = document.getElementById('start-trip-btn');
+        if (startBtn) {
+            startBtn.addEventListener('click', () => {
+                logTrip(result, 'transfer');
+                startBtn.textContent = 'Trip Started!';
+                startBtn.disabled = true;
+                startBtn.classList.remove('btn-primary');
+                startBtn.classList.add('btn-success');
+                setTimeout(() => {
+                    startBtn.outerHTML = `<button class="btn btn-accent btn-block" id="feedback-trip-btn">
+                        <i data-feather="star" style="width:16px;height:16px;"></i>
+                        Rate This Trip
+                    </button>`;
+                    feather.replace({ 'stroke-width': 1.75 });
+                    document.getElementById('feedback-trip-btn').addEventListener('click', promptFeedback);
+                }, 5000);
+            });
+        }
 
         if (currentResults && currentResults.length > 1) {
             renderOptionTabs(currentResults, currentType,
@@ -575,10 +663,133 @@ const SawariRouting = (function () {
     }
 
     /* ──────────────────────────────────────────────
+     *  Carbon Emission Calculator
+     * ────────────────────────────────────────────── */
+    function calculateCarbon(distanceKm, isElectric) {
+        const busRate = isElectric ? CO2_ELECTRIC_BUS_PER_KM : CO2_BUS_PER_KM;
+        const busCO2 = distanceKm * busRate;
+        const carCO2 = distanceKm * CO2_CAR_PER_KM;
+        const saved = Math.max(0, carCO2 - busCO2);
+        return { busCO2: busCO2.toFixed(3), carCO2: carCO2.toFixed(3), saved: saved.toFixed(3) };
+    }
+
+    function renderCarbonCard(distanceKm, isElectric) {
+        const carbon = calculateCarbon(distanceKm, isElectric);
+        return `
+            <div class="carbon-card">
+                <div class="carbon-card-header">
+                    <i data-feather="wind" style="width:16px;height:16px;"></i>
+                    <span>Carbon Emissions</span>
+                </div>
+                <div class="carbon-card-body">
+                    <div class="carbon-row">
+                        <span>🚌 Bus trip</span>
+                        <span>${carbon.busCO2} kg CO₂</span>
+                    </div>
+                    <div class="carbon-row">
+                        <span>🚗 If by car/taxi</span>
+                        <span>${carbon.carCO2} kg CO₂</span>
+                    </div>
+                    <div class="carbon-saved">
+                        🌱 You save <strong>${carbon.saved} kg CO₂</strong> by taking the bus!
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Tourist Help Mode
+     * ────────────────────────────────────────────── */
+    function renderTouristTips() {
+        return `
+            <div class="tourist-tips">
+                <div class="tourist-tips-header">
+                    <i data-feather="help-circle" style="width:16px;height:16px;"></i>
+                    <span>Tourist Tips</span>
+                </div>
+                <ul class="tourist-tips-list">
+                    <li><strong>Boarding:</strong> Wave at the bus to stop. Tell the conductor your destination clearly.</li>
+                    <li><strong>Fare:</strong> Pay the conductor after boarding. Keep small change ready (NPR notes).</li>
+                    <li><strong>Exits:</strong> Shout "Roknu!" (Stop!) when approaching your stop.</li>
+                    <li><strong>Safety:</strong> Keep bags on your lap. Watch for pickpockets in crowded buses.</li>
+                    <li><strong>Peak Hours:</strong> Avoid 8-10 AM and 4-6 PM if possible — buses are extremely crowded.</li>
+                </ul>
+            </div>`;
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Estimated Wait Time
+     * ────────────────────────────────────────────── */
+    function renderWaitTime(routeStopCount) {
+        // Rough estimate: routes with fewer stops run more frequently
+        let avgMins;
+        if (routeStopCount <= 5) avgMins = '5-10';
+        else if (routeStopCount <= 10) avgMins = '10-15';
+        else if (routeStopCount <= 20) avgMins = '15-25';
+        else avgMins = '20-35';
+        return `<div class="wait-time-hint">
+                    <i data-feather="clock" style="width:14px;height:14px;"></i>
+                    Estimated wait: ~${avgMins} min (based on route frequency)
+                </div>`;
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Trip Logging
+     * ────────────────────────────────────────────── */
+    function logTrip(result, type) {
+        const isElectric = (result.vehicles && result.vehicles[0] && (result.vehicles[0].electric === 1 || result.vehicles[0].electric === '1'));
+        const distKm = type === 'direct' ? result.distance_km : result.total_distance;
+        const carbon = calculateCarbon(distKm || 0, isElectric);
+
+        const data = {
+            route_id: result.route_id || (result.leg1 ? result.leg1.route_id : 0),
+            vehicle_id: (result.vehicles && result.vehicles[0]) ? result.vehicles[0].vehicle_id : 0,
+            boarding_stop_id: type === 'direct' ? result.boarding_stop.location_id : result.leg1.boarding_stop.location_id,
+            destination_stop_id: type === 'direct' ? result.dropoff_stop.location_id : result.leg2.dropoff_stop.location_id,
+            fare_paid: type === 'direct' ? (result.fare || 0) : (result.total_fare || 0),
+            carbon_saved: carbon.saved
+        };
+
+        if (type === 'transfer') {
+            data.transfer_stop_id = result.transfer_stop.location_id;
+            data.second_route_id = result.leg2.route_id;
+        }
+
+        const fd = new FormData();
+        Object.keys(data).forEach(k => { if (data[k]) fd.append(k, data[k]); });
+
+        fetch(BASE + '/api/trips.php?action=log', { method: 'POST', body: fd, credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success && res.trip_id) {
+                    activeTripId = res.trip_id;
+                    activeTripData = data;
+                }
+            })
+            .catch(err => console.error('Trip log error:', err));
+    }
+
+    /** Show the feedback modal (defined in map.php) */
+    function promptFeedback() {
+        if (!activeTripId) return;
+        const modal = document.getElementById('feedback-modal');
+        if (modal) {
+            document.getElementById('feedback-trip-id').value = activeTripId;
+            modal.style.display = 'flex';
+        }
+    }
+
+    function getActiveTripId() { return activeTripId; }
+
+    /* ──────────────────────────────────────────────
      *  Public API
      * ────────────────────────────────────────────── */
     return {
-        init
+        init,
+        logTrip,
+        promptFeedback,
+        getActiveTripId,
+        calculateCarbon
     };
 })();
 
