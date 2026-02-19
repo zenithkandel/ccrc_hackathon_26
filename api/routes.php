@@ -23,7 +23,7 @@ switch ($action) {
         requireAdminAPI();
         $db = getDB();
 
-        $where  = [];
+        $where = [];
         $params = [];
 
         $status = getString('status');
@@ -54,9 +54,11 @@ switch ($action) {
                 LIMIT :offset, :limit";
 
         $stmt = $db->prepare($sql);
-        foreach ($params as $k => $val) { $stmt->bindValue($k, $val); }
+        foreach ($params as $k => $val) {
+            $stmt->bindValue($k, $val);
+        }
         $stmt->bindValue(':offset', $pagination['offset'], PDO::PARAM_INT);
-        $stmt->bindValue(':limit',  $pagination['per_page'], PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $pagination['per_page'], PDO::PARAM_INT);
         $stmt->execute();
 
         $routes = $stmt->fetchAll();
@@ -77,7 +79,8 @@ switch ($action) {
     case 'get':
         $db = getDB();
         $id = getInt('id');
-        if (!$id) jsonError('Route ID required.');
+        if (!$id)
+            jsonError('Route ID required.');
 
         $stmt = $db->prepare("SELECT r.*, a.name AS agent_name, adm.name AS approved_by_name
                               FROM routes r
@@ -86,7 +89,8 @@ switch ($action) {
                               WHERE r.route_id = :id");
         $stmt->execute([':id' => $id]);
         $route = $stmt->fetch();
-        if (!$route) jsonError('Route not found.', 404);
+        if (!$route)
+            jsonError('Route not found.', 404);
 
         $route['location_list_parsed'] = $route['location_list'] ? json_decode($route['location_list'], true) : [];
 
@@ -99,14 +103,16 @@ switch ($action) {
         validateCsrf();
         $db = getDB();
 
-        $name     = postString('name');
-        $desc     = postString('description');
+        $name = postString('name');
+        $desc = postString('description');
         $fareBase = isset($_POST['fare_base']) ? floatval($_POST['fare_base']) : null;
-        $fareKm   = isset($_POST['fare_per_km']) ? floatval($_POST['fare_per_km']) : null;
-        $locList  = postString('location_list'); // JSON string
+        $fareKm = isset($_POST['fare_per_km']) ? floatval($_POST['fare_per_km']) : null;
+        $locList = postString('location_list'); // JSON string
 
-        if (!$name)    jsonError('Route name is required.');
-        if (!$locList) jsonError('Location list is required.');
+        if (!$name)
+            jsonError('Route name is required.');
+        if (!$locList)
+            jsonError('Location list is required.');
 
         // Validate JSON
         $parsed = json_decode($locList, true);
@@ -117,11 +123,11 @@ switch ($action) {
         $stmt = $db->prepare("INSERT INTO routes (name, description, location_list, fare_base, fare_per_km, status, approved_by, updated_at)
                               VALUES (:name, :desc, :locs, :fb, :fk, 'approved', :admin, NOW())");
         $stmt->execute([
-            ':name'  => $name,
-            ':desc'  => $desc,
-            ':locs'  => $locList,
-            ':fb'    => $fareBase,
-            ':fk'    => $fareKm,
+            ':name' => $name,
+            ':desc' => $desc,
+            ':locs' => $locList,
+            ':fb' => $fareBase,
+            ':fk' => $fareKm,
             ':admin' => getAdminId()
         ]);
 
@@ -134,15 +140,17 @@ switch ($action) {
         validateCsrf();
         $db = getDB();
 
-        $id       = postInt('route_id');
-        $name     = postString('name');
-        $desc     = postString('description');
+        $id = postInt('route_id');
+        $name = postString('name');
+        $desc = postString('description');
         $fareBase = isset($_POST['fare_base']) ? floatval($_POST['fare_base']) : null;
-        $fareKm   = isset($_POST['fare_per_km']) ? floatval($_POST['fare_per_km']) : null;
-        $locList  = postString('location_list');
+        $fareKm = isset($_POST['fare_per_km']) ? floatval($_POST['fare_per_km']) : null;
+        $locList = postString('location_list');
 
-        if (!$id)   jsonError('Route ID required.');
-        if (!$name) jsonError('Route name is required.');
+        if (!$id)
+            jsonError('Route ID required.');
+        if (!$name)
+            jsonError('Route name is required.');
 
         if ($locList) {
             $parsed = json_decode($locList, true);
@@ -158,9 +166,9 @@ switch ($action) {
             ':name' => $name,
             ':desc' => $desc,
             ':locs' => $locList,
-            ':fb'   => $fareBase,
-            ':fk'   => $fareKm,
-            ':id'   => $id
+            ':fb' => $fareBase,
+            ':fk' => $fareKm,
+            ':id' => $id
         ]);
 
         jsonSuccess('Route updated.');
@@ -172,14 +180,15 @@ switch ($action) {
         validateCsrf();
         $db = getDB();
         $id = postInt('id');
-        if (!$id) jsonError('Route ID required.');
+        if (!$id)
+            jsonError('Route ID required.');
 
         $db->prepare("UPDATE routes SET status = 'approved', approved_by = :admin, updated_at = NOW() WHERE route_id = :id")
-           ->execute([':admin' => getAdminId(), ':id' => $id]);
+            ->execute([':admin' => getAdminId(), ':id' => $id]);
 
         $db->prepare("UPDATE contributions SET status = 'approved', reviewed_by = :admin, reviewed_at = NOW()
                       WHERE contribution_id = (SELECT contribution_id FROM routes WHERE route_id = :id)")
-           ->execute([':admin' => getAdminId(), ':id' => $id]);
+            ->execute([':admin' => getAdminId(), ':id' => $id]);
 
         jsonSuccess('Route approved.');
         break;
@@ -189,17 +198,19 @@ switch ($action) {
         requireAdminAPI();
         validateCsrf();
         $db = getDB();
-        $id     = postInt('id');
+        $id = postInt('id');
         $reason = postString('reason');
-        if (!$id)     jsonError('Route ID required.');
-        if (!$reason) jsonError('Rejection reason required.');
+        if (!$id)
+            jsonError('Route ID required.');
+        if (!$reason)
+            jsonError('Rejection reason required.');
 
         $db->prepare("UPDATE routes SET status = 'rejected', approved_by = :admin, updated_at = NOW() WHERE route_id = :id")
-           ->execute([':admin' => getAdminId(), ':id' => $id]);
+            ->execute([':admin' => getAdminId(), ':id' => $id]);
 
         $db->prepare("UPDATE contributions SET status = 'rejected', reviewed_by = :admin, reviewed_at = NOW(), admin_note = :reason
                       WHERE contribution_id = (SELECT contribution_id FROM routes WHERE route_id = :id)")
-           ->execute([':admin' => getAdminId(), ':id' => $id, ':reason' => $reason]);
+            ->execute([':admin' => getAdminId(), ':id' => $id, ':reason' => $reason]);
 
         jsonSuccess('Route rejected.');
         break;
@@ -210,7 +221,8 @@ switch ($action) {
         validateCsrf();
         $db = getDB();
         $id = postInt('id');
-        if (!$id) jsonError('Route ID required.');
+        if (!$id)
+            jsonError('Route ID required.');
 
         $db->prepare("DELETE FROM routes WHERE route_id = :id")->execute([':id' => $id]);
         jsonSuccess('Route deleted.');

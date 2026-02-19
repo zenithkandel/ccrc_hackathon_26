@@ -8,7 +8,7 @@
 
 require_once __DIR__ . '/../../includes/auth-admin.php';
 
-$pageTitle   = 'Manage Routes';
+$pageTitle = 'Manage Routes';
 $currentPage = 'manage-routes';
 $pageActions = '<button class="btn btn-primary btn-sm" onclick="openCreateRoute()"><i data-feather="plus" style="width:14px;height:14px;"></i> Add Route</button>';
 require_once __DIR__ . '/../../includes/admin-header.php';
