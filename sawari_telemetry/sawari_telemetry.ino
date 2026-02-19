@@ -2,9 +2,9 @@
  * ============================================================================
  * SAWARI Bus Telemetry Device - Main Firmware
  * ============================================================================
- * 
+ *
  * Complete ESP32-based bus tracking telemetry system.
- * 
+ *
  * HARDWARE SETUP:
  *   - ESP32 Dev Module
  *   - NEO-6M GPS Module:     TX → GPIO16, RX → GPIO17 (UART2)
@@ -13,38 +13,41 @@
  *   - WiFi LED:               GPIO4  (ON when connected)
  *   - GPS Lock LED:           GPIO13 (ON when GPS has fix)
  *   - Data Send LED:          GPIO14 (blinks on transmission)
+ *   - BOOT Button:            GPIO0  (long-press opens WiFi portal)
  *   - Power Supply:           12V bus → buck converter → 5V to ESP32 VIN
- * 
+ *
  * REQUIRED LIBRARIES (install via Arduino Library Manager):
  *   - TinyGPSPlus        by Mikal Hart
  *   - U8g2               by Oliver Kraus
  *   - WiFiManager        by tzapu (ESP32 branch)
  *   - LittleFS_esp32     (built-in with ESP32 Arduino Core 2.x+)
- * 
+ *
  * BOARD SETTINGS:
  *   Board:           ESP32 Dev Module
  *   Partition Scheme: Default 4MB with spiffs (or custom with LittleFS)
  *   Upload Speed:    921600
  *   Flash Frequency: 80MHz
- * 
+ *
  * OPERATION FLOW:
- *   1. Power on → LEDs init, OLED splash, LittleFS mount
+ *   1. Power on → LEDs init, OLED boot splash with progress, LittleFS mount
  *   2. WiFiManager: auto-connect or start captive portal "SAWARI_SETUP"
- *   3. Main loop (non-blocking):
+ *   3. Display shows connection status (connected SSID / offline mode)
+ *   4. Main loop (non-blocking):
  *      a. Feed GPS parser continuously
  *      b. Every 2s: if GPS fix valid, build JSON and send to server
  *      c. If WiFi down: queue data locally in LittleFS (max 500 records)
- *      d. When WiFi reconnects: flush offline queue automatically
- *      e. Every 500ms: update OLED display with current status
- *      f. Monitor WiFi, manage LEDs, feed watchdog
- *      g. If no GPS fix for 10 minutes: restart ESP32 (watchdog)
- * 
+ *      d. Every 10s: check WiFi availability, auto-reconnect if possible
+ *      e. When WiFi reconnects: flush offline queue automatically
+ *      f. Every 500ms: update OLED with lat, lon, speed, WiFi info, mode
+ *      g. BOOT button long-press: open WiFi config portal on OLED
+ *      h. Portal auto-closes on successful connection, display updates
+ *      i. Monitor WiFi, manage LEDs, feed watchdog
+ *      j. If no GPS fix for 10 minutes: restart ESP32 (watchdog)
+ *
  * ============================================================================
- * 
  * SAWARI Transport Intelligence Platform
- * Firmware Version: 1.0.0
+ * Firmware Version: 2.0.0
  * Target: ESP32 Dev Module
- * 
  * ============================================================================
  */
 
@@ -62,32 +65,81 @@
 #include <esp_task_wdt.h>
 
 // ============================================================================
-// GLOBAL STATE — Timing variables for non-blocking task scheduling
+// GLOBAL STATE
 // ============================================================================
 
-// Last execution timestamps for each periodic task (millis()-based)
-static unsigned long lastSendTime     = 0;   // Telemetry data send
-static unsigned long lastDisplayTime  = 0;   // OLED display refresh
-static unsigned long lastWiFiCheck    = 0;   // WiFi connectivity check
-static unsigned long lastQueueFlush   = 0;   // Offline queue flush attempt
-static unsigned long lastGpsFixTime   = 0;   // Last time GPS had a valid fix (watchdog)
+// Task scheduling timestamps (millis()-based, non-blocking)
+static unsigned long lastSendTime     = 0;
+static unsigned long lastDisplayTime  = 0;
+static unsigned long lastWiFiCheck    = 0;
+static unsigned long lastQueueFlush   = 0;
+static unsigned long lastGpsFixTime   = 0;
 
-// Flag to track if we ever got a GPS fix (prevents watchdog restart before first fix)
+// GPS watchdog tracking
 static bool everHadGpsFix = false;
+
+// --- BOOT Button state ---
+static bool     buttonPressed       = false;
+static unsigned long buttonDownTime = 0;
+
+// --- WiFi / Offline mode tracking ---
+static bool isOfflineMode = false;           // true = WiFi unavailable, storing locally
+
+// Cached WiFi SSID for display (avoids repeated WiFi.SSID() calls)
+static char cachedSSID[33] = "";
+
+// ============================================================================
+// HELPER: Update cached Wi-Fi SSID
+// ============================================================================
+static void updateCachedSSID() {
+    if (networkIsConnected()) {
+        String ssid = networkGetSSID();
+        strncpy(cachedSSID, ssid.c_str(), sizeof(cachedSSID) - 1);
+        cachedSSID[sizeof(cachedSSID) - 1] = '\0';
+    } else {
+        cachedSSID[0] = '\0';
+    }
+}
+
+// ============================================================================
+// HELPER: Handle BOOT button (GPIO0) for WiFi portal
+// ============================================================================
+static void handleBootButton() {
+    bool currentlyPressed = (digitalRead(BUTTON_BOOT) == LOW);  // Active LOW
+
+    if (currentlyPressed && !buttonPressed) {
+        // Button just pressed — record the time
+        buttonPressed = true;
+        buttonDownTime = millis();
+    }
+    else if (!currentlyPressed && buttonPressed) {
+        // Button released — check if it was a long press
+        unsigned long pressDuration = millis() - buttonDownTime;
+        buttonPressed = false;
+
+        if (pressDuration >= BUTTON_LONG_PRESS_MS) {
+            // Long press detected — open WiFi portal
+            Serial.println(F("[BUTTON] Long press detected — opening WiFi portal"));
+
+            if (!networkIsPortalActive()) {
+                displayPortalActive(AP_NAME, networkGetPortalIP().c_str());
+                networkStartPortal();
+            }
+        }
+    }
+}
 
 // ============================================================================
 // SETUP — Runs once on boot
 // ============================================================================
 void setup() {
-    // -----------------------------------------------------------------------
-    // 1. Initialize serial debug output
-    // -----------------------------------------------------------------------
+    // --- 1. Serial debug ---
     Serial.begin(115200);
-    delay(100);  // Brief delay for serial to stabilize after power-on
+    delay(100);
 
     Serial.println();
     Serial.println(F("========================================"));
-    Serial.println(F("  SAWARI Bus Telemetry Device v1.0.0"));
+    Serial.println(F("  SAWARI Bus Telemetry Device v2.0.0"));
     Serial.println(F("  ESP32 Dev Module"));
     Serial.println(F("========================================"));
     Serial.print(F("  Bus ID:  "));
@@ -97,128 +149,104 @@ void setup() {
     Serial.println(F("========================================"));
     Serial.println();
 
-    // -----------------------------------------------------------------------
-    // 2. Initialize LED indicators
-    //    Power LED turns ON immediately to confirm device is energized.
-    // -----------------------------------------------------------------------
+    // --- 2. LEDs ---
     Serial.println(F("[INIT] Initializing LEDs..."));
     ledInit();
 
-    // -----------------------------------------------------------------------
-    // 3. Initialize OLED display
-    //    Shows boot splash screen while remaining subsystems are starting.
-    // -----------------------------------------------------------------------
+    // --- 3. OLED boot splash ---
     Serial.println(F("[INIT] Initializing OLED display..."));
     displayInit();
-    delay(500);  // Brief pause to show splash
+    delay(800);
 
-    // -----------------------------------------------------------------------
-    // 4. Initialize LittleFS for offline data storage
-    //    Formats the partition on first boot if needed.
-    // -----------------------------------------------------------------------
-    displayBootProgress(25, "Mounting storage...");
+    // --- 4. BOOT button pin ---
+    pinMode(BUTTON_BOOT, INPUT_PULLUP);
+
+    // --- 5. LittleFS storage ---
+    displayBootProgress(20, "Mounting storage...");
     Serial.println(F("[INIT] Initializing LittleFS storage..."));
     if (!storageInit()) {
-        Serial.println(F("[INIT] WARNING: Storage init failed! Offline queue unavailable."));
+        Serial.println(F("[INIT] WARNING: Storage init failed!"));
+        displayBootProgress(20, "Storage FAILED!");
+        delay(500);
     }
     delay(200);
 
-    // -----------------------------------------------------------------------
-    // 5. Initialize GPS module
-    //    Starts UART2 communication with the NEO-6M at 9600 baud.
-    //    GPS cold start can take 30-90 seconds for first fix.
-    // -----------------------------------------------------------------------
-    displayBootProgress(50, "Starting GPS...");
+    // --- 6. GPS module ---
+    displayBootProgress(40, "Starting GPS...");
     Serial.println(F("[INIT] Initializing GPS module..."));
     gpsInit();
     delay(200);
 
-    // -----------------------------------------------------------------------
-    // 6. Initialize WiFi via WiFiManager
-    //    First boot: AP mode with captive portal ("SAWARI_SETUP").
-    //    Subsequent boots: auto-connect to saved credentials.
-    //    This call may block for up to AP_TIMEOUT seconds if in portal mode.
-    // -----------------------------------------------------------------------
-    displayBootProgress(75, "Connecting WiFi...");
+    // --- 7. WiFi connection ---
+    displayBootProgress(60, "Connecting WiFi...");
     Serial.println(F("[INIT] Initializing WiFi..."));
-    displayWiFiSetup();  // Show WiFi setup screen on OLED while connecting
+    displayWiFiSetup();
 
     bool wifiConnected = networkInit();
     ledSetWiFi(wifiConnected);
 
-    displayBootProgress(100, wifiConnected ? "WiFi OK!" : "Offline mode");
-    delay(500);  // Brief pause to show completion
-
     if (wifiConnected) {
+        isOfflineMode = false;
+        updateCachedSSID();
+        displayBootProgress(90, "WiFi Connected!");
+        delay(400);
+
+        // Show connected confirmation screen
+        displayWiFiConnected(cachedSSID, networkGetIP().c_str(), networkGetRSSI());
+        delay(1500);
+
         Serial.println(F("[INIT] WiFi connected — online mode active"));
     } else {
+        isOfflineMode = true;
+        displayBootProgress(90, "WiFi FAILED-Offline");
+        delay(500);
+
         Serial.println(F("[INIT] WiFi not connected — offline mode active"));
+        Serial.println(F("[INIT] Data will be stored locally and synced when WiFi is available"));
     }
 
-    // -----------------------------------------------------------------------
-    // 7. Initialize hardware watchdog timer
-    //    Ensures the device recovers from any software hang.
-    //    The main loop must feed the watchdog within HW_WDT_TIMEOUT seconds.
-    // -----------------------------------------------------------------------
+    displayBootProgress(100, "System Ready!");
+    delay(400);
+
+    // --- 8. Hardware watchdog ---
     Serial.println(F("[INIT] Configuring hardware watchdog..."));
-    
-    // ESP32 Arduino Core 3.x uses new config struct API
     esp_task_wdt_config_t wdt_config = {
-        .timeout_ms = HW_WDT_TIMEOUT * 1000,  // Convert seconds to milliseconds
-        .idle_core_mask = (1 << portNUM_PROCESSORS) - 1,  // Watch all cores
-        .trigger_panic = true  // Reset on timeout
+        .timeout_ms = HW_WDT_TIMEOUT * 1000,
+        .idle_core_mask = (1 << portNUM_PROCESSORS) - 1,
+        .trigger_panic = true
     };
     esp_task_wdt_init(&wdt_config);
-    esp_task_wdt_add(NULL);  // Add current task to WDT
+    esp_task_wdt_add(NULL);
 
-    // -----------------------------------------------------------------------
-    // 8. Initialize timing baselines
-    // -----------------------------------------------------------------------
+    // --- 9. Timing baselines ---
     unsigned long now = millis();
     lastSendTime    = now;
     lastDisplayTime = now;
     lastWiFiCheck   = now;
     lastQueueFlush  = now;
-    lastGpsFixTime  = now;  // Grace period starts from boot
+    lastGpsFixTime  = now;
 
     Serial.println();
     Serial.println(F("[INIT] ======== INITIALIZATION COMPLETE ========"));
     Serial.println(F("[INIT] Entering main operational loop..."));
+    Serial.println(F("[INIT] Hold BOOT button (2s) to open WiFi portal"));
     Serial.println();
 }
 
 // ============================================================================
-// MAIN LOOP — Non-blocking task scheduler using millis()
+// MAIN LOOP — Non-blocking task scheduler
 // ============================================================================
-/**
- * The loop uses a cooperative multitasking approach where each task runs
- * at its own interval without blocking other tasks. No delay() calls
- * are used anywhere in the firmware.
- * 
- * Task Schedule:
- *   - GPS Feed:     CONTINUOUS (every iteration)
- *   - Data Send:    Every 2000ms   (SEND_INTERVAL)
- *   - Display:      Every 500ms    (DISPLAY_UPDATE_INTERVAL)
- *   - WiFi Check:   Every 5000ms   (WIFI_CHECK_INTERVAL)
- *   - Queue Flush:  Every 15000ms  (QUEUE_FLUSH_INTERVAL)
- *   - LED Update:   CONTINUOUS (manages blink timing)
- *   - Watchdog:     CONTINUOUS (feeds HW WDT + checks GPS timeout)
- */
 void loop() {
     unsigned long now = millis();
 
     // === Feed hardware watchdog ===
-    // This must happen every loop iteration to prevent ESP32 reset.
     esp_task_wdt_reset();
 
     // ===================================================================
     // TASK 1: GPS DATA FEED (continuous)
     // ===================================================================
-    // Feed all available serial bytes to the TinyGPSPlus parser.
-    // This must run every iteration to avoid losing NMEA sentences.
     gpsUpdate();
 
-    // Track GPS fix status for LED and watchdog
     bool gpsFix = gpsHasFix();
     ledSetGPS(gpsFix);
 
@@ -228,43 +256,85 @@ void loop() {
     }
 
     // ===================================================================
-    // TASK 2: TELEMETRY DATA TRANSMISSION (every SEND_INTERVAL ms)
+    // TASK 2: BOOT BUTTON — WiFi portal trigger (continuous)
+    // ===================================================================
+    handleBootButton();
+
+    // ===================================================================
+    // TASK 3: WiFi PORTAL PROCESSING (while portal is active)
+    // ===================================================================
+    if (networkIsPortalActive()) {
+        bool connected = networkPortalLoop();
+        if (connected) {
+            // Portal auto-closed after successful connection
+            isOfflineMode = false;
+            updateCachedSSID();
+            ledSetWiFi(true);
+
+            // Show connection success on OLED
+            displayWiFiConnected(cachedSSID, networkGetIP().c_str(), networkGetRSSI());
+            delay(2000);
+
+            Serial.println(F("[MAIN] WiFi connected via portal — switching to online mode"));
+
+            // Flush any queued offline data
+            if (storageGetCount() > 0) {
+                Serial.println(F("[MAIN] Flushing offline queue after portal connect..."));
+                storageFlush([](const String& json) -> bool {
+                    bool success = networkSendData(json);
+                    if (success) ledBlinkData();
+                    return success;
+                });
+            }
+        }
+
+        // While portal is active, keep updating the portal display
+        if (networkIsPortalActive()) {
+            displayAnimationTick();
+            if (now - lastDisplayTime >= DISPLAY_UPDATE_INTERVAL) {
+                lastDisplayTime = now;
+                displayPortalActive(AP_NAME, networkGetPortalIP().c_str());
+            }
+        }
+
+        // Skip other display/wifi tasks while portal is open, but keep GPS feeding
+        ledUpdate();
+        yield();
+        return;
+    }
+
+    // ===================================================================
+    // TASK 4: TELEMETRY DATA TRANSMISSION (every SEND_INTERVAL ms)
     // ===================================================================
     if (now - lastSendTime >= SEND_INTERVAL) {
         lastSendTime = now;
 
-        // Only attempt to send if GPS has a valid fix
         if (gpsFix) {
-            // Build telemetry data structure from GPS readings
             TelemetryData telemetry;
             gpsGetTelemetry(&telemetry);
-
-            // Format as JSON payload
             String payload = gpsFormatPayload(&telemetry);
 
             if (networkIsConnected()) {
-                // --- ONLINE: Send directly to API ---
+                // --- ONLINE: Send directly ---
                 Serial.println(F("[MAIN] Sending telemetry to server..."));
                 bool sent = networkSendData(payload);
 
                 if (sent) {
-                    ledBlinkData();  // Visual confirmation of successful send
+                    ledBlinkData();
                 } else {
-                    // HTTP request failed — queue for retry
                     Serial.println(F("[MAIN] Send failed — queuing for retry"));
                     storageEnqueue(payload);
                 }
             } else {
-                // --- OFFLINE: Queue data locally ---
+                // --- OFFLINE: Queue locally ---
                 Serial.println(F("[MAIN] WiFi offline — queuing telemetry data"));
                 storageEnqueue(payload);
             }
         }
-        // If no GPS fix, do nothing — don't send invalid data
     }
 
     // ===================================================================
-    // TASK 3: OLED DISPLAY UPDATE (every DISPLAY_UPDATE_INTERVAL ms)
+    // TASK 5: OLED DISPLAY UPDATE (every DISPLAY_UPDATE_INTERVAL ms)
     // ===================================================================
     if (now - lastDisplayTime >= DISPLAY_UPDATE_INTERVAL) {
         lastDisplayTime = now;
@@ -274,50 +344,70 @@ void loop() {
         int queueCount = storageGetCount();
 
         if (gpsFix) {
-            // Show full telemetry status screen with visual enhancements
+            // Main telemetry screen with all data
             TelemetryData displayData;
             gpsGetTelemetry(&displayData);
-            displayShowStatus(&displayData, wifiOk, wifiRSSI, queueCount);
+            displayShowStatus(&displayData, wifiOk, wifiRSSI,
+                              wifiOk ? cachedSSID : "OFFLINE",
+                              queueCount, isOfflineMode);
         } else {
-            // Show GPS search screen with animated radar
+            // GPS search screen with WiFi info
             int sats = gpsGetSatellites();
-            displaySearchingGPS(sats, wifiOk);
+            displaySearchingGPS(sats, wifiOk,
+                                wifiOk ? cachedSSID : "N/A",
+                                queueCount);
         }
     }
 
     // ===================================================================
-    // TASK 4: WIFI CONNECTIVITY CHECK (every WIFI_CHECK_INTERVAL ms)
+    // TASK 6: WIFI CHECK & AUTO-RECONNECT (every WIFI_CHECK_INTERVAL = 10s)
     // ===================================================================
     if (now - lastWiFiCheck >= WIFI_CHECK_INTERVAL) {
         lastWiFiCheck = now;
 
-        // Update WiFi LED
         bool wifiOk = networkIsConnected();
         ledSetWiFi(wifiOk);
 
-        // Attempt reconnection if disconnected
+        if (wifiOk && isOfflineMode) {
+            // WiFi came back! Switch from offline → online
+            isOfflineMode = false;
+            updateCachedSSID();
+            Serial.println(F("[MAIN] WiFi restored — switching to online mode"));
+
+            // Show brief connection notification
+            displayWiFiConnected(cachedSSID, networkGetIP().c_str(), networkGetRSSI());
+            delay(1000);
+        }
+        else if (!wifiOk && !isOfflineMode) {
+            // WiFi lost — switch to offline mode
+            isOfflineMode = true;
+            Serial.println(F("[MAIN] WiFi lost — switching to offline mode"));
+            Serial.println(F("[MAIN] Data will be stored locally"));
+        }
+
         if (!wifiOk) {
             networkCheckReconnect();
+            Serial.print(F("[MAIN] WiFi offline — next check in "));
+            Serial.print(WIFI_CHECK_INTERVAL / 1000);
+            Serial.println(F("s. Hold BOOT (2s) for portal."));
+        } else {
+            // Refresh cached SSID periodically
+            updateCachedSSID();
         }
     }
 
     // ===================================================================
-    // TASK 5: OFFLINE QUEUE FLUSH (every QUEUE_FLUSH_INTERVAL ms)
+    // TASK 7: OFFLINE QUEUE FLUSH (every QUEUE_FLUSH_INTERVAL ms)
     // ===================================================================
-    // When WiFi reconnects, periodically attempt to send queued records.
     if (now - lastQueueFlush >= QUEUE_FLUSH_INTERVAL) {
         lastQueueFlush = now;
 
         if (networkIsConnected() && storageGetCount() > 0) {
             Serial.println(F("[MAIN] WiFi available — flushing offline queue..."));
 
-            // The flush function calls networkSendData for each record.
-            // It stops on the first failure to avoid blocking too long.
             int sent = storageFlush([](const String& json) -> bool {
                 bool success = networkSendData(json);
-                if (success) {
-                    ledBlinkData();  // Blink for each successful send
-                }
+                if (success) ledBlinkData();
                 return success;
             });
 
@@ -330,24 +420,14 @@ void loop() {
     }
 
     // ===================================================================
-    // TASK 6: LED & DISPLAY ANIMATION UPDATE (continuous)
+    // TASK 8: LED & DISPLAY ANIMATION UPDATE (continuous)
     // ===================================================================
-    // Handles non-blocking blink timing for the data LED
     ledUpdate();
-    // Update display animations (radar sweep, blinking indicators)
     displayAnimationTick();
 
     // ===================================================================
-    // TASK 7: GPS WATCHDOG — Restart if no fix for 10 minutes
+    // TASK 9: GPS WATCHDOG — Restart if no fix for 10 minutes
     // ===================================================================
-    // This protects against GPS module lockup or antenna disconnection.
-    // Only active after the initial grace period (first fix must be obtained)
-    // or after a previously valid fix is lost for too long.
-    //
-    // Note: Cold start GPS acquisition can take several minutes, so this
-    // watchdog only activates if we had a fix and then lost it, OR if
-    // the device has been running for longer than GPS_WATCHDOG_TIMEOUT
-    // without ever getting a fix (indicates hardware problem).
     if (now - lastGpsFixTime >= GPS_WATCHDOG_TIMEOUT) {
         if (everHadGpsFix || now > GPS_WATCHDOG_TIMEOUT * 2) {
             Serial.println(F("[WATCHDOG] No GPS fix for 10 minutes — RESTARTING ESP32"));
@@ -356,7 +436,6 @@ void loop() {
         }
     }
 
-    // === Small yield to prevent WDT issues on tight loops ===
-    // ESP32 FreeRTOS needs occasional yields for background tasks
+    // === Yield for FreeRTOS background tasks ===
     yield();
 }
