@@ -107,7 +107,7 @@ Live tracking is dependent only on vehicles actively sending GPS data.
 1. Searches routes near Point A.
 2. Searches routes near Point B.
 3. Finds intersection stop.
-4. Uses Dijkstra algorithm:
+4. Uses A\* algorithm:
    - Nodes = locations
    - Edges = route connections
 5. Determines optimal transfer.
@@ -196,7 +196,7 @@ Volunteers collect data.
 | Database    | MySQL                                            |
 | Maps        | Leaflet, OpenStreetMap, OSRM (node-to-node only) |
 | Geolocation | Browser Geolocation API                          |
-| Algorithms  | Dijkstra, A\*                                    |
+| Algorithms  | A\*, A\*                                         |
 
 ---
 

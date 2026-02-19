@@ -40,7 +40,7 @@ CCRC/
 │   ├── suggestions.php         ← Suggestion submissions
 │   ├── agents.php              ← Agent auth + profile
 │   ├── admins.php              ← Admin auth + management
-│   └── routing-engine.php      ← Dijkstra/pathfinding logic
+│   └── routing-engine.php      ← A*/pathfinding logic
 │
 ├── pages/
 │   ├── map.php                 ← Main user page
@@ -178,7 +178,7 @@ CCRC/
 | 3B.1 | `api/routing-engine.php` — find nearest stops to A and B                                  | ☐      |
 | 3B.2 | Direct route detection — check if A-stop and B-stop exist on same route's `location_list` | ☐      |
 | 3B.3 | Direction validation — verify index order (A before B)                                    | ☐      |
-| 3B.4 | Multi-route with transfer — Dijkstra algorithm when no direct route                       | ☐      |
+| 3B.4 | Multi-route with transfer — A\* algorithm when no direct route                            | ☐      |
 | 3B.5 | Return route result as JSON (stops, vehicle, fare, instructions)                          | ☐      |
 
 ### 3C — Route Display & Visualization
