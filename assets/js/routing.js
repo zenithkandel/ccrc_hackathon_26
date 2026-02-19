@@ -657,7 +657,9 @@ const SawariRouting = (function () {
                 ${hint ? `<p style="font-size:var(--text-xs);color:var(--color-neutral-400);">${esc(hint)}</p>` : ''}
             </div>`;
 
+        if (resultPeek) resultPeek.innerHTML = '';
         resultPanel.classList.add('open');
+        resultPanel.classList.add('expanded');
         feather.replace({ 'stroke-width': 1.75 });
     }
 
