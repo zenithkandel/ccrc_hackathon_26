@@ -31,6 +31,9 @@ require_once __DIR__ . '/../../includes/admin-header.php';
         <option value="vehicle">Vehicle</option>
         <option value="route">Route</option>
     </select>
+    <button class="btn btn-success" id="approve-all-btn" style="margin-left:auto;display:none;">
+        <i data-feather="check-circle" style="width:16px;height:16px;"></i> Approve All
+    </button>
 </div>
 
 <!-- Table -->
@@ -90,8 +93,28 @@ require_once __DIR__ . '/../../includes/admin-header.php';
             });
         }
 
+        var pendingIds = [];
+
+        function updateApproveAllBtn() {
+            var btn = document.getElementById('approve-all-btn');
+            if (pendingIds.length > 0) {
+                btn.style.display = '';
+                btn.querySelector('.approve-all-count') && btn.querySelector('.approve-all-count').remove();
+                var countSpan = document.createElement('span');
+                countSpan.className = 'approve-all-count badge badge-neutral';
+                countSpan.style.cssText = 'margin-left:var(--space-1);font-size:var(--text-xs);';
+                countSpan.textContent = pendingIds.length;
+                btn.appendChild(countSpan);
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
         function renderTable(contribs) {
             var tbody = document.getElementById('contrib-tbody');
+            pendingIds = contribs.filter(function (c) { return c.status === 'pending'; }).map(function (c) { return c.contribution_id; });
+            updateApproveAllBtn();
+
             if (!contribs.length) {
                 tbody.innerHTML = Sawari.emptyRow(7, 'No contributions found.');
                 feather.replace({ 'stroke-width': 1.75 });
@@ -131,6 +154,30 @@ require_once __DIR__ . '/../../includes/admin-header.php';
                 });
             }, 'Approve', 'btn-success');
         };
+
+        document.getElementById('approve-all-btn').addEventListener('click', function () {
+            if (!pendingIds.length) return;
+            Sawari.confirm('Approve all ' + pendingIds.length + ' pending contributions on this page? Each agent will receive 10 points per approved item.', function () {
+                var btn = document.getElementById('approve-all-btn');
+                btn.disabled = true;
+                btn.innerHTML = '<i data-feather="loader" style="width:16px;height:16px;"></i> Approving...';
+                feather.replace({ 'stroke-width': 1.75 });
+
+                Sawari.api('contributions', 'approve-all', { ids: pendingIds }).then(function (d) {
+                    btn.disabled = false;
+                    if (d.success) {
+                        Sawari.toast(d.approved_count + ' contribution(s) approved.', 'success');
+                        loadContributions();
+                    } else {
+                        Sawari.toast(d.error || 'Failed to approve.', 'error');
+                        loadContributions();
+                    }
+                }).catch(function () {
+                    btn.disabled = false;
+                    loadContributions();
+                });
+            }, 'Approve All', 'btn-success');
+        });
 
         window.rejectContrib = function (id) {
             Sawari.rejectPrompt(function (reason) {
