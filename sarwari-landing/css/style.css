@@ -469,11 +469,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .hero-accent {
-    background: linear-gradient(135deg, var(--amber-300), var(--amber-500));
+    background: #FFFF00;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    filter: drop-shadow(0 2px 12px rgba(255,198,33,.6));
+    filter: drop-shadow(0 2px 12px rgba(255,255,0,.8));
 }
 
 .hero-sub {
