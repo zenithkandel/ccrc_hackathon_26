@@ -413,30 +413,57 @@ require_once __DIR__ . '/../api/config.php';
             });
         })();
 
-        /* ===== Result panel peek/expand (mobile) ===== */
+        /* ===== Result panel peek/expand (mobile) with swipe ===== */
         (function () {
             const panel = document.getElementById('result-panel');
             const handle = document.getElementById('result-panel-handle');
+            const peek = document.getElementById('result-panel-peek');
 
+            let startY = 0;
+            let isDragging = false;
+
+            // Tap handle to toggle
             handle.addEventListener('click', () => {
                 if (panel.classList.contains('open')) {
                     if (panel.classList.contains('expanded')) {
-                        // Expanded → peek
                         panel.classList.remove('expanded');
                     } else {
-                        // Peek → close
                         panel.classList.remove('open');
                     }
                 }
             });
 
             // Tap peek area to expand
-            const peek = document.getElementById('result-panel-peek');
             peek.addEventListener('click', () => {
                 if (panel.classList.contains('open') && !panel.classList.contains('expanded')) {
                     panel.classList.add('expanded');
                 }
             });
+
+            // Swipe gestures on handle
+            handle.addEventListener('touchstart', (e) => {
+                startY = e.touches[0].clientY;
+                isDragging = true;
+            }, { passive: true });
+
+            handle.addEventListener('touchend', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                const diff = e.changedTouches[0].clientY - startY;
+                if (diff < -30) {
+                    // Swiped up → expand
+                    if (panel.classList.contains('open') && !panel.classList.contains('expanded')) {
+                        panel.classList.add('expanded');
+                    }
+                } else if (diff > 30) {
+                    // Swiped down → collapse/close
+                    if (panel.classList.contains('expanded')) {
+                        panel.classList.remove('expanded');
+                    } else if (panel.classList.contains('open')) {
+                        panel.classList.remove('open');
+                    }
+                }
+            }, { passive: true });
         })();
 
         /* Feedback modal logic */

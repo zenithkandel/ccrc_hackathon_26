@@ -1552,16 +1552,37 @@
         min-width: 36px;
         min-height: 36px;
     }
+
+    /* Larger markers on touch for easier tapping */
+    .marker-dot-stop {
+        width: 30px;
+        height: 30px;
+    }
+
+    .marker-pin {
+        width: 32px;
+        height: 40px;
+    }
 }
 
-/* Search results dropdown on mobile */
-@media (max-width: 640px) {
-    .search-results {
-        max-height: 35vh;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-        border-radius: var(--radius-lg);
-        margin-top: var(--space-1);
-    }
+
+/* --- Leaflet Popup Overrides — Clean Look --- */
+
+.leaflet-popup-content-wrapper {
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.14);
+    padding: 0;
+    font-family: var(--font-sans);
+}
+
+.leaflet-popup-content {
+    margin: 12px 14px;
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+}
+
+.leaflet-popup-tip {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 
