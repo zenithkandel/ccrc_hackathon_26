@@ -546,13 +546,13 @@ const SawariMap = (function () {
         // Choose icon based on marker type
         let iconHtml, size, anchor;
         if (cssClass === 'marker-stop-boarding') {
-            iconHtml = '<div class="marker-pin marker-pin-board"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></div>';
+            iconHtml = '<div class="marker-pin marker-pin-board">' + SVG.boarding + '</div>';
             size = [28, 36]; anchor = [14, 36];
         } else if (cssClass === 'marker-stop-destination') {
-            iconHtml = '<div class="marker-pin marker-pin-dest"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>';
+            iconHtml = '<div class="marker-pin marker-pin-dest">' + SVG.dest + '</div>';
             size = [28, 36]; anchor = [14, 36];
         } else if (cssClass === 'marker-stop-transfer') {
-            iconHtml = '<div class="marker-pin marker-pin-transfer"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>';
+            iconHtml = '<div class="marker-pin marker-pin-transfer">' + SVG.transfer + '</div>';
             size = [28, 36]; anchor = [14, 36];
         } else {
             // Regular intermediate stop — small dot
@@ -657,7 +657,9 @@ const SawariMap = (function () {
         swapPoints,
         toggleMyLocation,
         reverseGeocode,
-        BASE
+        BASE,
+        SVG,
+        getStopIconConfig
     };
 })();
 
