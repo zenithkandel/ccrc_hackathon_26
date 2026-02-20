@@ -39,13 +39,18 @@ define('DB_CHARSET', 'utf8mb4');
 // APPLICATION CONSTANTS
 // ============================================================
 
-// Auto-detect base URL
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-define('BASE_URL', $protocol . '://' . $host . '/CCRC');
-
 // File paths
 define('ROOT_DIR', dirname(__DIR__));
+
+// Auto-detect base URL from document root (no hardcoded folder name)
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$docRoot = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
+$appRoot = rtrim(str_replace('\\', '/', ROOT_DIR), '/');
+$basePath = '/' . ltrim(str_replace($docRoot, '', $appRoot), '/');
+if ($basePath === '/')
+    $basePath = '';
+define('BASE_URL', $protocol . '://' . $host . $basePath);
 define('UPLOAD_DIR', ROOT_DIR . '/uploads');
 define('VEHICLE_IMAGE_DIR', UPLOAD_DIR . '/vehicles');
 
