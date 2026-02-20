@@ -171,7 +171,8 @@ require_once __DIR__ . '/../api/config.php';
                 <!-- Map click hint -->
                 <p id="map-hint"
                     style="font-size:var(--text-xs);color:var(--color-neutral-400);margin:var(--space-3) 0 0;text-align:center;">
-                    Use <i data-feather="map-pin" style="width:12px;height:12px;vertical-align:middle;"></i> to pick on map, or type to search
+                    Use <i data-feather="map-pin" style="width:12px;height:12px;vertical-align:middle;"></i> to pick on
+                    map, or type to search
                 </p>
             </div><!-- /search-panel-body -->
         </div>
@@ -309,10 +310,10 @@ require_once __DIR__ . '/../api/config.php';
     </div>
 
     <!-- ===== Bottom Toolbar (suggestion + info) ===== -->
-    <div class="map-bottom-toolbar">
-        <button class="btn btn-secondary btn-sm" id="suggestion-open-btn" title="Suggest an improvement">
+    <div class="map-bottom-toolbar" id="map-bottom-toolbar">
+        <button class="btn btn-secondary btn-sm map-fab-btn" id="suggestion-open-btn" title="Suggest an improvement">
             <i data-feather="message-square" style="width:16px;height:16px;"></i>
-            Suggest
+            <span class="map-fab-label">Suggest</span>
         </button>
     </div>
 
@@ -390,19 +391,20 @@ require_once __DIR__ . '/../api/config.php';
             document.getElementById('swap-btn').addEventListener('click', () => SawariMap.swapPoints());
         })();
 
-        /* ===== Search panel collapse (mobile) ===== */
+        /* ===== Search panel collapse (mobile) with swipe ===== */
         (function () {
             const panel = document.getElementById('search-panel');
             const body = document.getElementById('search-panel-body');
             const collapseBtn = document.getElementById('search-collapse-btn');
+            const header = document.getElementById('search-panel-header');
             let collapsed = false;
+            let swipeStartY = 0;
 
-            collapseBtn.addEventListener('click', () => {
-                collapsed = !collapsed;
+            function setCollapsed(state) {
+                collapsed = state;
                 panel.classList.toggle('collapsed', collapsed);
                 const icon = collapseBtn.querySelector('[data-feather], svg');
                 if (icon) {
-                    // Replace the icon
                     const newIcon = document.createElement('i');
                     newIcon.setAttribute('data-feather', collapsed ? 'chevron-down' : 'chevron-up');
                     newIcon.style.width = '18px';
@@ -410,7 +412,20 @@ require_once __DIR__ . '/../api/config.php';
                     icon.replaceWith(newIcon);
                     feather.replace({ 'stroke-width': 1.75 });
                 }
-            });
+            }
+
+            collapseBtn.addEventListener('click', () => setCollapsed(!collapsed));
+
+            // Swipe down on header to collapse, swipe up to expand
+            header.addEventListener('touchstart', (e) => {
+                swipeStartY = e.touches[0].clientY;
+            }, { passive: true });
+
+            header.addEventListener('touchend', (e) => {
+                const diff = e.changedTouches[0].clientY - swipeStartY;
+                if (diff > 30 && !collapsed) setCollapsed(true);
+                else if (diff < -30 && collapsed) setCollapsed(false);
+            }, { passive: true });
         })();
 
         /* ===== Result panel peek/expand (mobile) with swipe ===== */
