@@ -12,7 +12,7 @@
 
 ## GPS Module Overview
 
-### Hardware: NEO-6M GPS Modulei
+### Hardware: NEO-6M GPS Module
 - **Manufacturer**: u-blox
 - **Chipset**: u-blox 6 positioning engine
 - **Communication**: UART serial (TTL level, 3.3V/5V compatible)
