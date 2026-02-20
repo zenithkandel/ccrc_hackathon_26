@@ -183,14 +183,22 @@ switch ($action) {
         validateCsrf();
         $db = getDB();
 
-        $ids = isset($_POST['ids']) ? $_POST['ids'] : [];
-        if (!is_array($ids) || empty($ids))
+        $raw = isset($_POST['ids']) ? $_POST['ids'] : '';
+        if (is_array($raw)) {
+            $ids = $raw;
+        } elseif (is_string($raw) && strlen(trim($raw)) > 0) {
+            $ids = explode(',', $raw);
+        } else {
+            $ids = [];
+        }
+        if (empty($ids))
             jsonError('No contribution IDs provided.');
 
         // Sanitize to integers
         $ids = array_map('intval', $ids);
         $ids = array_filter($ids, function ($v) {
-            return $v > 0; });
+            return $v > 0;
+        });
         if (empty($ids))
             jsonError('No valid contribution IDs.');
 
