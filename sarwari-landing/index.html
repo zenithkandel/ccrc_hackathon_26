@@ -25,7 +25,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Feather Icons -->
     <script src="https://unpkg.com/feather-icons"></script>
@@ -201,6 +201,25 @@
     </section>
 
     <!-- ================================================================
+         IMAGE RIBBON — Visual break
+         ================================================================ -->
+    <div class="image-ribbon" aria-hidden="true">
+        <div class="ribbon-track">
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/image1.jpg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/108638425_305582130808549_5592725951144085732_n.jpg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/image2.jpg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/1594641445.jpg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/image3.jpg" alt="" width="400" height="260"></div>
+            <!-- Duplicate for seamless loop -->
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/image1.jpg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/108638425_305582130808549_5592725951144085732_n.jpg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/image2.jpg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/1594641445.jpg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/image3.jpg" alt="" width="400" height="260"></div>
+        </div>
+    </div>
+
+    <!-- ================================================================
          WHAT DOES SAWARI DO — Features showcase
          ================================================================ -->
     <section class="section what-section" id="what">
@@ -225,53 +244,109 @@
                     </div>
                 </div>
 
-                <div class="features-grid-sm">
-                    <div class="feature-card reveal">
-                        <div class="feature-card-icon">
+                <!-- Infographic Feature Bullets -->
+                <div class="feature-bullets">
+                    <div class="feature-bullet reveal">
+                        <div class="bullet-icon">
                             <i data-feather="navigation"></i>
                         </div>
-                        <h3>Live GPS Tracking</h3>
-                        <p>ESP32 hardware on each bus sends positions every 2 seconds. Your map updates every 8 seconds with smooth marker animations.</p>
+                        <div class="bullet-content">
+                            <div class="bullet-stat">8s</div>
+                            <h3>Live GPS Tracking</h3>
+                            <p>Refresh rate. ESP32 hardware on each bus sends positions every 2 seconds. Your map updates with smooth marker animations.</p>
+                        </div>
                     </div>
 
-                    <div class="feature-card reveal">
-                        <div class="feature-card-icon icon-alt">
+                    <div class="feature-bullet reveal">
+                        <div class="bullet-icon bullet-icon--emerald">
                             <i data-feather="dollar-sign"></i>
                         </div>
-                        <h3>Nepal Fare Rules</h3>
-                        <p>Fares rounded to nearest NPR 5, minimum NPR 20. Automatic 25% student and elderly discounts applied.</p>
+                        <div class="bullet-content">
+                            <div class="bullet-stat">NPR 20</div>
+                            <h3>Nepal Fare Rules</h3>
+                            <p>Minimum fare. Rounded to nearest NPR 5. Automatic 25% student and elderly discounts applied instantly.</p>
+                        </div>
                     </div>
 
-                    <div class="feature-card reveal">
-                        <div class="feature-card-icon icon-warm">
+                    <div class="feature-bullet reveal">
+                        <div class="bullet-icon bullet-icon--rose">
                             <i data-feather="git-merge"></i>
                         </div>
-                        <h3>Multi-Bus Transfers</h3>
-                        <p>No direct bus? Sawari finds a shared transfer stop and plans a two-bus journey with separate fares and conductor tips.</p>
+                        <div class="bullet-content">
+                            <div class="bullet-stat">2-Bus</div>
+                            <h3>Multi-Bus Transfers</h3>
+                            <p>Transfer planning. No direct bus? Sawari finds shared transfer stops and plans two-bus journeys with separate fares.</p>
+                        </div>
                     </div>
 
-                    <div class="feature-card reveal">
-                        <div class="feature-card-icon icon-green">
+                    <div class="feature-bullet reveal">
+                        <div class="bullet-icon bullet-icon--orange">
                             <i data-feather="message-circle"></i>
                         </div>
-                        <h3>Conductor Tips</h3>
-                        <p>"Tell the conductor: Kalanki to Buspark." Exact phrasing, boarding instructions, and "Roknu!" to signal your stop.</p>
+                        <div class="bullet-content">
+                            <div class="bullet-stat">रोक्नु!</div>
+                            <h3>Conductor Tips</h3>
+                            <p>Exact Nepali phrasing. "Tell the conductor: Kalanki to Buspark." Boarding instructions and stop signals included.</p>
+                        </div>
                     </div>
 
-                    <div class="feature-card reveal">
-                        <div class="feature-card-icon icon-blue">
+                    <div class="feature-bullet reveal">
+                        <div class="bullet-icon bullet-icon--sky">
                             <i data-feather="bell"></i>
                         </div>
-                        <h3>Emergency Alerts</h3>
-                        <p>Strikes, road blocks, diversions — real-time alerts on affected routes with severity markers on the map.</p>
+                        <div class="bullet-content">
+                            <div class="bullet-stat">Live</div>
+                            <h3>Emergency Alerts</h3>
+                            <p>Real-time notifications. Strikes, road blocks, diversions — alerts on affected routes with severity markers on the map.</p>
+                        </div>
                     </div>
 
-                    <div class="feature-card reveal">
-                        <div class="feature-card-icon icon-dark">
+                    <div class="feature-bullet reveal">
+                        <div class="bullet-icon bullet-icon--green">
                             <i data-feather="bar-chart-2"></i>
                         </div>
-                        <h3>Carbon Savings</h3>
-                        <p>Every route shows CO₂ saved vs. taking a car. Bus: 0.089 kg/km. Car: 0.210 kg/km. See your impact.</p>
+                        <div class="bullet-content">
+                            <div class="bullet-stat">57%</div>
+                            <h3>Carbon Savings</h3>
+                            <p>Less CO₂ per km vs. cars. Every route shows environmental impact — Bus: 0.089 kg/km. Car: 0.210 kg/km.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Infographic Comparison Chart -->
+                <div class="infographic reveal">
+                    <div class="infographic-compare">
+                        <div class="compare-header">
+                            <h3><i data-feather="trending-up"></i> Why Public Transit Wins</h3>
+                            <p>Per kilometer comparison — Public Bus vs Private Car</p>
+                        </div>
+                        <div class="compare-bars">
+                            <div class="compare-row">
+                                <span class="compare-label">Cost per km</span>
+                                <div class="compare-bar-group">
+                                    <div class="compare-bar compare-bar--bus" style="--bar-width: 25%"><span>NPR 1.8</span></div>
+                                    <div class="compare-bar compare-bar--car" style="--bar-width: 85%"><span>NPR 8.5</span></div>
+                                </div>
+                            </div>
+                            <div class="compare-row">
+                                <span class="compare-label">CO₂ Emissions</span>
+                                <div class="compare-bar-group">
+                                    <div class="compare-bar compare-bar--bus" style="--bar-width: 35%"><span>0.089 kg</span></div>
+                                    <div class="compare-bar compare-bar--car" style="--bar-width: 80%"><span>0.210 kg</span></div>
+                                </div>
+                            </div>
+                            <div class="compare-row">
+                                <span class="compare-label">Road Space Used</span>
+                                <div class="compare-bar-group">
+                                    <div class="compare-bar compare-bar--bus" style="--bar-width: 18%"><span>1×</span></div>
+                                    <div class="compare-bar compare-bar--car" style="--bar-width: 72%"><span>8×</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="compare-legend">
+                            <span class="legend-item legend-item--bus"><span class="legend-dot"></span> Public Bus</span>
+                            <span class="legend-item legend-item--car"><span class="legend-dot"></span> Private Car</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -334,6 +409,18 @@
             </div>
         </div>
     </section>
+
+    <!-- ================================================================
+         IMAGE MOSAIC — Visual break
+         ================================================================ -->
+    <div class="image-mosaic" aria-hidden="true">
+        <div class="mosaic-grid">
+            <div class="mosaic-img mosaic-img--tall"><img loading="lazy" src="../gallery/image4.jpg" alt="" width="400" height="500"></div>
+            <div class="mosaic-img"><img loading="lazy" src="../gallery/39089002_214055306121394_3987346834723962880_n_mmZU29H7GE.jpg" alt="" width="400" height="260"></div>
+            <div class="mosaic-img"><img loading="lazy" src="../gallery/image5.jpg" alt="" width="400" height="260"></div>
+            <div class="mosaic-img mosaic-img--tall"><img loading="lazy" src="../gallery/473749570_1355280112583010_593412764911101796_n.jpg" alt="" width="400" height="500"></div>
+        </div>
+    </div>
 
     <!-- ================================================================
          WHY IS IT NEEDED — Impact section
@@ -406,6 +493,36 @@
                         government-regulated fare before you board — including student and elderly discounts,
                         rounded to the nearest NPR 5 as per Nepal's transport rules.
                     </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         TRANSIT STATS — Key numbers with image background
+         ================================================================ -->
+    <section class="section stats-section">
+        <div class="stats-bg">
+            <img loading="lazy" src="../gallery/81038617_2710162452340155_22013957954863104_n.jpg" alt="" width="1920" height="600">
+            <div class="stats-overlay"></div>
+        </div>
+        <div class="container stats-content">
+            <div class="stats-grid reveal">
+                <div class="stat-item">
+                    <div><span class="stat-number" data-count="4">0</span><span class="stat-unit"> Million+</span></div>
+                    <div class="stat-label">Daily Commuters in Kathmandu Valley</div>
+                </div>
+                <div class="stat-item">
+                    <div><span class="stat-number" data-count="100">0</span><span class="stat-unit">+</span></div>
+                    <div class="stat-label">Bus Routes Across Nepal</div>
+                </div>
+                <div class="stat-item">
+                    <div><span class="stat-number" data-count="57">0</span><span class="stat-unit">%</span></div>
+                    <div class="stat-label">Less CO₂ Per Km vs Cars</div>
+                </div>
+                <div class="stat-item">
+                    <div><span class="stat-number" data-count="0">0</span><span class="stat-unit"> Apps</span></div>
+                    <div class="stat-label">Digital Transit Tools Before Sawari</div>
                 </div>
             </div>
         </div>
@@ -504,6 +621,25 @@
     </section>
 
     <!-- ================================================================
+         IMAGE RIBBON 2 — Visual break (reverse direction)
+         ================================================================ -->
+    <div class="image-ribbon image-ribbon--reverse" aria-hidden="true">
+        <div class="ribbon-track">
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/image6.jpg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/302216934_482557370551393_6475660738973236802_n.jpg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/image7.jpg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/IMG-1.jpeg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/mayur_yatayat_XWhLImWBJm.jpg" alt="" width="400" height="260"></div>
+            <!-- Duplicate for seamless loop -->
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/image6.jpg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/302216934_482557370551393_6475660738973236802_n.jpg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/image7.jpg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/IMG-1.jpeg" alt="" width="400" height="260"></div>
+            <div class="ribbon-img"><img loading="lazy" src="../gallery/mayur_yatayat_XWhLImWBJm.jpg" alt="" width="400" height="260"></div>
+        </div>
+    </div>
+
+    <!-- ================================================================
          GALLERY — Real fleet images
          ================================================================ -->
     <section class="section gallery-section" id="gallery">
@@ -529,128 +665,44 @@
                     <img loading="lazy" src="../gallery/digo-yatayat.jpg" alt="Digo Yatayat green bus" width="600" height="400">
                     <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
                 </div>
-                <div class="gallery-item" data-caption="Kathmandu public transit — Daily commuters board a local bus">
-                    <img loading="lazy" src="../gallery/108638425_305582130808549_5592725951144085732_n.jpg" alt="Commuters at Kathmandu bus stop" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Nepal transit scene — Bus operations in the valley">
-                    <img loading="lazy" src="../gallery/1594641445.jpg" alt="Nepal bus transit" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
                 <div class="gallery-item gallery-item--tall" data-caption="Samakhusi Yatayat — Serving northern Kathmandu corridor">
                     <img loading="lazy" src="../gallery/samakhusi-yatayat-1729569860.jpg" alt="Samakhusi Yatayat bus" width="600" height="700">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Public bus service connecting Kathmandu communities">
-                    <img loading="lazy" src="../gallery/302216934_482557370551393_6475660738973236802_n.jpg" alt="Kathmandu public bus" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Nepal micro bus — Nimble transit through narrow city roads">
-                    <img loading="lazy" src="../gallery/39089002_214055306121394_3987346834723962880_n_mmZU29H7GE.jpg" alt="Nepal micro bus" width="600" height="400">
                     <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
                 </div>
                 <div class="gallery-item" data-caption="Hiace minibus — The workhorse of Nepal's semi-urban routes">
                     <img loading="lazy" src="../gallery/hiace.webp" alt="Toyota Hiace minibus" width="600" height="400">
                     <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
                 </div>
+                <div class="gallery-item" data-caption="High-tech modern buses entering Nepal's transit fleet">
+                    <img loading="lazy" src="../gallery/high-tech-buses.jpg" alt="Modern high-tech bus" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
                 <div class="gallery-item gallery-item--wide" data-caption="Sajha Yatayat luxury service — Kathmandu–Narayangadh shuttle">
                     <img loading="lazy" src="../gallery/sajha-yatayat-kathmandu-narayangadh-shuttle-service-1758693554.jpg" alt="Sajha Yatayat long-distance shuttle" width="800" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Bus fleet scene — Peak traffic operations in the valley">
-                    <img loading="lazy" src="../gallery/473749570_1355280112583010_593412764911101796_n.jpg" alt="Valley bus fleet" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Busy Kathmandu transit — Passengers during rush hour">
-                    <img loading="lazy" src="../gallery/473783154_1062778689195922_6904992953434292580_n.jpg" alt="Kathmandu rush hour bus" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item gallery-item--tall" data-caption="High-tech modern buses entering Nepal's transit fleet">
-                    <img loading="lazy" src="../gallery/high-tech-buses.jpg" alt="Modern high-tech bus" width="600" height="700">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Transit operations — End-of-day bus staging area">
-                    <img loading="lazy" src="../gallery/481820024_656265493582501_1243983797300762177_n.jpg" alt="Bus staging area" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Vintage Nepal bus — The backbone of public transit for decades">
-                    <img loading="lazy" src="../gallery/81038617_2710162452340155_22013957954863104_n.jpg" alt="Vintage Nepal bus" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Kathmandu streets — Buses navigating the bustling city center">
-                    <img loading="lazy" src="../gallery/image1.jpg" alt="Kathmandu bus street scene" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Local microbus — Connecting suburbs to the city core">
-                    <img loading="lazy" src="../gallery/image2.jpg" alt="Local microbus" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item gallery-item--wide" data-caption="Mahanagar Yatayat bus — Panoramic view of a fleet vehicle on route">
-                    <img loading="lazy" src="../gallery/mahanagar.jpg" alt="Mahanagar Yatayat on route" width="800" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Transit riders — The everyday bus journey experience in Nepal">
-                    <img loading="lazy" src="../gallery/image3.jpg" alt="Bus journey in Nepal" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Roadside bus stop — Where commuters wait without schedules">
-                    <img loading="lazy" src="../gallery/image4.jpg" alt="Nepali bus stop" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Valley transit corridor — Buses lining a major Kathmandu route">
-                    <img loading="lazy" src="../gallery/image5.jpg" alt="Kathmandu bus corridor" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item gallery-item--tall" data-caption="Sajha Yatayat — Modern fleet vehicle in service">
-                    <img loading="lazy" src="../gallery/sajha.jpg" alt="Sajha Yatayat bus" width="600" height="700">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Nepal evening commute — Golden hour on busy streets">
-                    <img loading="lazy" src="../gallery/image6.jpg" alt="Nepal evening commute" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Conductor and passengers — The human side of Nepal's transit">
-                    <img loading="lazy" src="../gallery/image7.jpg" alt="Conductor and passengers" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Nepal bus scene — A candid look at daily operations">
-                    <img loading="lazy" src="../gallery/IMG-1.jpeg" alt="Nepal bus scene" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Manangar Yatayat — Another view of the valley fleet">
-                    <img loading="lazy" src="../gallery/manangar-yatayat.jpg" alt="Manangar Yatayat bus" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item gallery-item--wide" data-caption="Sajha Yatayat modern fleet — Lined up at the depot ready for service">
-                    <img loading="lazy" src="../gallery/SajhaBus_20220707134627.jpg" alt="Sajha Yatayat fleet" width="800" height="400">
                     <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
                 </div>
                 <div class="gallery-item" data-caption="Mayur Yatayat — Connecting outer ring road communities">
                     <img loading="lazy" src="../gallery/mayur.jpg" alt="Mayur Yatayat bus" width="600" height="400">
                     <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
                 </div>
-                <div class="gallery-item" data-caption="Mayur Yatayat — Another angle of the blue fleet bus">
-                    <img loading="lazy" src="../gallery/mayur_yatayat_XWhLImWBJm.jpg" alt="Mayur Yatayat fleet" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
-                <div class="gallery-item" data-caption="Sajha Yatayat fleet — Multiple vehicles at the main depot">
-                    <img loading="lazy" src="../gallery/sajha1.jpg" alt="Sajha Yatayat fleet at depot" width="600" height="400">
-                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
-                </div>
                 <div class="gallery-item" data-caption="Nilo Micro — Blue microbus serving Kathmandu inner routes">
                     <img loading="lazy" src="../gallery/nilo-micro.jpg" alt="Nilo Micro bus" width="600" height="400">
                     <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
                 </div>
-                <div class="gallery-item" data-caption="Nepal cityscape — The valley where Sawari navigates transit">
-                    <img loading="lazy" src="../gallery/nepal.jpg" alt="Kathmandu Valley cityscape" width="600" height="400">
+                <div class="gallery-item gallery-item--tall" data-caption="Sajha Yatayat — Modern fleet vehicle in service">
+                    <img loading="lazy" src="../gallery/sajha.jpg" alt="Sajha Yatayat bus" width="600" height="700">
                     <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
                 </div>
-                <div class="gallery-item gallery-item--wide" data-caption="Route map — Visualizing the bus network across Kathmandu Valley">
-                    <img loading="lazy" src="../gallery/routes.jpg" alt="Bus route map" width="800" height="400">
+                <div class="gallery-item" data-caption="Manangar Yatayat — Another view of the valley fleet">
+                    <img loading="lazy" src="../gallery/manangar-yatayat.jpg" alt="Manangar Yatayat bus" width="600" height="400">
                     <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
                 </div>
                 <div class="gallery-item" data-caption="Electric three-wheeler tempo — Zero emission local transit">
                     <img loading="lazy" src="../gallery/tempo.jpg" alt="Electric tempo in Kathmandu" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item gallery-item--wide" data-caption="Route map — Visualizing the bus network across Kathmandu Valley">
+                    <img loading="lazy" src="../gallery/routes.jpg" alt="Bus route map" width="800" height="400">
                     <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
                 </div>
             </div>
