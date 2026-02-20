@@ -68,7 +68,7 @@
 
 // API endpoint for telemetry data submission
 // UPDATE THIS to your actual server URL before deploying
-#define API_ENDPOINT        "http://zenithkandel.com.np/test%20api/api.php"
+#define API_ENDPOINT        "http://zenithkandel.com.np/sawari/api/gps-device.php"
 
 // HTTP request timeout in milliseconds
 #define HTTP_TIMEOUT        5000
@@ -77,7 +77,7 @@
 // TIMING INTERVALS (all in milliseconds)
 // ============================================================================
 // How often to send GPS data to the server
-#define SEND_INTERVAL               2000
+#define SEND_INTERVAL               5000
 
 // How often to refresh the OLED display
 #define DISPLAY_UPDATE_INTERVAL     500
