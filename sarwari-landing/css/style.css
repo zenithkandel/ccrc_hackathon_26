@@ -8,17 +8,17 @@
    0. DESIGN TOKENS
    ================================================================== */
 :root {
-    /* ── Amber / Gold (Primary) ── */
-    --amber-50:  #FFFBEB;
-    --amber-100: #FEF3C7;
-    --amber-200: #FDE68A;
-    --amber-300: #FCD34D;
-    --amber-400: #FBBF24;
-    --amber-500: #F59E0B;
-    --amber-600: #D97706;
-    --amber-700: #B45309;
-    --amber-800: #92400E;
-    --amber-900: #78350F;
+    /* ── Amber / Gold (Primary) — Bright ── */
+    --amber-50:  #FFFDF0;
+    --amber-100: #FFF8D6;
+    --amber-200: #FFEC99;
+    --amber-300: #FFD84D;
+    --amber-400: #FFC621;
+    --amber-500: #FFAA00;
+    --amber-600: #E89500;
+    --amber-700: #CC7A00;
+    --amber-800: #A35F00;
+    --amber-900: #7A4500;
 
     /* ── Warm Neutrals ── */
     --stone-50:  #FAFAF9;
@@ -33,20 +33,20 @@
     --stone-900: #1C1917;
     --stone-950: #0C0A09;
 
-    /* ── Accent Colors ── */
-    --emerald-500: #10B981;
-    --emerald-600: #059669;
-    --sky-400:     #38BDF8;
-    --sky-500:     #0EA5E9;
-    --sky-600:     #0284C7;
-    --rose-500:    #F43F5E;
-    --rose-600:    #E11D48;
+    /* ── Accent Colors — Bright ── */
+    --emerald-500: #34D399;
+    --emerald-600: #10B981;
+    --sky-400:     #5FC8FC;
+    --sky-500:     #22B8FF;
+    --sky-600:     #0EA5E9;
+    --rose-500:    #FF5574;
+    --rose-600:    #F43F5E;
 
     /* ── Semantic Tokens ── */
     --color-accent:       var(--amber-500);
     --color-accent-hover: var(--amber-600);
     --color-accent-light: var(--amber-100);
-    --color-accent-glow:  rgba(245, 158, 11, .3);
+    --color-accent-glow:  rgba(255, 170, 0, .4);
     --color-text:         var(--stone-800);
     --color-text-muted:   var(--stone-500);
     --color-bg:           #fff;
@@ -55,7 +55,7 @@
     --color-surface:      #fff;
 
     /* ── Typography ── */
-    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     --text-xs:   .75rem;
     --text-sm:   .875rem;
     --text-base: 1rem;
@@ -263,13 +263,13 @@ h1, h2, h3, h4, h5, h6 {
     display: inline-flex;
     align-items: center;
     gap: .5rem;
-    background: linear-gradient(135deg, var(--amber-500), var(--amber-600));
+    background: linear-gradient(135deg, var(--amber-400), var(--amber-600));
     color: #fff;
     font-size: var(--text-sm);
     font-weight: 600;
     padding: .625rem 1.5rem;
     border-radius: var(--radius-full);
-    box-shadow: 0 2px 12px rgba(245,158,11,.3);
+    box-shadow: 0 2px 16px rgba(255,170,0,.4);
     transition: all var(--duration) var(--ease-out);
 }
 
@@ -349,15 +349,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-accent {
-    background: linear-gradient(135deg, var(--amber-500), var(--amber-600));
+    background: linear-gradient(135deg, var(--amber-400), var(--amber-600));
     color: #fff;
-    box-shadow: 0 4px 16px rgba(245, 158, 11, .35), inset 0 1px 0 rgba(255,255,255,.15);
+    box-shadow: 0 4px 20px rgba(255, 170, 0, .45), inset 0 1px 0 rgba(255,255,255,.2);
 }
 
 .btn-accent:hover {
-    background: linear-gradient(135deg, var(--amber-400), var(--amber-500));
+    background: linear-gradient(135deg, var(--amber-300), var(--amber-500));
     transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(245, 158, 11, .45), inset 0 1px 0 rgba(255,255,255,.2);
+    box-shadow: 0 8px 36px rgba(255, 170, 0, .55), inset 0 1px 0 rgba(255,255,255,.25);
 }
 
 .btn-glass {
@@ -408,14 +408,14 @@ h1, h2, h3, h4, h5, h6 {
     inset: 0;
     background:
         linear-gradient(180deg,
-            rgba(12,10,9,.35) 0%,
-            rgba(12,10,9,.2) 30%,
-            rgba(12,10,9,.25) 60%,
-            rgba(12,10,9,.65) 100%
+            rgba(12,10,9,.25) 0%,
+            rgba(12,10,9,.1) 30%,
+            rgba(12,10,9,.15) 60%,
+            rgba(12,10,9,.55) 100%
         ),
         linear-gradient(90deg,
-            rgba(12,10,9,.5) 0%,
-            transparent 60%
+            rgba(12,10,9,.4) 0%,
+            transparent 55%
         );
 }
 
@@ -460,12 +460,12 @@ h1, h2, h3, h4, h5, h6 {
 
 .hero-title {
     font-size: clamp(2.75rem, 6vw, var(--text-7xl));
-    font-weight: 900;
+    font-weight: 800;
     color: #fff;
     letter-spacing: -.03em;
     margin-bottom: 1.5rem;
     line-height: 1.05;
-    text-shadow: 0 2px 30px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.3);
+    text-shadow: 0 2px 30px rgba(0,0,0,.6), 0 1px 4px rgba(0,0,0,.4);
 }
 
 .hero-accent {
@@ -473,16 +473,16 @@ h1, h2, h3, h4, h5, h6 {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    filter: drop-shadow(0 2px 8px rgba(245,158,11,.4));
+    filter: drop-shadow(0 2px 12px rgba(255,198,33,.6));
 }
 
 .hero-sub {
     font-size: clamp(1.05rem, 1.5vw, var(--text-lg));
-    color: rgba(255,255,255,.85);
+    color: rgba(255,255,255,.92);
     max-width: 560px;
     line-height: 1.75;
     margin-bottom: 2.5rem;
-    text-shadow: 0 1px 8px rgba(0,0,0,.4);
+    text-shadow: 0 1px 8px rgba(0,0,0,.5);
 }
 
 .hero-actions {
@@ -515,17 +515,17 @@ h1, h2, h3, h4, h5, h6 {
 .metric strong {
     font-size: var(--text-2xl);
     font-weight: 800;
-    color: var(--amber-400);
+    color: var(--amber-300);
     line-height: 1.2;
-    text-shadow: 0 0 16px rgba(245,158,11,.3);
+    text-shadow: 0 0 20px rgba(255,198,33,.5);
 }
 
 .metric span {
     font-size: var(--text-xs);
-    color: rgba(255,255,255,.5);
+    color: rgba(255,255,255,.65);
     text-transform: uppercase;
     letter-spacing: .08em;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .metric:first-child { padding-left: 1.25rem; }
@@ -569,12 +569,12 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .12em;
-    color: var(--amber-600);
-    background: linear-gradient(135deg, var(--amber-50), var(--amber-100));
+    color: var(--amber-700);
+    background: linear-gradient(135deg, var(--amber-100), var(--amber-200));
     padding: .4rem 1.125rem;
     border-radius: var(--radius-full);
     margin-bottom: 1.25rem;
-    border: 1px solid var(--amber-200);
+    border: 1px solid var(--amber-300);
 }
 
 .section-tag--light {
@@ -790,12 +790,12 @@ h1, h2, h3, h4, h5, h6 {
     height: 100%;
     object-fit: cover;
     transition: transform .4s var(--ease-out);
-    filter: brightness(.9);
+    filter: brightness(.95) saturate(1.1);
 }
 
 .ribbon-img:hover img {
     transform: scale(1.08);
-    filter: brightness(1);
+    filter: brightness(1.05) saturate(1.2);
 }
 
 @keyframes ribbon-scroll {
@@ -937,7 +937,7 @@ h1, h2, h3, h4, h5, h6 {
 .bullet-stat {
     font-size: var(--text-2xl);
     font-weight: 900;
-    background: linear-gradient(135deg, var(--amber-500), var(--amber-700));
+    background: linear-gradient(135deg, var(--amber-400), var(--amber-600));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -1251,12 +1251,12 @@ h1, h2, h3, h4, h5, h6 {
     height: 100%;
     object-fit: cover;
     transition: transform .5s var(--ease-out);
-    filter: brightness(.85);
+    filter: brightness(.9) saturate(1.1);
 }
 
 .mosaic-img:hover img {
     transform: scale(1.08);
-    filter: brightness(1);
+    filter: brightness(1.05) saturate(1.2);
 }
 
 .mosaic-img--tall {
@@ -1416,7 +1416,7 @@ h1, h2, h3, h4, h5, h6 {
 .stats-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(12,10,9,.82);
+    background: rgba(12,10,9,.75);
 }
 
 .stats-content {
@@ -1458,7 +1458,7 @@ h1, h2, h3, h4, h5, h6 {
     background-clip: text;
     line-height: 1;
     display: inline;
-    filter: drop-shadow(0 0 12px rgba(245,158,11,.3));
+    filter: drop-shadow(0 0 18px rgba(255,198,33,.5));
 }
 
 .stat-unit {
@@ -1466,11 +1466,12 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
     color: var(--amber-300);
     display: inline;
+    text-shadow: 0 0 12px rgba(255,198,33,.4);
 }
 
 .stat-label {
     font-size: var(--text-sm);
-    color: rgba(255,255,255,.6);
+    color: rgba(255,255,255,.75);
     max-width: 160px;
     margin: .5rem auto 0;
     text-shadow: 0 1px 6px rgba(0,0,0,.3);
@@ -1503,8 +1504,8 @@ h1, h2, h3, h4, h5, h6 {
     inset: 0;
     background: linear-gradient(
         135deg,
-        rgba(12,10,9,.65) 0%,
-        rgba(12,10,9,.5) 100%
+        rgba(12,10,9,.55) 0%,
+        rgba(12,10,9,.4) 100%
     );
 }
 
@@ -1692,7 +1693,7 @@ h1, h2, h3, h4, h5, h6 {
 .gallery-hover {
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(245,158,11,.2), rgba(12,10,9,.3));
+    background: linear-gradient(135deg, rgba(255,170,0,.25), rgba(12,10,9,.2));
     display: grid;
     place-items: center;
     opacity: 0;
@@ -1825,16 +1826,16 @@ h1, h2, h3, h4, h5, h6 {
 
 .cta-content h2 {
     font-size: clamp(2.25rem, 4.5vw, var(--text-5xl));
-    font-weight: 900;
+    font-weight: 800;
     color: #fff;
     margin-bottom: 1.25rem;
-    text-shadow: 0 2px 20px rgba(0,0,0,.4);
+    text-shadow: 0 2px 20px rgba(0,0,0,.5);
     letter-spacing: -.02em;
 }
 
 .cta-content p {
     font-size: var(--text-lg);
-    color: rgba(255,255,255,.85);
+    color: rgba(255,255,255,.92);
     max-width: 560px;
     margin: 0 auto 3rem;
     text-shadow: 0 1px 8px rgba(0,0,0,.3);
