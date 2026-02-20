@@ -1800,6 +1800,13 @@
         margin-top: var(--space-1);
         letter-spacing: 0.02em;
     }
+
+    /* Hide bottom toolbar when result panel is visible */
+    .result-panel.open~.map-bottom-toolbar {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
 }
 
 
