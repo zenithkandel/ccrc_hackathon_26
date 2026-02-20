@@ -603,9 +603,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .split-image img {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-    aspect-ratio: 4/3;
+    height: auto;
+    object-fit: contain;
 }
 
 .image-badge {
@@ -1150,6 +1149,355 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==================================================================
+   12a. IMAGE RIBBON — Infinite scrolling image strip
+   ================================================================== */
+.image-ribbon {
+    overflow: hidden;
+    background: var(--stone-900);
+    padding: .5rem 0;
+}
+
+.ribbon-track {
+    display: flex;
+    gap: .5rem;
+    width: max-content;
+    animation: ribbon-scroll 28s linear infinite;
+}
+
+.image-ribbon--reverse .ribbon-track {
+    animation-direction: reverse;
+}
+
+.ribbon-img {
+    flex-shrink: 0;
+    width: 320px;
+    height: 200px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.ribbon-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .4s var(--ease-out);
+}
+
+.ribbon-img:hover img {
+    transform: scale(1.05);
+}
+
+@keyframes ribbon-scroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* ==================================================================
+   12b. IMAGE MOSAIC — Grid break between sections
+   ================================================================== */
+.image-mosaic {
+    background: var(--stone-900);
+    padding: 0;
+    overflow: hidden;
+}
+
+.mosaic-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1fr 1.3fr;
+    grid-template-rows: 150px 150px;
+    gap: 4px;
+}
+
+.mosaic-img {
+    overflow: hidden;
+    position: relative;
+}
+
+.mosaic-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .4s var(--ease-out);
+}
+
+.mosaic-img:hover img {
+    transform: scale(1.05);
+}
+
+.mosaic-img--tall {
+    grid-row: span 2;
+}
+
+/* ==================================================================
+   12c. INFOGRAPHIC — Comparison Chart + Feature Bullets
+   ================================================================== */
+.infographic {
+    margin-top: 2.5rem;
+}
+
+.infographic-compare {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: 2.5rem;
+    box-shadow: var(--shadow-md);
+}
+
+.compare-header {
+    margin-bottom: 2rem;
+}
+
+.compare-header h3 {
+    font-size: var(--text-xl);
+    font-weight: 800;
+    margin-bottom: .25rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.compare-header h3 svg {
+    width: 22px;
+    height: 22px;
+    color: var(--amber-500);
+}
+
+.compare-header p {
+    font-size: var(--text-sm);
+    color: var(--stone-500);
+}
+
+.compare-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.compare-row {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.compare-label {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--stone-700);
+}
+
+.compare-bar-group {
+    display: flex;
+    flex-direction: column;
+    gap: .375rem;
+}
+
+.compare-bar {
+    height: 2.25rem;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    color: #fff;
+    width: var(--bar-width);
+    min-width: 80px;
+    transition: width 1.2s var(--ease-out);
+}
+
+.compare-bar span {
+    white-space: nowrap;
+}
+
+.compare-bar--bus {
+    background: linear-gradient(90deg, var(--emerald-500), var(--emerald-600));
+}
+
+.compare-bar--car {
+    background: linear-gradient(90deg, var(--stone-400), var(--stone-500));
+}
+
+.compare-legend {
+    display: flex;
+    gap: 1.5rem;
+    padding-top: .5rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: var(--text-sm);
+    color: var(--stone-600);
+    font-weight: 500;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.legend-item--bus .legend-dot { background: var(--emerald-500); }
+.legend-item--car .legend-dot { background: var(--stone-400); }
+
+/* Feature Bullets — Infographic Style */
+.feature-bullets {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+}
+
+.feature-bullet {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: 1.75rem;
+    transition: transform var(--duration) var(--ease-out),
+                box-shadow var(--duration) var(--ease-out),
+                border-color var(--duration);
+}
+
+.feature-bullet:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--amber-200);
+}
+
+.bullet-icon {
+    width: 3.25rem;
+    height: 3.25rem;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-lg);
+    background: var(--amber-50);
+    color: var(--amber-600);
+    flex-shrink: 0;
+}
+
+.bullet-icon svg { width: 20px; height: 20px; }
+
+.bullet-icon--sky     { background: #F0F9FF; color: var(--sky-600); }
+.bullet-icon--emerald { background: #ECFDF5; color: var(--emerald-600); }
+.bullet-icon--rose    { background: #FFF1F2; color: var(--rose-500); }
+.bullet-icon--orange  { background: #FFF7ED; color: #EA580C; }
+.bullet-icon--green   { background: #ECFDF5; color: var(--emerald-600); }
+.bullet-icon--red     { background: #FEF2F2; color: #DC2626; }
+
+.bullet-stat {
+    font-size: var(--text-2xl);
+    font-weight: 900;
+    color: var(--amber-600);
+    line-height: 1;
+    margin-bottom: .375rem;
+}
+
+.bullet-content h3 {
+    font-size: var(--text-base);
+    font-weight: 700;
+    margin-bottom: .25rem;
+}
+
+.bullet-content p {
+    font-size: var(--text-sm);
+    color: var(--stone-500);
+    line-height: 1.65;
+}
+
+/* Stagger bullet animations */
+.feature-bullets .feature-bullet.reveal:nth-child(2) { transition-delay: .06s; }
+.feature-bullets .feature-bullet.reveal:nth-child(3) { transition-delay: .12s; }
+.feature-bullets .feature-bullet.reveal:nth-child(4) { transition-delay: .18s; }
+.feature-bullets .feature-bullet.reveal:nth-child(5) { transition-delay: .24s; }
+.feature-bullets .feature-bullet.reveal:nth-child(6) { transition-delay: .30s; }
+
+/* ==================================================================
+   12d. STATS SECTION — Big numbers with image background
+   ================================================================== */
+.stats-section {
+    position: relative;
+    padding: 5rem 0;
+    overflow: hidden;
+}
+
+.stats-bg {
+    position: absolute;
+    inset: 0;
+}
+
+.stats-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.stats-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(12,10,9,.78);
+}
+
+.stats-content {
+    position: relative;
+    z-index: 2;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    position: relative;
+}
+
+.stat-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 56px;
+    background: rgba(255,255,255,.15);
+}
+
+.stat-number {
+    font-size: clamp(2.5rem, 5vw, var(--text-6xl));
+    font-weight: 900;
+    color: var(--amber-400);
+    line-height: 1;
+    text-shadow: 0 2px 12px rgba(245,158,11,.35);
+    display: inline;
+}
+
+.stat-unit {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--amber-300);
+    display: inline;
+}
+
+.stat-label {
+    font-size: var(--text-sm);
+    color: rgba(255,255,255,.7);
+    max-width: 160px;
+    margin: .5rem auto 0;
+    text-shadow: 0 1px 6px rgba(0,0,0,.3);
+    line-height: 1.4;
+}
+
+/* ==================================================================
    12. GALLERY
    ================================================================== */
 .gallery-section {
@@ -1160,12 +1508,11 @@ h1, h2, h3, h4, h5, h6 {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     grid-auto-rows: 200px;
-    gap: .75rem;
+    gap: 4px;
 }
 
 .gallery-item {
     position: relative;
-    border-radius: var(--radius-md);
     overflow: hidden;
     cursor: pointer;
 }
@@ -1497,6 +1844,37 @@ h1, h2, h3, h4, h5, h6 {
         grid-template-columns: repeat(2, 1fr);
     }
 
+    .feature-bullets {
+        grid-template-columns: 1fr;
+    }
+
+    .infographic-compare {
+        padding: 1.75rem;
+    }
+
+    .ribbon-img {
+        width: 260px;
+        height: 160px;
+    }
+
+    .mosaic-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 140px 140px;
+        gap: 3px;
+    }
+
+    .mosaic-img--tall {
+        grid-row: span 2;
+    }
+
+    .stat-item {
+        padding: 1rem 1.5rem;
+    }
+
+    .stat-item:nth-child(2)::after {
+        display: none;
+    }
+
     .steps-grid {
         grid-template-columns: 1fr;
         gap: 1.5rem;
@@ -1558,6 +1936,52 @@ h1, h2, h3, h4, h5, h6 {
         grid-template-columns: 1fr;
     }
 
+    .feature-bullets {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .feature-bullet {
+        padding: 1.25rem;
+    }
+
+    .infographic-compare {
+        padding: 1.25rem;
+    }
+
+    .compare-bar {
+        height: 2rem;
+        font-size: var(--text-xs);
+    }
+
+    .ribbon-img {
+        width: 220px;
+        height: 140px;
+    }
+
+    .mosaic-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 120px 120px;
+        gap: 3px;
+    }
+
+    .mosaic-img--tall {
+        grid-row: span 2;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0;
+    }
+
+    .stat-item:nth-child(2)::after {
+        display: none;
+    }
+
+    .stat-item {
+        padding: 1rem .5rem;
+    }
+
     .feature-main-image {
         height: 260px;
     }
@@ -1606,6 +2030,10 @@ h1, h2, h3, h4, h5, h6 {
         opacity: 1;
         transform: none;
     }
+
+    .ribbon-track {
+        animation: none !important;
+    }
 }
 
 :focus-visible {
@@ -1629,18 +2057,20 @@ h1, h2, h3, h4, h5, h6 {
    ================================================================== */
 @media print {
     .site-header, .scroll-progress, .hero-scroll,
-    .lightbox, .mobile-overlay { display: none !important; }
+    .lightbox, .mobile-overlay, .image-ribbon, .image-mosaic { display: none !important; }
 
     body { color: #000; background: #fff; }
     .hero { min-height: auto; padding: 2rem 0; }
     .section { padding: 2rem 0; break-inside: avoid; }
 
     .perspectives-section,
-    .cta-section {
+    .cta-section,
+    .stats-section {
         background: none !important;
     }
 
     .perspectives-bg,
     .cta-bg,
+    .stats-bg,
     .hero-img-bg { display: none; }
 }
