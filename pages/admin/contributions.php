@@ -1,297 +1,210 @@
 <?php
 /**
- * Admin: Contributions Review — Sawari
- * 
- * Review, accept, and reject agent contributions.
- * Shows associated entry details and allows approval or rejection with reason.
+ * SAWARI — Contributions Review (Admin)
+ *
+ * Unified queue showing all contributions with status/type filters,
+ * inline approve/reject, and detail preview modal.
  */
 
-$pageTitle = 'Contributions — Admin — Sawari';
-$pageCss = ['admin.css'];
-$bodyClass = 'admin-page';
-$pageJs = ['admin.js'];
+require_once __DIR__ . '/../../includes/auth-admin.php';
+
+$pageTitle = 'Contributions';
 $currentPage = 'contributions';
-
-require_once __DIR__ . '/../../includes/header.php';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/validation.php';
-
-requireAuth('admin');
-
-$pdo = getDBConnection();
-
-// ─── Filters ─────────────────────────────────────────────
-$statusFilter = getParam('status', '');
-$typeFilter = getParam('type', '');
-$page = getIntParam('page', 1);
-
-$where = [];
-$params = [];
-
-if ($statusFilter && in_array($statusFilter, ['pending', 'accepted', 'rejected'])) {
-    $where[] = 'c.status = :status';
-    $params['status'] = $statusFilter;
-}
-
-if ($typeFilter && in_array($typeFilter, ['vehicle', 'route', 'location'])) {
-    $where[] = 'c.type = :type';
-    $params['type'] = $typeFilter;
-}
-
-$whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-
-$countStmt = $pdo->prepare("SELECT COUNT(*) FROM contributions c $whereClause");
-$countStmt->execute($params);
-$totalItems = (int) $countStmt->fetchColumn();
-$pagination = paginate($totalItems, $page);
-
-$stmt = $pdo->prepare("
-    SELECT c.*, 
-           a.name AS agent_name,
-           adm.name AS reviewer_name
-    FROM contributions c
-    LEFT JOIN agents a ON c.proposed_by = a.agent_id
-    LEFT JOIN admins adm ON c.accepted_by = adm.admin_id
-    $whereClause
-    ORDER BY c.proposed_at DESC
-    LIMIT :limit OFFSET :offset
-");
-foreach ($params as $key => $val) {
-    $stmt->bindValue($key, $val);
-}
-$stmt->bindValue('limit', $pagination['perPage'], PDO::PARAM_INT);
-$stmt->bindValue('offset', $pagination['offset'], PDO::PARAM_INT);
-$stmt->execute();
-$contributions = $stmt->fetchAll();
-
-// Enrich with associated entry names
-foreach ($contributions as &$c) {
-    $c['entry_name'] = '—';
-    if ($c['associated_entry_id']) {
-        $table = match ($c['type']) {
-            'location' => 'locations',
-            'route' => 'routes',
-            'vehicle' => 'vehicles',
-            default => null,
-        };
-        if ($table) {
-            $entryStmt = $pdo->prepare("SELECT name FROM $table WHERE {$c['type']}_id = :id LIMIT 1");
-            $entryStmt->execute(['id' => $c['associated_entry_id']]);
-            $entry = $entryStmt->fetchColumn();
-            if ($entry)
-                $c['entry_name'] = $entry;
-        }
-    }
-}
-unset($c);
-
-$filterParams = http_build_query(array_filter(['status' => $statusFilter, 'type' => $typeFilter]));
-$baseUrl = BASE_URL . '/pages/admin/contributions.php' . ($filterParams ? '?' . $filterParams : '');
-$csrfToken = generateCSRFToken();
+require_once __DIR__ . '/../../includes/admin-header.php';
 ?>
 
-<div class="admin-layout">
-    <?php require_once __DIR__ . '/../../includes/admin-sidebar.php'; ?>
-
-    <div class="admin-content">
-        <div class="admin-page-header">
-            <h1>Contributions Review</h1>
-        </div>
-
-        <form class="filter-bar" method="GET">
-            <select name="status" class="filter-select">
-                <option value="">All Statuses</option>
-                <option value="pending" <?= $statusFilter === 'pending' ? 'selected' : '' ?>>Pending</option>
-                <option value="accepted" <?= $statusFilter === 'accepted' ? 'selected' : '' ?>>Accepted</option>
-                <option value="rejected" <?= $statusFilter === 'rejected' ? 'selected' : '' ?>>Rejected</option>
-            </select>
-            <select name="type" class="filter-select">
-                <option value="">All Types</option>
-                <option value="location" <?= $typeFilter === 'location' ? 'selected' : '' ?>>Location</option>
-                <option value="route" <?= $typeFilter === 'route' ? 'selected' : '' ?>>Route</option>
-                <option value="vehicle" <?= $typeFilter === 'vehicle' ? 'selected' : '' ?>>Vehicle</option>
-            </select>
-            <button type="submit" class="filter-btn">Filter</button>
-            <a href="<?= BASE_URL ?>/pages/admin/contributions.php" class="filter-btn secondary">Reset</a>
-        </form>
-
-        <div class="data-table-wrapper">
-            <?php if (empty($contributions)): ?>
-                <div class="empty-state">
-                    <div class="empty-icon"><i class="fa-duotone fa-solid fa-clipboard-list"></i></div>
-                    <h3>No contributions found</h3>
-                    <p>Contributions from agents will appear here for review.</p>
-                </div>
-            <?php else: ?>
-                <div class="table-scroll">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Type</th>
-                                <th>Entry</th>
-                                <th>Proposed By</th>
-                                <th>Status</th>
-                                <th>Proposed At</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($contributions as $c): ?>
-                                <tr>
-                                    <td>#<?= $c['contribution_id'] ?></td>
-                                    <td>
-                                        <span
-                                            class="badge badge-<?= $c['type'] === 'location' ? 'stop' : ($c['type'] === 'route' ? 'info' : 'landmark') ?>">
-                                            <?= sanitize($c['type']) ?>
-                                        </span>
-                                    </td>
-                                    <td><strong><?= sanitize($c['entry_name']) ?></strong></td>
-                                    <td><?= sanitize($c['agent_name'] ?? '—') ?></td>
-                                    <td>
-                                        <span
-                                            class="badge badge-<?= $c['status'] === 'accepted' ? 'accepted' : ($c['status'] === 'rejected' ? 'rejected' : 'pending') ?>">
-                                            <?= sanitize($c['status']) ?>
-                                        </span>
-                                    </td>
-                                    <td style="font-size:0.8125rem;"><?= timeAgo($c['proposed_at']) ?></td>
-                                    <td>
-                                        <div class="actions">
-                                            <button class="btn btn-sm btn-outline"
-                                                onclick='viewDetails(<?= json_encode($c) ?>)'>View</button>
-                                            <?php if ($c['status'] === 'pending'): ?>
-                                                <button class="btn btn-sm btn-success"
-                                                    onclick="acceptContribution(<?= $c['contribution_id'] ?>)">Accept</button>
-                                                <button class="btn btn-sm btn-danger"
-                                                    onclick="rejectContribution(<?= $c['contribution_id'] ?>)">Reject</button>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
-        </div>
-
-        <?php if ($pagination['totalPages'] > 1): ?>
-            <div class="pagination">
-                <?php if ($pagination['hasPrev']): ?>
-                    <a
-                        href="<?= $baseUrl . (str_contains($baseUrl, '?') ? '&' : '?') ?>page=<?= $pagination['currentPage'] - 1 ?>">&laquo;
-                        Prev</a>
-                <?php else: ?>
-                    <span class="disabled">&laquo; Prev</span>
-                <?php endif; ?>
-                <?php for ($i = max(1, $pagination['currentPage'] - 2); $i <= min($pagination['totalPages'], $pagination['currentPage'] + 2); $i++): ?>
-                    <?php if ($i === $pagination['currentPage']): ?>
-                        <span class="active"><?= $i ?></span>
-                    <?php else: ?>
-                        <a href="<?= $baseUrl . (str_contains($baseUrl, '?') ? '&' : '?') ?>page=<?= $i ?>"><?= $i ?></a>
-                    <?php endif; ?>
-                <?php endfor; ?>
-                <?php if ($pagination['hasNext']): ?>
-                    <a
-                        href="<?= $baseUrl . (str_contains($baseUrl, '?') ? '&' : '?') ?>page=<?= $pagination['currentPage'] + 1 ?>">Next
-                        &raquo;</a>
-                <?php else: ?>
-                    <span class="disabled">Next &raquo;</span>
-                <?php endif; ?>
-            </div>
-        <?php endif; ?>
+<!-- Filters -->
+<div class="filters-bar">
+    <div class="search-bar" style="flex:1;max-width:240px;">
+        <i data-feather="search" class="search-icon"></i>
+        <input type="text" class="form-input" id="search-input" placeholder="Search...">
     </div>
+    <select class="form-select" id="filter-status" style="width:auto;">
+        <option value="pending" selected>Pending</option>
+        <option value="">All Statuses</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+    </select>
+    <select class="form-select" id="filter-type" style="width:auto;">
+        <option value="">All Types</option>
+        <option value="location">Location</option>
+        <option value="vehicle">Vehicle</option>
+        <option value="route">Route</option>
+    </select>
 </div>
 
-<!-- Details Modal -->
-<div class="modal-overlay" id="detailsModal">
-    <div class="modal" style="max-width: 550px;">
-        <div class="modal-header">
-            <h2>Contribution Details</h2>
-            <button class="modal-close"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="modal-body" id="detailsBody">
-            <!-- filled by JS -->
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="AdminUtils.closeFormModal('#detailsModal')">Close</button>
+<!-- Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-container" style="border:none;border-radius:0;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Item</th>
+                        <th>Agent</th>
+                        <th>Notes</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th style="width:140px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="contrib-tbody">
+                    <tr>
+                        <td colspan="7" class="text-center text-muted p-6">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
-
-<!-- Reject Modal -->
-<div class="modal-overlay" id="rejectModal">
-    <div class="modal" style="max-width: 450px;">
-        <div class="modal-header">
-            <h2>Reject Contribution</h2>
-            <button class="modal-close"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label for="rejectReason">Reason for rejection *</label>
-                <textarea id="rejectReason" class="form-textarea" required
-                    placeholder="Explain why this contribution is being rejected..."></textarea>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="AdminUtils.closeFormModal('#rejectModal')">Cancel</button>
-            <button class="btn btn-danger" onclick="submitReject()">Reject</button>
-        </div>
-    </div>
-</div>
+<div id="contrib-pagination" style="margin-top:var(--space-4);"></div>
 
 <script>
-    const BASE = '<?= BASE_URL ?>';
-    let rejectingId = null;
+    (function () {
+        var currentPage = 1;
 
-    function viewDetails(c) {
-        const body = document.getElementById('detailsBody');
-        body.innerHTML = `
-        <div class="detail-row"><span class="detail-label">ID</span><span class="detail-value">#${c.contribution_id}</span></div>
-        <div class="detail-row"><span class="detail-label">Type</span><span class="detail-value">${SawariUtils.statusBadge(c.type)}</span></div>
-        <div class="detail-row"><span class="detail-label">Entry</span><span class="detail-value"><strong>${SawariUtils.escapeHTML(c.entry_name)}</strong></span></div>
-        <div class="detail-row"><span class="detail-label">Proposed By</span><span class="detail-value">${SawariUtils.escapeHTML(c.agent_name || '—')}</span></div>
-        <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${SawariUtils.statusBadge(c.status)}</span></div>
-        <div class="detail-row"><span class="detail-label">Proposed At</span><span class="detail-value">${SawariUtils.formatDate(c.proposed_at)}</span></div>
-        ${c.responded_at ? `<div class="detail-row"><span class="detail-label">Responded At</span><span class="detail-value">${SawariUtils.formatDate(c.responded_at)}</span></div>` : ''}
-        ${c.rejection_reason ? `<div class="detail-row"><span class="detail-label">Rejection Reason</span><span class="detail-value">${SawariUtils.escapeHTML(c.rejection_reason)}</span></div>` : ''}
-        ${c.reviewer_name ? `<div class="detail-row"><span class="detail-label">Reviewed By</span><span class="detail-value">${SawariUtils.escapeHTML(c.reviewer_name)}</span></div>` : ''}
-    `;
-        AdminUtils.openFormModal('#detailsModal');
-    }
+        document.addEventListener('DOMContentLoaded', function () {
+            loadContributions();
+            document.getElementById('filter-status').addEventListener('change', function () { currentPage = 1; loadContributions(); });
+            document.getElementById('filter-type').addEventListener('change', function () { currentPage = 1; loadContributions(); });
 
-    function acceptContribution(id) {
-        if (!SawariUtils.confirmAction('Accept this contribution? The associated entry will be approved.')) return;
-
-        AdminUtils.apiAction(`${BASE}/api/contributions/respond.php`, {
-            contribution_id: id,
-            action: 'accept'
-        }, {
-            onSuccess: () => location.reload()
+            var timer;
+            document.getElementById('search-input').addEventListener('input', function () {
+                clearTimeout(timer);
+                timer = setTimeout(function () { currentPage = 1; loadContributions(); }, 350);
+            });
         });
-    }
 
-    function rejectContribution(id) {
-        rejectingId = id;
-        document.getElementById('rejectReason').value = '';
-        AdminUtils.openFormModal('#rejectModal');
-    }
+        function loadContributions() {
+            var p = { page: currentPage };
+            var s = document.getElementById('filter-status').value;
+            var t = document.getElementById('filter-type').value;
+            if (s) p.status = s;
+            if (t) p.type = t;
 
-    function submitReject() {
-        const reason = document.getElementById('rejectReason').value.trim();
-        if (!reason) { SawariUtils.showToast('Please provide a rejection reason', 'warning'); return; }
+            Sawari.api('contributions', 'list', p, 'GET').then(function (data) {
+                if (!data.success) return;
+                renderTable(data.contributions);
+                Sawari.pagination(document.getElementById('contrib-pagination'), data.pagination.page, data.pagination.total_pages, function (pg) { currentPage = pg; loadContributions(); });
+            });
+        }
 
-        AdminUtils.apiAction(`${BASE}/api/contributions/respond.php`, {
-            contribution_id: rejectingId,
-            action: 'reject',
-            rejection_reason: reason
-        }, {
-            onSuccess: () => {
-                AdminUtils.closeFormModal('#rejectModal');
-                location.reload();
+        function renderTable(contribs) {
+            var tbody = document.getElementById('contrib-tbody');
+            if (!contribs.length) {
+                tbody.innerHTML = Sawari.emptyRow(7, 'No contributions found.');
+                feather.replace({ 'stroke-width': 1.75 });
+                return;
             }
-        });
-    }
+
+            var typeIcons = { location: 'map-pin', vehicle: 'truck', route: 'git-branch' };
+
+            tbody.innerHTML = contribs.map(function (c) {
+                var icon = typeIcons[c.type] || 'file';
+
+                var actions = '';
+                if (c.status === 'pending') {
+                    actions += '<button class="btn btn-sm btn-success" onclick="approveContrib(' + c.contribution_id + ')" title="Approve"><i data-feather="check" style="width:14px;height:14px;"></i></button> ';
+                    actions += '<button class="btn btn-sm btn-danger" onclick="rejectContrib(' + c.contribution_id + ')" title="Reject"><i data-feather="x" style="width:14px;height:14px;"></i></button> ';
+                }
+                actions += '<button class="btn btn-sm btn-ghost" onclick="viewContrib(' + c.contribution_id + ')" title="View details"><i data-feather="eye" style="width:14px;height:14px;"></i></button>';
+
+                return '<tr>' +
+                    '<td><span style="display:inline-flex;align-items:center;gap:var(--space-1);"><i data-feather="' + icon + '" style="width:14px;height:14px;"></i> ' + c.type + '</span></td>' +
+                    '<td><strong>' + Sawari.escape(c.item_name) + '</strong></td>' +
+                    '<td>' + Sawari.escape(c.agent_name) + '<br><small class="text-muted">' + Sawari.escape(c.agent_email) + '</small></td>' +
+                    '<td class="text-muted" style="font-size:var(--text-sm);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + Sawari.escape(c.notes || '—') + '</td>' +
+                    '<td><span class="badge badge-' + c.status + '">' + c.status + '</span></td>' +
+                    '<td class="text-muted" style="font-size:var(--text-sm);">' + Sawari.escape(c.created_at) + '</td>' +
+                    '<td>' + actions + '</td>' +
+                    '</tr>';
+            }).join('');
+
+            feather.replace({ 'stroke-width': 1.75 });
+        }
+
+        window.approveContrib = function (id) {
+            Sawari.confirm('Approve this contribution? The agent will receive 10 points.', function () {
+                Sawari.api('contributions', 'approve', { id: id }).then(function (d) {
+                    if (d.success) { Sawari.toast('Contribution approved.', 'success'); loadContributions(); }
+                });
+            }, 'Approve', 'btn-success');
+        };
+
+        window.rejectContrib = function (id) {
+            Sawari.rejectPrompt(function (reason) {
+                Sawari.api('contributions', 'reject', { id: id, reason: reason }).then(function (d) {
+                    if (d.success) { Sawari.toast('Contribution rejected.', 'success'); loadContributions(); }
+                });
+            });
+        };
+
+        window.viewContrib = function (id) {
+            Sawari.api('contributions', 'get', { id: id }, 'GET').then(function (d) {
+                if (!d.success) return;
+                var c = d.contribution;
+                var item = c.item;
+
+                var body = '<div style="margin-bottom:var(--space-4);">';
+                body += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-4);">';
+                body += '<div><span class="text-muted" style="font-size:var(--text-xs);">Type</span><br>' + c.type + '</div>';
+                body += '<div><span class="text-muted" style="font-size:var(--text-xs);">Status</span><br><span class="badge badge-' + c.status + '">' + c.status + '</span></div>';
+                body += '<div><span class="text-muted" style="font-size:var(--text-xs);">Agent</span><br>' + Sawari.escape(c.agent_name) + '</div>';
+                body += '<div><span class="text-muted" style="font-size:var(--text-xs);">Submitted</span><br>' + Sawari.escape(c.created_at) + '</div>';
+                body += '</div>';
+
+                if (c.notes) {
+                    body += '<div style="margin-bottom:var(--space-3);"><span class="text-muted" style="font-size:var(--text-xs);">Agent Notes</span><br>' + Sawari.escape(c.notes) + '</div>';
+                }
+                if (c.rejection_reason) {
+                    body += '<div style="margin-bottom:var(--space-3);"><span class="text-muted" style="font-size:var(--text-xs);">Rejection Reason</span><br>' + Sawari.escape(c.rejection_reason) + '</div>';
+                }
+
+                if (item) {
+                    body += '<hr style="border:none;border-top:1px solid var(--color-neutral-100);margin:var(--space-4) 0;">';
+                    body += '<h5 style="margin-bottom:var(--space-2);">Submitted Item: ' + Sawari.escape(item.name || '—') + '</h5>';
+
+                    if (c.type === 'location' && item) {
+                        body += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">';
+                        body += '<div><span class="text-muted" style="font-size:var(--text-xs);">Type</span><br>' + (item.type || '—') + '</div>';
+                        body += '<div><span class="text-muted" style="font-size:var(--text-xs);">Coordinates</span><br>' + item.latitude + ', ' + item.longitude + '</div>';
+                        body += '</div>';
+                        if (item.description) body += '<p style="margin-top:var(--space-2);">' + Sawari.escape(item.description) + '</p>';
+                    }
+
+                    if (c.type === 'vehicle' && item) {
+                        body += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">';
+                        body += '<div><span class="text-muted" style="font-size:var(--text-xs);">Electric</span><br>' + (item.electric == 1 ? 'Yes' : 'No') + '</div>';
+                        body += '<div><span class="text-muted" style="font-size:var(--text-xs);">Hours</span><br>' + (item.starts_at || '—') + ' – ' + (item.stops_at || '—') + '</div>';
+                        body += '</div>';
+                    }
+
+                    if (c.type === 'route' && item && item.location_list_parsed) {
+                        body += '<div style="margin-top:var(--space-2);">';
+                        body += '<span class="text-muted" style="font-size:var(--text-xs);">Stops (' + item.location_list_parsed.length + ')</span><br>';
+                        item.location_list_parsed.forEach(function (s, i) {
+                            body += '<span class="badge badge-neutral" style="margin:2px;">' + (i + 1) + '. ' + Sawari.escape(s.name) + '</span>';
+                        });
+                        body += '</div>';
+                    }
+                }
+                body += '</div>';
+
+                var footer = '';
+                if (c.status === 'pending') {
+                    footer = '<button class="btn btn-secondary" onclick="Sawari.modal()">Close</button>' +
+                        '<button class="btn btn-danger" onclick="Sawari.modal();rejectContrib(' + c.contribution_id + ')">Reject</button>' +
+                        '<button class="btn btn-success" onclick="Sawari.modal();approveContrib(' + c.contribution_id + ')">Approve</button>';
+                } else {
+                    footer = '<button class="btn btn-secondary" onclick="Sawari.modal()">Close</button>';
+                }
+
+                Sawari.modal('Contribution #' + c.contribution_id, body, footer);
+            });
+        };
+
+    })();
 </script>
 
-<?php require_once __DIR__ . '/../../includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../../includes/admin-footer.php'; ?>

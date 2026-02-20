@@ -1,264 +1,287 @@
 <?php
 /**
- * Landing Page — Sawari
+ * SAWARI — Landing Page
  * 
- * Public landing page with hero, features, how-it-works,
- * agents leaderboard, and call-to-action.
+ * Entry point for the application. Introduces users to Sawari
+ * and provides navigation to the map, agent dashboard, and admin panel.
  */
 
-$pageTitle = 'Sawari — Navigate Nepal\'s Public Transport';
-$pageCss = ['landing.css'];
-$bodyClass = 'page-landing';
-
-require_once __DIR__ . '/includes/header.php';
-require_once __DIR__ . '/config/database.php';
-
-// ─── Fetch top 10 agents by approved contribution count ───
-$db = getDBConnection();
-$leaderboardStmt = $db->prepare("
-    SELECT a.agent_id, a.name, a.image_path, a.joined_at,
-           COUNT(c.contribution_id) AS total_contributions,
-           SUM(CASE WHEN c.type = 'location' THEN 1 ELSE 0 END) AS location_count,
-           SUM(CASE WHEN c.type = 'route' THEN 1 ELSE 0 END) AS route_count,
-           SUM(CASE WHEN c.type = 'vehicle' THEN 1 ELSE 0 END) AS vehicle_count
-    FROM agents a
-    INNER JOIN contributions c ON c.proposed_by = a.agent_id AND c.status = 'accepted'
-    GROUP BY a.agent_id
-    ORDER BY total_contributions DESC
-    LIMIT 10
-");
-$leaderboardStmt->execute();
-$topAgents = $leaderboardStmt->fetchAll();
-
-// ─── Fetch quick stats ───────────────────────────────────
-$statsStmt = $db->query("
-    SELECT
-        (SELECT COUNT(*) FROM locations WHERE status = 'approved') AS total_locations,
-        (SELECT COUNT(*) FROM routes WHERE status = 'approved') AS total_routes,
-        (SELECT COUNT(*) FROM vehicles WHERE status = 'approved') AS total_vehicles,
-        (SELECT COUNT(*) FROM agents) AS total_agents
-");
-$stats = $statsStmt->fetch();
+require_once __DIR__ . '/api/config.php';
 ?>
+<!DOCTYPE html>
+<html lang="en">
 
-<!-- ═══ Hero Section ═══════════════════════════════════════ -->
-<section class="hero-section">
-    <div class="hero-bg-pattern"></div>
-    <div class="hero-content">
-        <h1 class="hero-title">Navigate Nepal's Public Transport <span class="hero-highlight">with Ease</span></h1>
-        <p class="hero-subtitle">
-            Find bus routes, estimate fares, get walking directions, and navigate
-            Kathmandu Valley's public transportation — all in one place.
-        </p>
-        <div class="hero-actions">
-            <a href="<?= BASE_URL ?>/pages/map.php" class="btn btn-hero-primary">
-                <span class="btn-icon"><i class="fa-duotone fa-solid fa-map-location-dot"></i></span>
-                Find Your Route <i class="fa-solid fa-arrow-right"></i>
-            </a>
-            <a href="<?= BASE_URL ?>/pages/auth/register.php" class="btn btn-hero-secondary">
-                Become an Agent
-            </a>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sawari — Navigate Nepal's Public Transport</title>
+
+    <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/global.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/components.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <style>
+        .landing-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Hero */
+        .hero {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%);
+            color: var(--color-white);
+            text-align: center;
+            padding: var(--space-12) var(--space-6);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="1.5" fill="rgba(255,255,255,0.08)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.05)"/><circle cx="40" cy="80" r="1.2" fill="rgba(255,255,255,0.06)"/><circle cx="60" cy="10" r="0.8" fill="rgba(255,255,255,0.04)"/><circle cx="90" cy="90" r="1.3" fill="rgba(255,255,255,0.07)"/></svg>');
+            background-size: 200px 200px;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 600px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--radius-full);
+            padding: var(--space-1) var(--space-4);
+            font-size: var(--text-xs);
+            font-weight: var(--font-medium);
+            margin-bottom: var(--space-6);
+        }
+
+        .hero h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: var(--font-bold);
+            line-height: var(--leading-tight);
+            margin: 0 0 var(--space-4);
+            letter-spacing: var(--tracking-tight);
+        }
+
+        .hero p {
+            font-size: var(--text-lg);
+            opacity: 0.9;
+            margin: 0 0 var(--space-8);
+            line-height: var(--leading-relaxed);
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: var(--space-4);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .hero-actions .btn {
+            padding: var(--space-3) var(--space-8);
+            font-size: var(--text-base);
+            border-radius: var(--radius-lg);
+        }
+
+        .btn-hero-primary {
+            background: var(--color-white);
+            color: var(--color-primary-700);
+            border: none;
+            font-weight: var(--font-semibold);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-hero-primary:hover {
+            background: var(--color-neutral-50);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-hero-secondary {
+            background: rgba(255, 255, 255, 0.12);
+            color: var(--color-white);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-hero-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Features */
+        .features {
+            padding: var(--space-16) var(--space-6);
+            background: var(--color-white);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-8);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            text-align: center;
+            padding: var(--space-6);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-xl);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--space-4);
+        }
+
+        .feature-card h3 {
+            font-size: var(--text-base);
+            font-weight: var(--font-semibold);
+            color: var(--color-neutral-900);
+            margin: 0 0 var(--space-2);
+        }
+
+        .feature-card p {
+            font-size: var(--text-sm);
+            color: var(--color-neutral-500);
+            margin: 0;
+            line-height: var(--leading-relaxed);
+        }
+
+        /* Footer */
+        .landing-footer {
+            padding: var(--space-6);
+            text-align: center;
+            background: var(--color-neutral-50);
+            border-top: 1px solid var(--color-neutral-200);
+        }
+
+        .landing-footer p {
+            font-size: var(--text-sm);
+            color: var(--color-neutral-500);
+            margin: 0;
+        }
+
+        .landing-footer a {
+            color: var(--color-primary-600);
+            text-decoration: none;
+        }
+
+        .landing-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: var(--space-6);
+            justify-content: center;
+            margin-bottom: var(--space-3);
+        }
+
+        @media (max-width: 640px) {
+            .hero {
+                padding: var(--space-8) var(--space-4);
+            }
+
+            .hero-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .hero-actions .btn {
+                width: 100%;
+                max-width: 280px;
+            }
+
+            .features {
+                padding: var(--space-10) var(--space-4);
+            }
+        }
+    </style>
+</head>
+
+<body class="landing-page">
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <i data-feather="map" style="width:14px;height:14px;"></i>
+                Nepal's Public Transport Navigator
+            </div>
+
+            <h1>Navigate with <span style="color:var(--color-accent-300);">Sawari</span></h1>
+
+            <p>Find bus routes, track vehicles in real-time, and navigate Nepal's public transport system with
+                confidence. No more asking strangers for directions.</p>
+
+            <div class="hero-actions">
+                <a href="<?= BASE_URL ?>/pages/map.php" class="btn btn-hero-primary">
+                    <i data-feather="navigation" style="width:20px;height:20px;"></i>
+                    Find My Route
+                </a>
+                <a href="<?= BASE_URL ?>/pages/agent/login.php" class="btn btn-hero-secondary">
+                    <i data-feather="users" style="width:18px;height:18px;"></i>
+                    Agent Portal
+                </a>
+            </div>
         </div>
-        <div class="hero-stats">
-            <div class="hero-stat">
-                <span class="hero-stat-number"><?= (int) $stats['total_locations'] ?></span>
-                <span class="hero-stat-label">Bus Stops</span>
-            </div>
-            <div class="hero-stat">
-                <span class="hero-stat-number"><?= (int) $stats['total_routes'] ?></span>
-                <span class="hero-stat-label">Routes</span>
-            </div>
-            <div class="hero-stat">
-                <span class="hero-stat-number"><?= (int) $stats['total_vehicles'] ?></span>
-                <span class="hero-stat-label">Vehicles</span>
-            </div>
-            <div class="hero-stat">
-                <span class="hero-stat-number"><?= (int) $stats['total_agents'] ?></span>
-                <span class="hero-stat-label">Agents</span>
-            </div>
-        </div>
-    </div>
-</section>
+    </section>
 
-<!-- ═══ How It Works ═══════════════════════════════════════ -->
-<section class="section how-it-works">
-    <div class="container">
-        <h2 class="section-title">How It Works</h2>
-        <p class="section-subtitle">Three simple steps to navigate Kathmandu Valley</p>
-
-        <div class="steps-grid">
-            <div class="step-card">
-                <div class="step-number">1</div>
-                <div class="step-icon"><i class="fa-duotone fa-solid fa-location-dot"></i></div>
-                <h3 class="step-title">Enter Start Point</h3>
-                <p class="step-desc">
-                    Type your starting location or use GPS to detect it automatically.
-                </p>
-            </div>
-            <div class="step-connector"><i class="fa-solid fa-arrow-right"></i></div>
-            <div class="step-card">
-                <div class="step-number">2</div>
-                <div class="step-icon"><i class="fa-duotone fa-solid fa-flag-checkered"></i></div>
-                <h3 class="step-title">Enter Destination</h3>
-                <p class="step-desc">
-                    Search for your destination from hundreds of mapped bus stops and landmarks.
-                </p>
-            </div>
-            <div class="step-connector"><i class="fa-solid fa-arrow-right"></i></div>
-            <div class="step-card">
-                <div class="step-number">3</div>
-                <div class="step-icon"><i class="fa-duotone fa-solid fa-map-location-dot"></i></div>
-                <h3 class="step-title">Get Directions</h3>
-                <p class="step-desc">
-                    View step-by-step directions with bus routes, fares, and walking paths.
-                </p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ═══ Features Highlight ═════════════════════════════════ -->
-<section class="section features-section">
-    <div class="container">
-        <h2 class="section-title">Why Sawari?</h2>
-        <p class="section-subtitle">Everything you need to navigate public transport in Nepal</p>
-
+    <!-- Features Section -->
+    <section class="features">
         <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-icon"><i class="fa-duotone fa-solid fa-bus"></i></div>
-                <h3 class="feature-title">Real Routes</h3>
-                <p class="feature-desc">
-                    Actual bus routes mapped by local volunteer agents who ride these routes daily.
+                <div class="feature-icon" style="background:var(--color-primary-50);color:var(--color-primary-600);">
+                    <i data-feather="search" style="width:24px;height:24px;"></i>
+                </div>
+                <h3>Smart Route Finding</h3>
+                <p>Enter your start and destination — Sawari finds the best bus routes, including transfers when needed.
                 </p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon"><i class="fa-duotone fa-solid fa-money-bill-wave"></i></div>
-                <h3 class="feature-title">Fare Estimates</h3>
-                <p class="feature-desc">
-                    Know how much your ride will cost before you board — including student and elderly discounts.
-                </p>
+                <div class="feature-icon" style="background:var(--color-accent-50);color:var(--color-accent-600);">
+                    <i data-feather="radio" style="width:24px;height:24px;"></i>
+                </div>
+                <h3>Live Bus Tracking</h3>
+                <p>See real-time positions of GPS-enabled buses on the map with ETA to your stop.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon"><i class="fa-duotone fa-solid fa-arrows-rotate"></i></div>
-                <h3 class="feature-title">Bus Switching</h3>
-                <p class="feature-desc">
-                    Smart multi-bus route suggestions when no direct bus connects your start and end points.
-                </p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon"><i class="fa-duotone fa-solid fa-person-walking"></i></div>
-                <h3 class="feature-title">Walking Directions</h3>
-                <p class="feature-desc">
-                    Step-by-step walking guidance to the nearest bus stop and from your drop-off to the destination.
-                </p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon"><i class="fa-duotone fa-solid fa-triangle-exclamation"></i></div>
-                <h3 class="feature-title">Emergency Alerts</h3>
-                <p class="feature-desc">
-                    Stay informed about route disruptions, road closures, and transport strikes.
-                </p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon"><i class="fa-duotone fa-solid fa-handshake"></i></div>
-                <h3 class="feature-title">Community Driven</h3>
-                <p class="feature-desc">
-                    Powered by volunteer agents who contribute and maintain route data for everyone.
-                </p>
+                <div class="feature-icon" style="background:var(--color-success-50);color:var(--color-success-600);">
+                    <i data-feather="wind" style="width:24px;height:24px;"></i>
+                </div>
+                <h3>Carbon Calculator</h3>
+                <p>See how much CO₂ you save by choosing public transport over private vehicles.</p>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- ═══ Agents Leaderboard ═════════════════════════════════ -->
-<section class="section leaderboard-section">
-    <div class="container">
-        <h2 class="section-title">Top Contributors</h2>
-        <p class="section-subtitle">
-            Our amazing volunteer agents who map Nepal's public transport
-        </p>
-
-        <?php if (!empty($topAgents)): ?>
-            <div class="leaderboard-grid">
-                <?php foreach ($topAgents as $rank => $agent): ?>
-                    <div class="leaderboard-card <?= $rank < 3 ? 'leaderboard-top' : '' ?>">
-                        <div class="leaderboard-rank">
-                            <?php if ($rank === 0): ?>
-                                <span class="rank-medal"><i class="fa-sharp-duotone fa-solid fa-trophy"
-                                        style="color:#FFD700;"></i></span>
-                            <?php elseif ($rank === 1): ?>
-                                <span class="rank-medal"><i class="fa-sharp-duotone fa-solid fa-medal"
-                                        style="color:#C0C0C0;"></i></span>
-                            <?php elseif ($rank === 2): ?>
-                                <span class="rank-medal"><i class="fa-sharp-duotone fa-solid fa-medal"
-                                        style="color:#CD7F32;"></i></span>
-                            <?php else: ?>
-                                <span class="rank-number">#<?= $rank + 1 ?></span>
-                            <?php endif; ?>
-                        </div>
-                        <div class="leaderboard-avatar">
-                            <?php if ($agent['image_path']): ?>
-                                <img src="<?= BASE_URL ?>/assets/images/uploads/<?= sanitize($agent['image_path']) ?>"
-                                    alt="<?= sanitize($agent['name']) ?>">
-                            <?php else: ?>
-                                <div class="avatar-placeholder">
-                                    <?= strtoupper(substr($agent['name'], 0, 1)) ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="leaderboard-info">
-                            <span class="leaderboard-name"><?= sanitize($agent['name']) ?></span>
-                            <span class="leaderboard-count">
-                                <?= (int) $agent['total_contributions'] ?>
-                                contribution<?= $agent['total_contributions'] != 1 ? 's' : '' ?>
-                            </span>
-                            <span class="leaderboard-breakdown">
-                                <?php if ($agent['location_count'] > 0): ?>
-                                    <span class="breakdown-tag" title="Locations"><i
-                                            class="fa-duotone fa-solid fa-location-dot"></i>
-                                        <?= (int) $agent['location_count'] ?>
-                                    </span>
-                                <?php endif; ?>
-                                <?php if ($agent['route_count'] > 0): ?>
-                                    <span class="breakdown-tag" title="Routes"><i class="fa-duotone fa-solid fa-route"></i>
-                                        <?= (int) $agent['route_count'] ?>
-                                    </span>
-                                <?php endif; ?>
-                                <?php if ($agent['vehicle_count'] > 0): ?>
-                                    <span class="breakdown-tag" title="Vehicles"><i class="fa-duotone fa-solid fa-bus"></i>
-                                        <?= (int) $agent['vehicle_count'] ?>
-                                    </span>
-                                <?php endif; ?>
-                            </span>
-                            <span class="leaderboard-since">Since
-                                <?= date('M Y', strtotime($agent['joined_at'])) ?>
-                            </span>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php else: ?>
-            <div class="leaderboard-empty">
-                <p>No contributions yet. Be the first to contribute!</p>
-            </div>
-        <?php endif; ?>
-    </div>
-</section>
-
-<!-- ═══ Call to Action ═════════════════════════════════════ -->
-<section class="section cta-section">
-    <div class="container">
-        <div class="cta-card">
-            <h2 class="cta-title">Want to Help Map Nepal's Transport?</h2>
-            <p class="cta-desc">
-                Become a Sawari agent and contribute bus stops, routes, and vehicle information
-                to help thousands of commuters navigate the streets of Nepal.
-            </p>
-            <a href="<?= BASE_URL ?>/pages/auth/register.php" class="btn btn-cta">
-                <i class="fa-duotone fa-solid fa-rocket"></i> Become an Agent — It's Free
-            </a>
+    <!-- Footer -->
+    <footer class="landing-footer">
+        <div class="footer-links">
+            <a href="<?= BASE_URL ?>/pages/map.php">Map</a>
+            <a href="<?= BASE_URL ?>/pages/agent/login.php">Agent Login</a>
+            <a href="<?= BASE_URL ?>/pages/admin/login.php">Admin</a>
         </div>
-    </div>
-</section>
+        <p>&copy; 2026 Sawari — Community-powered public transport navigation for Nepal.</p>
+    </footer>
 
-<?php require_once __DIR__ . '/includes/footer.php'; ?>
+    <script>feather.replace({ 'stroke-width': 1.75 });</script>
+</body>
+
+</html>

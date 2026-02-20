@@ -1,506 +1,488 @@
 /**
- * ═══════════════════════════════════════════════════════════
- * Sawari — Search Interaction (Enhanced)
- * ═══════════════════════════════════════════════════════════
- *
- * Handles autocomplete, geolocation, map-click point picking,
- * swap locations, and route search.
+ * SAWARI — Search Controller
+ * 
+ * Point A / Point B input handling, location autocomplete,
+ * geocoding, and search result display.
  */
 
 const SawariSearch = (function () {
     'use strict';
 
-    // ─── State ──────────────────────────────────────────────
-    let startLocation = null;
-    let endLocation = null;
-    let activeIndex = -1;
+    const BASE = document.querySelector('meta[name="base-url"]').content;
 
-    // Map-pick mode: 'start' | 'end' | null
-    let pickMode = null;
+    // Debounce timer
+    let debounceA = null;
+    let debounceB = null;
+    const DEBOUNCE_MS = 300;
+    const MIN_CHARS = 2;
 
-    // Actual user coordinates (from geolocation or map-click)
-    // These may differ from the nearest bus stop's coords
-    let actualStartCoords = null;  // { lat, lng }
-    let actualEndCoords = null;    // { lat, lng }
+    // DOM refs (cached on init)
+    let inputA, inputB, resultsA, resultsB, clearA, clearB;
 
-    // ─── Initialize ─────────────────────────────────────────
+    /* ──────────────────────────────────────────────
+     *  Init
+     * ────────────────────────────────────────────── */
     function init() {
-        var startInput = document.getElementById('startInput');
-        var endInput = document.getElementById('endInput');
-        if (!startInput || !endInput) return;
+        inputA = document.getElementById('input-a');
+        inputB = document.getElementById('input-b');
+        resultsA = document.getElementById('results-a');
+        resultsB = document.getElementById('results-b');
+        clearA = document.getElementById('clear-a');
+        clearB = document.getElementById('clear-b');
 
-        initAutocomplete(startInput, 'startDropdown', function (loc, userCoords) { setStart(loc, userCoords); });
-        initAutocomplete(endInput, 'endDropdown', function (loc, userCoords) { setEnd(loc, userCoords); });
+        // Input listeners
+        inputA.addEventListener('input', () => onInput('a'));
+        inputB.addEventListener('input', () => onInput('b'));
 
-        var btnSwap = document.getElementById('btnSwap');
-        if (btnSwap) btnSwap.addEventListener('click', swapLocations);
+        // Focus listeners — show results if we have cached items
+        inputA.addEventListener('focus', () => onFocus('a'));
+        inputB.addEventListener('focus', () => onFocus('b'));
 
-        var btnGeo = document.getElementById('btnGeolocate');
-        if (btnGeo) btnGeo.addEventListener('click', geolocate);
-
-        var btnPickStart = document.getElementById('btnPickStart');
-        var btnPickEnd = document.getElementById('btnPickEnd');
-        if (btnPickStart) btnPickStart.addEventListener('click', function () { enterPickMode('start'); });
-        if (btnPickEnd) btnPickEnd.addEventListener('click', function () { enterPickMode('end'); });
-
-        var btnPickCancel = document.getElementById('btnPickCancel');
-        if (btnPickCancel) btnPickCancel.addEventListener('click', exitPickMode);
-
-        var btnSearch = document.getElementById('btnSearch');
-        if (btnSearch) btnSearch.addEventListener('click', triggerSearch);
-
-        // Enter key on inputs
-        [startInput, endInput].forEach(function (inp) {
-            inp.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter') {
-                    var dd = inp.id === 'startInput'
-                        ? document.getElementById('startDropdown')
-                        : document.getElementById('endDropdown');
-                    var items = dd ? dd.querySelectorAll('.autocomplete-item') : [];
-                    if (activeIndex >= 0 && items[activeIndex]) return;
-                    if (startLocation && endLocation) {
-                        e.preventDefault();
-                        triggerSearch();
-                    }
-                }
-            });
+        // Clear buttons
+        clearA.addEventListener('click', () => {
+            SawariMap.clearPointA();
+            closeResults('a');
+            inputA.focus();
+        });
+        clearB.addEventListener('click', () => {
+            SawariMap.clearPointB();
+            closeResults('b');
+            inputB.focus();
         });
 
-        // Close dropdowns on outside click
-        document.addEventListener('click', function (e) {
-            document.querySelectorAll('.autocomplete-dropdown').forEach(function (dd) {
-                if (!dd.parentElement.contains(e.target)) dd.classList.remove('active');
-            });
-        });
-
-        // Clear fields on edit
-        startInput.addEventListener('input', function () {
-            if (startLocation && startInput.value !== startLocation.name &&
-                startInput.value !== startLocation.name + ' (nearest stop)') {
-                startLocation = null;
-                actualStartCoords = null;
-                document.getElementById('startLocationId').value = '';
+        // Close results when clicking elsewhere
+        document.addEventListener('click', (e) => {
+            if (!inputA.contains(e.target) && !resultsA.contains(e.target) && !clearA.contains(e.target)) {
+                closeResults('a');
+            }
+            if (!inputB.contains(e.target) && !resultsB.contains(e.target) && !clearB.contains(e.target)) {
+                closeResults('b');
             }
         });
-        endInput.addEventListener('input', function () {
-            if (endLocation && endInput.value !== endLocation.name &&
-                endInput.value !== endLocation.name + ' (nearest stop)') {
-                endLocation = null;
-                actualEndCoords = null;
-                document.getElementById('endLocationId').value = '';
-            }
-        });
+
+        // Keyboard navigation
+        inputA.addEventListener('keydown', (e) => onKeydown(e, 'a'));
+        inputB.addEventListener('keydown', (e) => onKeydown(e, 'b'));
+
+        // Load alerts
+        loadAlerts();
     }
 
-    // ─── Set Start / End with visual feedback ───────────────
-    function setStart(loc, userCoords) {
-        startLocation = loc;
-        // userCoords = the actual point the user picked (map click / GPS)
-        // loc = the nearest bus stop resolved from that point
-        actualStartCoords = userCoords || null;
-        document.getElementById('startInput').value = userCoords
-            ? loc.name + ' (nearest stop)'
-            : loc.name;
-        document.getElementById('startLocationId').value = loc.location_id;
-        SawariMap.setStartMarker(loc.latitude, loc.longitude, loc.name);
-        flashField('startField');
-    }
+    /* ──────────────────────────────────────────────
+     *  Input handler with debounce
+     * ────────────────────────────────────────────── */
+    function onInput(which) {
+        const input = which === 'a' ? inputA : inputB;
+        const query = input.value.trim();
 
-    function setEnd(loc, userCoords) {
-        endLocation = loc;
-        actualEndCoords = userCoords || null;
-        document.getElementById('endInput').value = userCoords
-            ? loc.name + ' (nearest stop)'
-            : loc.name;
-        document.getElementById('endLocationId').value = loc.location_id;
-        SawariMap.setEndMarker(loc.latitude, loc.longitude, loc.name);
-        flashField('endField');
-    }
+        // Clear selected state since user is typing
+        delete input.dataset.lat;
+        delete input.dataset.lng;
+        SawariMap.checkFindRouteReady();
 
-    function flashField(id) {
-        var el = document.getElementById(id);
-        if (el) {
-            el.classList.add('field-set');
-            setTimeout(function () { el.classList.remove('field-set'); }, 700);
+        if (which === 'a') {
+            if (debounceA) clearTimeout(debounceA);
+            document.getElementById('clear-a').style.display = query ? '' : 'none';
+        } else {
+            if (debounceB) clearTimeout(debounceB);
+            document.getElementById('clear-b').style.display = query ? '' : 'none';
         }
-    }
 
-    // ─── Map-click Point Picking ────────────────────────────
-    function enterPickMode(mode) {
-        pickMode = mode;
-        var banner = document.getElementById('mapPickBanner');
-        var text = document.getElementById('mapPickBannerText');
-        if (banner) {
-            banner.style.display = 'flex';
-            text.textContent = mode === 'start'
-                ? 'Click anywhere on the map to set your starting point'
-                : 'Click anywhere on the map to set your destination';
-        }
-        document.body.classList.add('map-picking');
-        var map = SawariMap.getMap();
-        if (map) map.once('click', onMapPick);
-    }
-
-    function exitPickMode() {
-        pickMode = null;
-        var banner = document.getElementById('mapPickBanner');
-        if (banner) banner.style.display = 'none';
-        document.body.classList.remove('map-picking');
-        var map = SawariMap.getMap();
-        if (map) map.off('click', onMapPick);
-    }
-
-    function onMapPick(e) {
-        var lat = e.latlng.lat;
-        var lng = e.latlng.lng;
-        var mode = pickMode;
-        var userCoords = { lat: lat, lng: lng };
-
-        SawariUtils.apiFetch(
-            'api/locations/read.php?nearest=1&lat=' + lat +
-            '&lng=' + lng + '&radius=50&status=approved&limit=1'
-        ).then(function (data) {
-            var locs = data.locations || data.data || [];
-            if (locs.length > 0) {
-                var nearest = {
-                    location_id: parseInt(locs[0].location_id),
-                    name: locs[0].name,
-                    latitude: parseFloat(locs[0].latitude),
-                    longitude: parseFloat(locs[0].longitude)
-                };
-                var dist = Number(locs[0].distance_km).toFixed(1);
-                // Pass userCoords so the API gets walking directions from actual point
-                if (mode === 'start') setStart(nearest, userCoords);
-                else setEnd(nearest, userCoords);
-                SawariUtils.showToast('Nearest stop: ' + nearest.name + ' (' + dist + ' km away)', 'success');
-            } else {
-                SawariUtils.showToast('No bus stops found near that point', 'warning');
-            }
-        }).catch(function () {
-            SawariUtils.showToast('Could not find nearby stops', 'error');
-        });
-
-        exitPickMode();
-    }
-
-    // ─── Autocomplete Setup ─────────────────────────────────
-    function initAutocomplete(input, dropdownId, onSelect) {
-        var dropdown = document.getElementById(dropdownId);
-        if (!dropdown) return;
-        var debounceTimer = null;
-
-        input.addEventListener('input', function () {
-            var query = input.value.trim();
-            activeIndex = -1;
-            if (debounceTimer) clearTimeout(debounceTimer);
-            if (query.length < 1) { dropdown.classList.remove('active'); return; }
-            debounceTimer = setTimeout(function () {
-                fetchLocations(query, dropdown, onSelect);
-            }, 250);
-        });
-
-        input.addEventListener('keydown', function (e) {
-            var items = dropdown.querySelectorAll('.autocomplete-item');
-            if (!items.length) return;
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                activeIndex = Math.min(activeIndex + 1, items.length - 1);
-                highlightItem(items, activeIndex);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                activeIndex = Math.max(activeIndex - 1, 0);
-                highlightItem(items, activeIndex);
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if (activeIndex >= 0 && items[activeIndex]) items[activeIndex].click();
-            } else if (e.key === 'Escape') {
-                dropdown.classList.remove('active');
-            }
-        });
-
-        input.addEventListener('focus', function () {
-            if (dropdown.children.length > 0 && input.value.trim().length > 0) {
-                dropdown.classList.add('active');
-            }
-        });
-    }
-
-    function fetchLocations(query, dropdown, onSelect) {
-        // Show loading indicator immediately
-        dropdown.innerHTML = '<div class="autocomplete-loading"><span class="autocomplete-spinner"></span> Searching...</div>';
-        dropdown.classList.add('active');
-
-        SawariUtils.apiFetch('api/search/locations.php?q=' + encodeURIComponent(query))
-            .then(function (data) {
-                var locals = data.locations || [];
-                if (locals.length >= 3) {
-                    renderDropdown(dropdown, locals, [], onSelect);
-                } else {
-                    // Show local results immediately, then fetch Nominatim
-                    if (locals.length > 0) {
-                        renderDropdown(dropdown, locals, [], onSelect);
-                    }
-                    // Show a searching-web indicator
-                    var loadingEl = document.createElement('div');
-                    loadingEl.className = 'autocomplete-loading autocomplete-web-loading';
-                    loadingEl.innerHTML = '<span class="autocomplete-spinner"></span> Searching more places...';
-                    dropdown.appendChild(loadingEl);
-
-                    fetchNominatim(query, function (webResults) {
-                        // Remove the loading indicator
-                        var webLoad = dropdown.querySelector('.autocomplete-web-loading');
-                        if (webLoad) webLoad.remove();
-                        // Re-render with both local and web results
-                        renderDropdown(dropdown, locals, webResults, onSelect);
-                    });
-                }
-            })
-            .catch(function () {
-                dropdown.innerHTML = '<div class="autocomplete-empty">Search failed. Please try again.</div>';
-                dropdown.classList.add('active');
-            });
-    }
-
-    function fetchNominatim(query, callback) {
-        SawariUtils.apiFetch('api/search/geocode.php?q=' + encodeURIComponent(query))
-            .then(function (data) { callback(data.results || []); })
-            .catch(function () { callback([]); });
-    }
-
-    function renderDropdown(dropdown, locations, webResults, onSelect) {
-        activeIndex = -1;
-        if (locations.length === 0 && webResults.length === 0) {
-            dropdown.innerHTML = '<div class="autocomplete-empty">No locations found</div>';
-            dropdown.classList.add('active');
+        if (query.length < MIN_CHARS) {
+            closeResults(which);
             return;
         }
 
-        var html = '';
+        const timer = setTimeout(() => searchLocations(query, which), DEBOUNCE_MS);
+        if (which === 'a') debounceA = timer;
+        else debounceB = timer;
+    }
 
-        // Local DB results
-        locations.forEach(function (loc) {
-            var typeIcon = loc.type === 'landmark'
-                ? '<i class="fa-duotone fa-solid fa-location-dot" style="color:#7c3aed;"></i>'
-                : '<i class="fa-duotone fa-solid fa-bus-simple" style="color:#2563eb;"></i>';
-            html += '<div class="autocomplete-item" data-id="' + loc.location_id + '">' +
-                '<span class="autocomplete-item-icon">' + typeIcon + '</span>' +
-                '<div class="autocomplete-item-text">' +
-                '<span class="autocomplete-item-name">' + SawariUtils.escapeHTML(loc.name) + '</span>' +
-                '<span class="autocomplete-item-type">' + SawariUtils.escapeHTML(loc.type) + '</span>' +
-                '</div></div>';
-        });
+    function onFocus(which) {
+        const input = which === 'a' ? inputA : inputB;
+        const container = which === 'a' ? resultsA : resultsB;
 
-        // Nominatim / internet results
-        if (webResults.length > 0) {
-            if (locations.length > 0) {
-                html += '<div class="autocomplete-divider">More places nearby</div>';
-            }
-            webResults.forEach(function (place, idx) {
-                html += '<div class="autocomplete-item autocomplete-web" data-web-idx="' + idx + '">' +
-                    '<span class="autocomplete-item-icon"><i class="fa-duotone fa-solid fa-earth-americas" style="color:#059669;"></i></span>' +
-                    '<div class="autocomplete-item-text">' +
-                    '<span class="autocomplete-item-name">' + SawariUtils.escapeHTML(place.name) + '</span>' +
-                    '<span class="autocomplete-item-type autocomplete-web-type">' + SawariUtils.escapeHTML(place.type) + '</span>' +
-                    '</div></div>';
-            });
+        // If input is empty, show "Use current location" quick option
+        if (!input.value.trim()) {
+            showQuickOptions(which);
+            return;
         }
 
-        dropdown.innerHTML = html;
-        dropdown.classList.add('active');
+        // If there are already results, show them
+        if (container.children.length > 0) {
+            container.classList.add('open');
+        }
+    }
 
-        // Click handlers for local results
-        dropdown.querySelectorAll('.autocomplete-item:not(.autocomplete-web)').forEach(function (item) {
-            item.addEventListener('click', function () {
-                var id = parseInt(item.getAttribute('data-id'));
-                var selected = locations.find(function (l) { return l.location_id === id; });
-                if (selected) { onSelect(selected); dropdown.classList.remove('active'); }
-            });
+    /**
+     * Show quick-pick options when input is focused but empty.
+     */
+    function showQuickOptions(which) {
+        const container = which === 'a' ? resultsA : resultsB;
+        container.innerHTML = '';
+
+        // "Use current location" option
+        const locItem = document.createElement('div');
+        locItem.className = 'search-result-item search-result-location';
+        locItem.innerHTML = `
+            <i data-feather="navigation" style="width:16px;height:16px;color:var(--color-primary-500);flex-shrink:0;"></i>
+            <div>
+                <div style="font-size:var(--text-sm);color:var(--color-primary-600);font-weight:500;">Use current location</div>
+                <div style="font-size:var(--text-xs);color:var(--color-neutral-400);">GPS</div>
+            </div>
+        `;
+        locItem.addEventListener('click', () => useCurrentLocation(which));
+        container.appendChild(locItem);
+
+        // "Pick on map" option
+        const pinItem = document.createElement('div');
+        pinItem.className = 'search-result-item search-result-location';
+        pinItem.innerHTML = `
+            <i data-feather="map-pin" style="width:16px;height:16px;color:var(--color-accent-600);flex-shrink:0;"></i>
+            <div>
+                <div style="font-size:var(--text-sm);color:var(--color-accent-600);font-weight:500;">Pick on map</div>
+                <div style="font-size:var(--text-xs);color:var(--color-neutral-400);">Tap to place pin</div>
+            </div>
+        `;
+        pinItem.addEventListener('click', () => {
+            closeResults(which);
+            SawariMap.startPinPick(which);
         });
+        container.appendChild(pinItem);
 
-        // Click handlers for web results (act like map-pick: find nearest bus stop)
-        dropdown.querySelectorAll('.autocomplete-web').forEach(function (item) {
-            item.addEventListener('click', function () {
-                var idx = parseInt(item.getAttribute('data-web-idx'));
-                var place = webResults[idx];
-                if (!place) return;
-                dropdown.classList.remove('active');
-
-                var lat = place.latitude;
-                var lng = place.longitude;
-                var userCoords = { lat: lat, lng: lng };
-
-                // Show loading feedback
-                SawariUtils.showToast('Finding nearest bus stop to ' + place.name + '...', 'info');
-
-                // Find nearest bus stop to this internet place
-                SawariUtils.apiFetch(
-                    'api/locations/read.php?nearest=1&lat=' + lat +
-                    '&lng=' + lng + '&radius=50&status=approved&limit=1'
-                ).then(function (data) {
-                    var locs = data.locations || data.data || [];
-                    if (locs.length > 0) {
-                        var nearest = {
-                            location_id: parseInt(locs[0].location_id),
-                            name: locs[0].name,
-                            latitude: parseFloat(locs[0].latitude),
-                            longitude: parseFloat(locs[0].longitude)
-                        };
-                        onSelect(nearest, userCoords);
-                        var distKm = Number(locs[0].distance_km).toFixed(1);
-                        SawariUtils.showToast('Nearest stop: ' + nearest.name + ' (' + distKm + ' km from ' + place.name + ')', 'success');
-                    } else {
-                        SawariUtils.showToast('No bus stops found near ' + place.name, 'warning');
-                    }
-                }).catch(function () {
-                    SawariUtils.showToast('Could not find nearby stops', 'error');
-                });
-            });
-        });
+        container.classList.add('open');
+        feather.replace({ 'stroke-width': 1.75 });
     }
 
-    function highlightItem(items, index) {
-        items.forEach(function (item, i) { item.classList.toggle('active', i === index); });
-        if (items[index]) items[index].scrollIntoView({ block: 'nearest' });
-    }
-
-    // ─── Swap ───────────────────────────────────────────────
-    function swapLocations() {
-        var si = document.getElementById('startInput'), ei = document.getElementById('endInput');
-        var sId = document.getElementById('startLocationId'), eId = document.getElementById('endLocationId');
-        var tmpT = si.value; si.value = ei.value; ei.value = tmpT;
-        var tmpI = sId.value; sId.value = eId.value; eId.value = tmpI;
-        var tmp = startLocation; startLocation = endLocation; endLocation = tmp;
-        // Also swap actual coordinates
-        var tmpC = actualStartCoords; actualStartCoords = actualEndCoords; actualEndCoords = tmpC;
-        if (startLocation) SawariMap.setStartMarker(startLocation.latitude, startLocation.longitude, startLocation.name);
-        if (endLocation) SawariMap.setEndMarker(endLocation.latitude, endLocation.longitude, endLocation.name);
-        var btn = document.getElementById('btnSwap');
-        if (btn) { btn.classList.add('swapping'); setTimeout(function () { btn.classList.remove('swapping'); }, 400); }
-    }
-
-    // ─── Geolocation ────────────────────────────────────────
-    function geolocate() {
+    /**
+     * Use device GPS to set a point.
+     */
+    function useCurrentLocation(which) {
         if (!navigator.geolocation) {
-            SawariUtils.showToast('Geolocation not supported', 'warning');
+            SawariMap.showToast('Geolocation not supported by your browser.', 'warning');
             return;
         }
-        var btn = document.getElementById('btnGeolocate');
-        btn.classList.add('locating');
-        btn.disabled = true;
+        closeResults(which);
+        SawariMap.showToast('Getting your location...', 'info');
 
         navigator.geolocation.getCurrentPosition(
-            function (pos) {
-                var lat = pos.coords.latitude, lng = pos.coords.longitude;
-                var userCoords = { lat: lat, lng: lng };
-                SawariUtils.apiFetch(
-                    'api/locations/read.php?nearest=1&lat=' + lat +
-                    '&lng=' + lng + '&radius=50&status=approved&limit=1'
-                ).then(function (data) {
-                    var locs = data.locations || data.data || [];
-                    if (locs.length > 0) {
-                        var n = {
-                            location_id: parseInt(locs[0].location_id),
-                            name: locs[0].name,
-                            latitude: parseFloat(locs[0].latitude),
-                            longitude: parseFloat(locs[0].longitude)
-                        };
-                        // Pass userCoords so API gets walking from actual GPS position
-                        setStart(n, userCoords);
-                        SawariUtils.showToast('Nearest stop: ' + n.name + ' (' + Number(locs[0].distance_km).toFixed(1) + ' km)', 'success');
-                    } else {
-                        SawariUtils.showToast('No bus stops found nearby', 'warning');
-                    }
-                }).catch(function () {
-                    SawariUtils.showToast('Could not find nearby stops', 'error');
-                }).finally(function () {
-                    btn.classList.remove('locating');
-                    btn.disabled = false;
-                });
+            pos => {
+                const { latitude, longitude } = pos.coords;
+                if (which === 'a') {
+                    SawariMap.setPointA(latitude, longitude, 'My Location');
+                } else {
+                    SawariMap.setPointB(latitude, longitude, 'My Location');
+                }
+                SawariMap.getMap().setView([latitude, longitude], 15);
             },
-            function (err) {
-                var msg = 'Could not get location';
-                if (err.code === 1) msg = 'Location access denied';
-                SawariUtils.showToast(msg, 'error');
-                btn.classList.remove('locating');
-                btn.disabled = false;
+            () => {
+                SawariMap.showToast('Could not get your location. Please allow location access.', 'warning');
             },
-            { enableHighAccuracy: true, timeout: 15000 }
+            { enableHighAccuracy: true, timeout: 10000 }
         );
     }
 
-    // ─── Trigger Route Search ───────────────────────────────
-    function triggerSearch() {
-        var startId = document.getElementById('startLocationId').value;
-        var endId = document.getElementById('endLocationId').value;
+    /* ──────────────────────────────────────────────
+     *  Search — DB first, Nominatim fallback
+     * ────────────────────────────────────────────── */
+    function searchLocations(query, which) {
+        // 1. Search our local database first
+        const dbPromise = fetch(BASE + '/api/locations.php?action=search&q=' + encodeURIComponent(query))
+            .then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(data => (data.success && data.locations) ? data.locations : [])
+            .catch(() => []);
 
-        if (!startId) {
-            SawariUtils.showToast('Please select a starting point', 'warning');
-            document.getElementById('startInput').focus();
-            pulseField('startField');
-            return;
-        }
-        if (!endId) {
-            SawariUtils.showToast('Please select a destination', 'warning');
-            document.getElementById('endInput').focus();
-            pulseField('endField');
-            return;
-        }
-        if (startId === endId) {
-            SawariUtils.showToast('Start and destination cannot be the same', 'warning');
-            return;
-        }
+        dbPromise.then(dbResults => {
+            // If we have enough DB results, just show them
+            if (dbResults.length >= 3) {
+                renderResults(dbResults, [], which);
+                return;
+            }
 
-        var passengerType = document.getElementById('passengerType').value;
-        SawariMap.showLoading();
-        var btnSearch = document.getElementById('btnSearch');
-        btnSearch.disabled = true;
-        btnSearch.querySelector('span').textContent = 'Searching...';
-        SawariMap.closeResults();
+            // 2. Also search Nominatim for broader results (bounded to Nepal)
+            const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&countrycodes=np&viewbox=80.0,26.3,88.2,30.5&bounded=1`;
 
-        var body = new URLSearchParams();
-        body.append('start_location_id', startId);
-        body.append('destination_location_id', endId);
-        body.append('passenger_type', passengerType);
-
-        // Send actual user coordinates for walking guidance
-        if (actualStartCoords) {
-            body.append('start_lat', actualStartCoords.lat);
-            body.append('start_lng', actualStartCoords.lng);
-        }
-        if (actualEndCoords) {
-            body.append('end_lat', actualEndCoords.lat);
-            body.append('end_lng', actualEndCoords.lng);
-        }
-
-        SawariUtils.apiFetch('api/search/find-route.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: body.toString()
-        }).then(function (data) {
-            SawariMap.displayResults(data);
-        }).catch(function () {
-            SawariMap.displayResults({ success: false, message: 'Route search failed. Please try again.' });
-        }).finally(function () {
-            SawariMap.hideLoading();
-            btnSearch.disabled = false;
-            btnSearch.querySelector('span').textContent = 'Find Route';
+            fetch(nominatimUrl, { headers: { 'Accept-Language': 'en' } })
+                .then(r => r.json())
+                .then(onlineResults => {
+                    const mapped = onlineResults.map(r => ({
+                        name: r.display_name.split(',').slice(0, 2).join(', ').trim(),
+                        latitude: r.lat,
+                        longitude: r.lon,
+                        type: r.type || 'place',
+                        source: 'online',
+                        full_name: r.display_name
+                    }));
+                    renderResults(dbResults, mapped, which);
+                })
+                .catch(() => {
+                    renderResults(dbResults, [], which);
+                });
         });
     }
 
-    function pulseField(id) {
-        var el = document.getElementById(id);
-        if (el) { el.classList.add('field-error'); setTimeout(function () { el.classList.remove('field-error'); }, 1500); }
+    /* ──────────────────────────────────────────────
+     *  Render search results (grouped: DB + online)
+     * ────────────────────────────────────────────── */
+    function renderResults(dbLocations, onlineLocations, which) {
+        const container = which === 'a' ? resultsA : resultsB;
+        container.innerHTML = '';
+
+        if (dbLocations.length === 0 && onlineLocations.length === 0) {
+            container.innerHTML = `
+                <div style="padding:var(--space-4);text-align:center;">
+                    <div style="font-size:var(--text-sm);color:var(--color-neutral-400);margin-bottom:var(--space-2);">No locations found</div>
+                    <div class="search-result-item search-result-location" id="pick-from-map-${which}" style="justify-content:center;">
+                        <i data-feather="map-pin" style="width:14px;height:14px;color:var(--color-accent-600);"></i>
+                        <span style="font-size:var(--text-sm);color:var(--color-accent-600);font-weight:500;">Pick on map instead</span>
+                    </div>
+                </div>`;
+            container.classList.add('open');
+            // Bind pick-on-map click
+            document.getElementById('pick-from-map-' + which).addEventListener('click', () => {
+                closeResults(which);
+                SawariMap.startPinPick(which);
+            });
+            feather.replace({ 'stroke-width': 1.75 });
+            return;
+        }
+
+        // DB results group
+        if (dbLocations.length > 0) {
+            const header = document.createElement('div');
+            header.className = 'search-result-group';
+            header.textContent = 'Bus Stops';
+            container.appendChild(header);
+
+            dbLocations.forEach((loc, idx) => {
+                const item = createResultItem(loc, which, idx, 'db');
+                container.appendChild(item);
+            });
+        }
+
+        // Online results group
+        if (onlineLocations.length > 0) {
+            const header = document.createElement('div');
+            header.className = 'search-result-group';
+            header.textContent = 'Other Places';
+            container.appendChild(header);
+
+            onlineLocations.forEach((loc, idx) => {
+                const item = createResultItem(loc, which, dbLocations.length + idx, 'online');
+                container.appendChild(item);
+            });
+        }
+
+        container.classList.add('open');
+        feather.replace({ 'stroke-width': 1.75 });
     }
 
+    /**
+     * Create a single result item element.
+     */
+    function createResultItem(loc, which, idx, source) {
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
+        item.dataset.index = idx;
+        item.dataset.lat = loc.latitude;
+        item.dataset.lng = loc.longitude;
+        item.dataset.name = loc.name;
+
+        const isOnline = source === 'online';
+        const typeIcon = isOnline ? 'globe' : (loc.type === 'landmark' ? 'map-pin' : 'circle');
+        const typeBadge = isOnline ? loc.type : loc.type;
+
+        item.innerHTML = `
+            <i data-feather="${typeIcon}" style="width:16px;height:16px;color:var(--color-neutral-400);flex-shrink:0;"></i>
+            <div style="min-width:0;flex:1;">
+                <div style="font-size:var(--text-sm);color:var(--color-neutral-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${SawariMap.escHtml(loc.name)}</div>
+                <div style="font-size:var(--text-xs);color:var(--color-neutral-400);">${SawariMap.escHtml(typeBadge)}${isOnline && loc.full_name ? ' · ' + SawariMap.escHtml(loc.full_name.split(',').slice(2, 4).join(',').trim()) : ''}</div>
+            </div>
+            ${isOnline ? '<span class="search-result-source">web</span>' : ''}
+        `;
+
+        item.addEventListener('click', () => selectResult(loc, which));
+        return item;
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Select a search result
+     * ────────────────────────────────────────────── */
+    function selectResult(loc, which) {
+        const lat = parseFloat(loc.latitude);
+        const lng = parseFloat(loc.longitude);
+        const name = loc.name;
+
+        if (which === 'a') {
+            SawariMap.setPointA(lat, lng, name);
+        } else {
+            SawariMap.setPointB(lat, lng, name);
+        }
+
+        closeResults(which);
+
+        // Focus the map on the selected point
+        SawariMap.getMap().setView([lat, lng], 15);
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Keyboard navigation in results
+     * ────────────────────────────────────────────── */
+    function onKeydown(e, which) {
+        const container = which === 'a' ? resultsA : resultsB;
+        if (!container.classList.contains('open')) return;
+
+        const items = container.querySelectorAll('.search-result-item');
+        if (items.length === 0) return;
+
+        let activeIdx = -1;
+        items.forEach((item, i) => {
+            if (item.classList.contains('selected')) activeIdx = i;
+        });
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            activeIdx = Math.min(activeIdx + 1, items.length - 1);
+            highlightItem(items, activeIdx);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            activeIdx = Math.max(activeIdx - 1, 0);
+            highlightItem(items, activeIdx);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (activeIdx >= 0 && items[activeIdx]) {
+                items[activeIdx].click();
+            }
+        } else if (e.key === 'Escape') {
+            closeResults(which);
+        }
+    }
+
+    function highlightItem(items, idx) {
+        items.forEach(i => i.classList.remove('selected'));
+        if (items[idx]) {
+            items[idx].classList.add('selected');
+            items[idx].scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Close results dropdown
+     * ────────────────────────────────────────────── */
+    function closeResults(which) {
+        const container = which === 'a' ? resultsA : resultsB;
+        container.classList.remove('open');
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Programmatic setters (used by map.js on drag)
+     * ────────────────────────────────────────────── */
+    function setInputA(lat, lng, name) {
+        inputA.value = name;
+        inputA.dataset.lat = lat;
+        inputA.dataset.lng = lng;
+        clearA.style.display = '';
+        SawariMap.checkFindRouteReady();
+    }
+
+    function setInputB(lat, lng, name) {
+        inputB.value = name;
+        inputB.dataset.lat = lat;
+        inputB.dataset.lng = lng;
+        clearB.style.display = '';
+        SawariMap.checkFindRouteReady();
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Load active alerts
+     * ────────────────────────────────────────────── */
+    function loadAlerts() {
+        fetch(BASE + '/api/alerts.php?action=active')
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success || !data.alerts || data.alerts.length === 0) return;
+
+                const banner = document.getElementById('alerts-banner');
+                const text = document.getElementById('alert-text');
+                if (!banner || !text) return;
+
+                // Show most severe alert in banner
+                const alert = data.alerts[0];
+                let msg = alert.title;
+                if (alert.route_name) {
+                    msg += ' — ' + alert.route_name;
+                }
+                text.textContent = msg;
+                banner.style.display = '';
+                banner.title = alert.description || '';
+
+                // Show alert indicators on map for route-specific alerts
+                showAlertMarkers(data.alerts);
+            })
+            .catch(err => console.error('Alerts load error:', err));
+    }
+
+    /**
+     * Show alert markers on the map for route-specific alerts.
+     * Fetches each route's first stop and places a warning marker there.
+     */
+    function showAlertMarkers(alerts) {
+        const alertLayer = SawariMap.getAlertLayer();
+        if (!alertLayer) return;
+
+        alerts.forEach(alert => {
+            if (!alert.route_id) return;
+
+            // Fetch route info to get first stop coords
+            fetch(BASE + '/api/routes.php?action=get&id=' + alert.route_id)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success || !data.route || !data.route.location_list) return;
+
+                    const stops = typeof data.route.location_list === 'string'
+                        ? JSON.parse(data.route.location_list)
+                        : data.route.location_list;
+
+                    if (!stops || stops.length === 0) return;
+
+                    // Place alert marker at first stop of affected route
+                    const firstStop = stops[0];
+                    const severityColors = {
+                        critical: '#DC2626',
+                        high: '#EA580C',
+                        medium: '#D97706',
+                        low: '#6B7280'
+                    };
+                    const color = severityColors[alert.severity] || '#D97706';
+
+                    const icon = L.divIcon({
+                        className: 'marker-alert',
+                        html: `<div class="marker-pin marker-pin-alert" style="background:${color};"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>`,
+                        iconSize: [28, 36],
+                        iconAnchor: [14, 36]
+                    });
+
+                    L.marker([parseFloat(firstStop.latitude), parseFloat(firstStop.longitude)], { icon })
+                        .bindPopup(`<div style="font-family:var(--font-sans);"><strong style="color:${color};">⚠ ${SawariMap.escHtml(alert.title)}</strong><br><span style="font-size:12px;">${SawariMap.escHtml(alert.description || '')}</span>${alert.route_name ? '<br><span style="font-size:11px;color:#64748B;">Route: ' + SawariMap.escHtml(alert.route_name) + '</span>' : ''}</div>`)
+                        .addTo(alertLayer);
+                })
+                .catch(() => { });
+        });
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Public API
+     * ────────────────────────────────────────────── */
     return {
-        init: init,
-        enterPickMode: enterPickMode,
-        exitPickMode: exitPickMode,
-        setStart: setStart,
-        setEnd: setEnd
+        init,
+        setInputA,
+        setInputB,
+        closeResults
     };
 })();
 
-document.addEventListener('DOMContentLoaded', function () {
-    SawariSearch.init();
-});
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', SawariSearch.init);
