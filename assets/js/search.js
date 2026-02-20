@@ -292,11 +292,26 @@ const SawariSearch = (function () {
         item.dataset.name = loc.name;
 
         const isOnline = source === 'online';
-        const typeIcon = isOnline ? 'globe' : (loc.type === 'landmark' ? 'map-pin' : 'circle');
+
+        // -- Choose icon + colour based on type --
+        let typeIcon, iconColor;
+        if (isOnline) {
+            typeIcon = 'globe'; iconColor = 'var(--color-neutral-400)';
+        } else {
+            const t = (loc.type || '').toLowerCase();
+            if (t.includes('hospital') || t.includes('health') || t.includes('clinic')) { typeIcon = 'heart'; iconColor = '#EF4444'; }
+            else if (t.includes('temple') || t.includes('stupa') || t.includes('church') || t.includes('mosque') || t.includes('mandir')) { typeIcon = 'home'; iconColor = '#8B5CF6'; }
+            else if (t.includes('school') || t.includes('college') || t.includes('university') || t.includes('campus')) { typeIcon = 'book-open'; iconColor = '#F59E0B'; }
+            else if (t.includes('market') || t.includes('mall') || t.includes('shop') || t.includes('store')) { typeIcon = 'shopping-bag'; iconColor = '#EC4899'; }
+            else if (t.includes('park') || t.includes('garden')) { typeIcon = 'feather'; iconColor = '#10B981'; }
+            else if (t.includes('gov') || t.includes('office') || t.includes('ministry') || t.includes('embassy')) { typeIcon = 'briefcase'; iconColor = '#6366F1'; }
+            else if (t === 'landmark') { typeIcon = 'map-pin'; iconColor = '#0EA5E9'; }
+            else { typeIcon = 'navigation'; iconColor = 'var(--color-primary-500)'; }
+        }
         const typeBadge = isOnline ? loc.type : loc.type;
 
         item.innerHTML = `
-            <i data-feather="${typeIcon}" style="width:16px;height:16px;color:var(--color-neutral-400);flex-shrink:0;"></i>
+            <i data-feather="${typeIcon}" style="width:16px;height:16px;color:${iconColor};flex-shrink:0;"></i>
             <div style="min-width:0;flex:1;">
                 <div style="font-size:var(--text-sm);color:var(--color-neutral-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${SawariMap.escHtml(loc.name)}</div>
                 <div style="font-size:var(--text-xs);color:var(--color-neutral-400);">${SawariMap.escHtml(typeBadge)}${isOnline && loc.full_name ? ' · ' + SawariMap.escHtml(loc.full_name.split(',').slice(2, 4).join(',').trim()) : ''}</div>
@@ -458,9 +473,12 @@ const SawariSearch = (function () {
                     };
                     const color = severityColors[alert.severity] || '#D97706';
 
+                    const alertSvg = (window.SawariMap && SawariMap.SVG) ? SawariMap.SVG.alert :
+                        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+
                     const icon = L.divIcon({
                         className: 'marker-alert',
-                        html: `<div class="marker-pin marker-pin-alert" style="background:${color};"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>`,
+                        html: `<div class="marker-pin marker-pin-alert" style="background:${color};">${alertSvg}</div>`,
                         iconSize: [28, 36],
                         iconAnchor: [14, 36]
                     });

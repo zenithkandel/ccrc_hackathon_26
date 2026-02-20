@@ -40,10 +40,64 @@ const SawariMap = (function () {
     let myLocationCircle = null;
     let myLocationWatcher = null;
 
+    // ── SVG Icon Library ──────────────────────────────────────
+    // Crisp, minimal SVG paths for every marker type
+    const SVG = {
+        // Origin pin — radiating dot
+        origin: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9" opacity=".4"/></svg>',
+        // Destination — flag
+        dest: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+        // Bus stop — stylised bus front silhouette
+        busStop: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M4 10h16"/><circle cx="8" cy="20" r="1"/><circle cx="16" cy="20" r="1"/><path d="M8 17v2M16 17v2"/></svg>',
+        // Landmark — generic map-pin
+        landmark: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>',
+        // Hospital — cross
+        hospital: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/><path d="M12 8v8M8 12h8"/></svg>',
+        // Temple / religious — pagoda/stupa shape
+        temple: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L8 8h8l-4-6z"/><path d="M6 12h12"/><path d="M8 8v4M16 8v4"/><rect x="7" y="12" width="10" height="8" rx="1"/><path d="M10 20v-4h4v4"/></svg>',
+        // School / education — book
+        school: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
+        // Market / shopping — shopping bag
+        market: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>',
+        // Park / garden — tree
+        park: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-6"/><path d="M12 4a5 5 0 015 5c0 2-1 3.5-2.5 4.5H9.5C8 12.5 7 11 7 9a5 5 0 015-5z"/><path d="M8 16h8"/></svg>',
+        // Government / office — building columns
+        govt: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/><path d="M9 10h1M14 10h1M9 14h1M14 14h1"/></svg>',
+        // Boarding — log-in arrow
+        boarding: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>',
+        // Transfer — repeat arrows
+        transfer: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>',
+        // Alert — warning triangle
+        alert: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+        // Vehicle — mini bus
+        vehicle: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M4 10h16"/><circle cx="8" cy="20" r="1"/><circle cx="16" cy="20" r="1"/><path d="M8 17v2M16 17v2"/></svg>'
+    };
+
+    /** Map location type strings to an icon key + colour */
+    function getStopIconConfig(locationType) {
+        const t = (locationType || '').toLowerCase();
+        if (t.includes('hospital') || t.includes('health') || t.includes('clinic'))
+            return { svg: SVG.hospital, bg: '#EF4444' }; // red
+        if (t.includes('temple') || t.includes('stupa') || t.includes('church') || t.includes('mosque') || t.includes('mandir'))
+            return { svg: SVG.temple, bg: '#8B5CF6' }; // violet
+        if (t.includes('school') || t.includes('college') || t.includes('university') || t.includes('campus'))
+            return { svg: SVG.school, bg: '#F59E0B' }; // amber
+        if (t.includes('market') || t.includes('mall') || t.includes('shop') || t.includes('store'))
+            return { svg: SVG.market, bg: '#EC4899' }; // pink
+        if (t.includes('park') || t.includes('garden'))
+            return { svg: SVG.park, bg: '#10B981' }; // emerald
+        if (t.includes('gov') || t.includes('office') || t.includes('ministry') || t.includes('embassy'))
+            return { svg: SVG.govt, bg: '#6366F1' }; // indigo
+        if (t === 'landmark')
+            return { svg: SVG.landmark, bg: '#0EA5E9' }; // sky blue
+        // Default — bus stop
+        return { svg: SVG.busStop, bg: '#1A56DB' }; // brand primary
+    }
+
     // Custom icons — unique SVG-based markers
     const iconA = L.divIcon({
         className: 'marker-icon-a',
-        html: '<div class="marker-pin marker-pin-origin"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 1.892.402 3.13 1.5 4.5L12 22l6.5-7.5c1.098-1.37 1.5-2.608 1.5-4.5a8 8 0 0 0-8-8z"/></svg></div>',
+        html: '<div class="marker-pin marker-pin-origin">' + SVG.origin + '</div>',
         iconSize: [32, 40],
         iconAnchor: [16, 40],
         popupAnchor: [0, -40]
@@ -51,18 +105,25 @@ const SawariMap = (function () {
 
     const iconB = L.divIcon({
         className: 'marker-icon-b',
-        html: '<div class="marker-pin marker-pin-dest"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>',
+        html: '<div class="marker-pin marker-pin-dest">' + SVG.dest + '</div>',
         iconSize: [32, 40],
         iconAnchor: [16, 40],
         popupAnchor: [0, -40]
     });
 
-    const iconStop = L.divIcon({
-        className: 'marker-icon-stop',
-        html: '<div class="marker-dot marker-dot-stop"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></div>',
-        iconSize: [22, 22],
-        iconAnchor: [11, 11]
-    });
+    /** Build a stop icon from location type */
+    function makeStopIcon(type) {
+        const cfg = getStopIconConfig(type);
+        return L.divIcon({
+            className: 'marker-icon-stop',
+            html: '<div class="marker-dot marker-dot-stop" style="background:' + cfg.bg + ';">' + cfg.svg + '</div>',
+            iconSize: [26, 26],
+            iconAnchor: [13, 13]
+        });
+    }
+
+    // Default stop icon (fallback)
+    const iconStop = makeStopIcon('stop');
 
     /* ──────────────────────────────────────────────
      *  Init
@@ -128,8 +189,11 @@ const SawariMap = (function () {
     function renderStopMarkers() {
         stopMarkersLayer.clearLayers();
         allStops.forEach(s => {
-            const m = L.marker([s.lat, s.lng], { icon: iconStop })
-                .bindPopup(`<strong>${escHtml(s.name)}</strong><br><span style="font-size:12px;color:#64748B;">${s.type}</span>`);
+            const icon = makeStopIcon(s.type);
+            const cfg = getStopIconConfig(s.type);
+            const typeLabel = (s.type || 'stop').charAt(0).toUpperCase() + (s.type || 'stop').slice(1);
+            const m = L.marker([s.lat, s.lng], { icon })
+                .bindPopup(`<div class="stop-popup"><strong>${escHtml(s.name)}</strong><span class="stop-popup-type" style="color:${cfg.bg};">${typeLabel}</span></div>`);
             stopMarkersLayer.addLayer(m);
         });
     }
@@ -482,13 +546,13 @@ const SawariMap = (function () {
         // Choose icon based on marker type
         let iconHtml, size, anchor;
         if (cssClass === 'marker-stop-boarding') {
-            iconHtml = '<div class="marker-pin marker-pin-board"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></div>';
+            iconHtml = '<div class="marker-pin marker-pin-board">' + SVG.boarding + '</div>';
             size = [28, 36]; anchor = [14, 36];
         } else if (cssClass === 'marker-stop-destination') {
-            iconHtml = '<div class="marker-pin marker-pin-dest"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>';
+            iconHtml = '<div class="marker-pin marker-pin-dest">' + SVG.dest + '</div>';
             size = [28, 36]; anchor = [14, 36];
         } else if (cssClass === 'marker-stop-transfer') {
-            iconHtml = '<div class="marker-pin marker-pin-transfer"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>';
+            iconHtml = '<div class="marker-pin marker-pin-transfer">' + SVG.transfer + '</div>';
             size = [28, 36]; anchor = [14, 36];
         } else {
             // Regular intermediate stop — small dot
@@ -593,7 +657,9 @@ const SawariMap = (function () {
         swapPoints,
         toggleMyLocation,
         reverseGeocode,
-        BASE
+        BASE,
+        SVG,
+        getStopIconConfig
     };
 })();
 

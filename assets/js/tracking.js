@@ -32,10 +32,15 @@ const SawariTracking = (function () {
     const ANIMATE_DURATION = 2000; // 2 seconds smooth slide
     let animationFrames = {};
 
-    // Vehicle icon — SVG bus icon
+    // Vehicle icon — SVG bus icon (uses shared SVG library from map.js)
+    function getVehicleSvg() {
+        return (window.SawariMap && SawariMap.SVG) ? SawariMap.SVG.vehicle :
+            '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M4 10h16"/><circle cx="8" cy="20" r="1"/><circle cx="16" cy="20" r="1"/><path d="M8 17v2M16 17v2"/></svg>';
+    }
+
     const vehicleIcon = L.divIcon({
         className: 'marker-vehicle-icon',
-        html: '<div class="marker-vehicle-dot"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M16 6v6"/><path d="M2 12h20"/><path d="M18 18H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div>',
+        html: '<div class="marker-vehicle-dot"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M4 10h16"/><circle cx="8" cy="20" r="1"/><circle cx="16" cy="20" r="1"/><path d="M8 17v2M16 17v2"/></svg></div>',
         iconSize: [32, 32],
         iconAnchor: [16, 16]
     });
@@ -43,7 +48,7 @@ const SawariTracking = (function () {
     // Pulsing vehicle icon (for vehicles approaching a stop < 500m)
     const vehicleIconApproaching = L.divIcon({
         className: 'marker-vehicle-icon marker-vehicle-approaching',
-        html: '<div class="marker-vehicle-dot marker-vehicle-dot-pulse"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M16 6v6"/><path d="M2 12h20"/><path d="M18 18H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div>',
+        html: '<div class="marker-vehicle-dot marker-vehicle-dot-pulse"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M4 10h16"/><circle cx="8" cy="20" r="1"/><circle cx="16" cy="20" r="1"/><path d="M8 17v2M16 17v2"/></svg></div>',
         iconSize: [36, 36],
         iconAnchor: [18, 18]
     });
