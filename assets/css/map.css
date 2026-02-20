@@ -209,13 +209,16 @@
 /* Search panel body — collapsible on mobile */
 .search-panel-body {
     transition: max-height var(--duration-slow) var(--ease-out),
-        opacity var(--duration-fast) var(--ease-out);
+        opacity var(--duration-fast) var(--ease-out),
+        padding var(--duration-fast) var(--ease-out);
     overflow: hidden;
 }
 
 .search-panel.collapsed .search-panel-body {
     max-height: 0;
     opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
     pointer-events: none;
 }
 
@@ -440,16 +443,16 @@
     max-height: 50vh;
     background: var(--color-white);
     border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.10);
     z-index: var(--z-map-controls);
     overflow-y: auto;
     transform: translateY(100%);
-    transition: transform var(--transition-slow);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
 }
 
 .result-panel.open {
     transform: translateY(0);
-    animation: slideUp var(--duration-slow) var(--ease-out);
 }
 
 .result-panel-handle {
@@ -1749,6 +1752,54 @@
     z-index: var(--z-map-controls);
     display: flex;
     gap: var(--space-2);
+}
+
+.map-fab-btn {
+    border-radius: var(--radius-full);
+    padding: var(--space-2-5) var(--space-4);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    transition: all var(--transition-fast);
+    backdrop-filter: blur(8px);
+}
+
+.map-fab-btn:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+    transform: translateY(-1px);
+}
+
+/* On mobile, hide the "Suggest" label and show icon-only FAB */
+@media (max-width: 640px) {
+    .map-fab-btn {
+        width: 48px;
+        height: 48px;
+        padding: 0;
+        border-radius: var(--radius-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .map-fab-label {
+        display: none;
+    }
+}
+
+/* --- Peek expand hint (subtle arrow indicator) --- */
+.result-panel-peek::after {
+    content: '';
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .result-panel.open:not(.expanded) .result-panel-peek::after {
+        content: 'Tap for details';
+        display: block;
+        text-align: center;
+        font-size: 11px;
+        color: var(--color-neutral-400);
+        margin-top: var(--space-1);
+        letter-spacing: 0.02em;
+    }
 }
 
 
