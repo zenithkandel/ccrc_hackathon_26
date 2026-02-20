@@ -177,6 +177,60 @@ switch ($action) {
         jsonSuccess('Contribution approved.');
         break;
 
+    /* ── Approve All ─────────────────────────────────────── */
+    case 'approve-all':
+        requireAdminAPI();
+        validateCsrf();
+        $db = getDB();
+
+        $ids = isset($_POST['ids']) ? $_POST['ids'] : [];
+        if (!is_array($ids) || empty($ids))
+            jsonError('No contribution IDs provided.');
+
+        // Sanitize to integers
+        $ids = array_map('intval', $ids);
+        $ids = array_filter($ids, function ($v) {
+            return $v > 0; });
+        if (empty($ids))
+            jsonError('No valid contribution IDs.');
+
+        $adminId = getAdminId();
+        $approvedCount = 0;
+
+        $db->beginTransaction();
+        try {
+            foreach ($ids as $cid) {
+                // Fetch contribution
+                $stmt = $db->prepare("SELECT * FROM contributions WHERE contribution_id = :id AND status = 'pending'");
+                $stmt->execute([':id' => $cid]);
+                $cont = $stmt->fetch();
+                if (!$cont)
+                    continue;
+
+                // Update contribution status
+                $db->prepare("UPDATE contributions SET status = 'approved', reviewed_by = :admin, reviewed_at = NOW() WHERE contribution_id = :id")
+                    ->execute([':admin' => $adminId, ':id' => $cid]);
+
+                // Update linked item
+                $table = $cont['type'] === 'location' ? 'locations' : ($cont['type'] === 'vehicle' ? 'vehicles' : 'routes');
+                $db->prepare("UPDATE $table SET status = 'approved', approved_by = :admin, updated_at = NOW() WHERE contribution_id = :id")
+                    ->execute([':admin' => $adminId, ':id' => $cid]);
+
+                // Update agent stats
+                $db->prepare("UPDATE agents SET approved_count = approved_count + 1, points = points + 10 WHERE agent_id = :aid")
+                    ->execute([':aid' => $cont['agent_id']]);
+
+                $approvedCount++;
+            }
+            $db->commit();
+        } catch (Exception $e) {
+            $db->rollBack();
+            jsonError('Bulk approval failed: ' . $e->getMessage());
+        }
+
+        jsonResponse(['success' => true, 'message' => $approvedCount . ' contribution(s) approved.', 'approved_count' => $approvedCount]);
+        break;
+
     /* ── Reject ──────────────────────────────────────────── */
     case 'reject':
         requireAdminAPI();
