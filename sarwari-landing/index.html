@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sawari — Navigate Nepal's public transport with real-time GPS tracking, smart route finding, and live fare estimation for Kathmandu Valley.">
+    <meta name="keywords" content="Sawari, Nepal, public transport, GPS tracking, bus tracker, Kathmandu, route finder, smart transit">
+    <meta name="author" content="Sawari Team">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Sawari — Smart Public Transit for Nepal">
+    <meta property="og:description" content="Real-time GPS bus tracking, intelligent route finding, and fare estimation. Navigate Kathmandu's public transport with confidence.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://sawari.com.np">
+    <meta property="og:image" content="../gallery/sajha-bus-EV.jpg">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Sawari — Smart Public Transit for Nepal">
+    <meta name="twitter:description" content="Real-time bus tracking and route finding for Kathmandu Valley.">
+
+    <title>Sawari — Smart Public Transit for Nepal</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Scroll Progress -->
+    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
+    <!-- ================================================================
+         NAVIGATION
+         ================================================================ -->
+    <header class="site-header" id="siteHeader">
+        <nav class="nav-container">
+            <a href="#hero" class="nav-logo" aria-label="Sawari Home">
+                <div class="nav-logo-mark">S</div>
+                <span>Sawari</span>
+            </a>
+
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#why" class="nav-link">Why Sawari</a></li>
+                <li><a href="#what" class="nav-link">What We Do</a></li>
+                <li><a href="#how" class="nav-link">How It Works</a></li>
+                <li><a href="#need" class="nav-link">Why It's Needed</a></li>
+                <li><a href="#perspectives" class="nav-link">Perspectives</a></li>
+                <li><a href="#gallery" class="nav-link">Gallery</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <a href="pages/map.php" class="nav-cta">
+                    <i data-feather="map-pin"></i>
+                    Open Map
+                </a>
+                <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Mobile Overlay -->
+    <div class="mobile-overlay" id="mobileOverlay" aria-hidden="true"></div>
+
+    <!-- ================================================================
+         HERO — Full-screen real bus image
+         ================================================================ -->
+    <section class="hero" id="hero">
+        <div class="hero-img-bg">
+            <img src="../gallery/sajha-bus-EV.jpg" alt="Sajha Yatayat electric bus on Kathmandu road" class="hero-bg-image" fetchpriority="high">
+            <div class="hero-overlay"></div>
+        </div>
+
+        <div class="container hero-content">
+            <span class="hero-chip reveal">
+                <span class="chip-dot"></span>
+                Live GPS Tracking &middot; Smart Routing &middot; Real Fares
+            </span>
+
+            <h1 class="hero-title reveal">
+                Know Your Bus.<br>
+                <span class="hero-accent">Before It Arrives.</span>
+            </h1>
+
+            <p class="hero-sub reveal">
+                Sawari tells you exactly which bus to take, where to board, what to say to the conductor,
+                how much to pay — and tracks it live on the map, every 8 seconds.
+            </p>
+
+            <div class="hero-actions reveal">
+                <a href="pages/map.php" class="btn btn-accent btn-lg">
+                    <i data-feather="navigation"></i>
+                    Find My Route
+                </a>
+                <a href="#why" class="btn btn-glass btn-lg">
+                    Learn More
+                    <i data-feather="arrow-down"></i>
+                </a>
+            </div>
+
+            <div class="hero-metrics reveal">
+                <div class="metric">
+                    <strong data-count="15">0</strong>
+                    <span>Stops Mapped</span>
+                </div>
+                <div class="metric-divider"></div>
+                <div class="metric">
+                    <strong data-count="5">0</strong>
+                    <span>Active Routes</span>
+                </div>
+                <div class="metric-divider"></div>
+                <div class="metric">
+                    <strong>8s</strong>
+                    <span>Refresh Rate</span>
+                </div>
+                <div class="metric-divider"></div>
+                <div class="metric">
+                    <strong>2.5m</strong>
+                    <span>GPS Precision</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-scroll" aria-hidden="true">
+            <div class="scroll-line"></div>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         WHY SAWARI — Problem statement with real image split
+         ================================================================ -->
+    <section class="section why-section" id="why">
+        <div class="split-layout container">
+            <div class="split-image reveal">
+                <img loading="lazy" src="../gallery/473783154_1062778689195922_6904992953434292580_n.jpg" alt="Crowded Kathmandu bus stop" width="640" height="480">
+                <div class="image-badge">
+                    <i data-feather="alert-circle"></i>
+                    The daily struggle
+                </div>
+            </div>
+            <div class="split-content reveal">
+                <span class="section-tag">The Problem</span>
+                <h2 class="section-title">Why Sawari?</h2>
+                <p class="section-lead">
+                    Millions of commuters in Kathmandu Valley have no reliable way to navigate public transport.
+                    There is no official route map, no fare calculator, no way to know when a bus is coming.
+                </p>
+
+                <div class="pain-points">
+                    <div class="pain-point">
+                        <div class="pain-icon">
+                            <i data-feather="x"></i>
+                        </div>
+                        <div>
+                            <h4>No Route Information</h4>
+                            <p>Google Maps shows driving paths, not actual bus routes. Nepal's informal transit system is invisible online.</p>
+                        </div>
+                    </div>
+                    <div class="pain-point">
+                        <div class="pain-icon">
+                            <i data-feather="x"></i>
+                        </div>
+                        <div>
+                            <h4>Expensive Alternatives</h4>
+                            <p>Ride-booking apps like Pathao cost 5–10× the bus fare. Not everyone can afford them daily.</p>
+                        </div>
+                    </div>
+                    <div class="pain-point">
+                        <div class="pain-icon">
+                            <i data-feather="x"></i>
+                        </div>
+                        <div>
+                            <h4>Ask a Stranger</h4>
+                            <p>The most common method — unreliable, time-consuming, and impossible for tourists.</p>
+                        </div>
+                    </div>
+                    <div class="pain-point">
+                        <div class="pain-icon">
+                            <i data-feather="x"></i>
+                        </div>
+                        <div>
+                            <h4>No Live Tracking</h4>
+                            <p>You stand at a stop with zero visibility. Is the bus 2 minutes away or 30?</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         WHAT DOES SAWARI DO — Features showcase
+         ================================================================ -->
+    <section class="section what-section" id="what">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="section-tag">The Solution</span>
+                <h2 class="section-title">What Does Sawari Do?</h2>
+                <p class="section-subtitle">
+                    One platform that answers every question a commuter has — from "Which bus?" to "How much?"
+                </p>
+            </div>
+
+            <div class="features-showcase">
+                <div class="feature-main reveal">
+                    <div class="feature-main-image">
+                        <img loading="lazy" src="../gallery/sajha1.jpg" alt="Sajha Yatayat bus fleet" width="800" height="500">
+                        <div class="feature-overlay-card">
+                            <i data-feather="map"></i>
+                            <h3>Smart Route Finding</h3>
+                            <p>Enter your start and destination. Sawari finds the best bus, shows every stop along the way, and draws the route on a live map.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="features-grid-sm">
+                    <div class="feature-card reveal">
+                        <div class="feature-card-icon">
+                            <i data-feather="navigation"></i>
+                        </div>
+                        <h3>Live GPS Tracking</h3>
+                        <p>ESP32 hardware on each bus sends positions every 2 seconds. Your map updates every 8 seconds with smooth marker animations.</p>
+                    </div>
+
+                    <div class="feature-card reveal">
+                        <div class="feature-card-icon icon-alt">
+                            <i data-feather="dollar-sign"></i>
+                        </div>
+                        <h3>Nepal Fare Rules</h3>
+                        <p>Fares rounded to nearest NPR 5, minimum NPR 20. Automatic 25% student and elderly discounts applied.</p>
+                    </div>
+
+                    <div class="feature-card reveal">
+                        <div class="feature-card-icon icon-warm">
+                            <i data-feather="git-merge"></i>
+                        </div>
+                        <h3>Multi-Bus Transfers</h3>
+                        <p>No direct bus? Sawari finds a shared transfer stop and plans a two-bus journey with separate fares and conductor tips.</p>
+                    </div>
+
+                    <div class="feature-card reveal">
+                        <div class="feature-card-icon icon-green">
+                            <i data-feather="message-circle"></i>
+                        </div>
+                        <h3>Conductor Tips</h3>
+                        <p>"Tell the conductor: Kalanki to Buspark." Exact phrasing, boarding instructions, and "Roknu!" to signal your stop.</p>
+                    </div>
+
+                    <div class="feature-card reveal">
+                        <div class="feature-card-icon icon-blue">
+                            <i data-feather="bell"></i>
+                        </div>
+                        <h3>Emergency Alerts</h3>
+                        <p>Strikes, road blocks, diversions — real-time alerts on affected routes with severity markers on the map.</p>
+                    </div>
+
+                    <div class="feature-card reveal">
+                        <div class="feature-card-icon icon-dark">
+                            <i data-feather="bar-chart-2"></i>
+                        </div>
+                        <h3>Carbon Savings</h3>
+                        <p>Every route shows CO₂ saved vs. taking a car. Bus: 0.089 kg/km. Car: 0.210 kg/km. See your impact.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         HOW IT WORKS — Step-by-step with image banner
+         ================================================================ -->
+    <section class="section how-section" id="how">
+        <div class="how-img-banner">
+            <img loading="lazy" src="../gallery/mahanagar.jpg" alt="Mahanagar Yatayat bus on Kathmandu road" width="1920" height="600">
+            <div class="banner-overlay"></div>
+            <div class="container banner-content reveal">
+                <span class="section-tag section-tag--light">Simple Process</span>
+                <h2 class="section-title section-title--light">How Does Sawari Make Things Easier?</h2>
+                <p class="section-subtitle section-subtitle--light">
+                    Three steps from confusion to confident commuting.
+                </p>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="steps-grid">
+                <div class="step-card reveal">
+                    <div class="step-number">01</div>
+                    <div class="step-icon">
+                        <i data-feather="search"></i>
+                    </div>
+                    <h3>Enter Your Destination</h3>
+                    <p>
+                        Type where you want to go — or tap the map. Sawari finds the nearest bus stops
+                        to your start and destination using its approved stop database.
+                    </p>
+                </div>
+
+                <div class="step-card reveal">
+                    <div class="step-number">02</div>
+                    <div class="step-icon">
+                        <i data-feather="truck"></i>
+                    </div>
+                    <h3>Get Your Bus &amp; Fare</h3>
+                    <p>
+                        See the exact bus name, route drawn on the map, fare in NPR (with student discount),
+                        every stop along the way, and what to tell the conductor.
+                    </p>
+                </div>
+
+                <div class="step-card reveal">
+                    <div class="step-number">03</div>
+                    <div class="step-icon">
+                        <i data-feather="radio"></i>
+                    </div>
+                    <h3>Track It Live</h3>
+                    <p>
+                        Watch your bus move on the map in real-time. GPS hardware on the vehicle updates every 2 seconds.
+                        See ETA, approaching stop, and current speed.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         WHY IS IT NEEDED — Impact section
+         ================================================================ -->
+    <section class="section need-section" id="need">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="section-tag">The Impact</span>
+                <h2 class="section-title">Why Is Sawari Needed?</h2>
+                <p class="section-subtitle">
+                    Nepal's public transport carries millions daily, but lacks any digital infrastructure.
+                    Sawari fills that gap entirely.
+                </p>
+            </div>
+
+            <div class="need-grid">
+                <div class="need-card need-card--wide reveal">
+                    <div class="need-card-image">
+                        <img loading="lazy" src="../gallery/481820024_656265493582501_1243983797300762177_n.jpg" alt="Busy Kathmandu transit" width="800" height="400">
+                        <div class="need-image-overlay"></div>
+                    </div>
+                    <div class="need-card-body">
+                        <div class="need-icon">
+                            <i data-feather="users"></i>
+                        </div>
+                        <h3>Millions of Commuters, Zero Digital Tools</h3>
+                        <p>
+                            Kathmandu Valley alone has 4+ million people who rely on buses, microbuses, and tempos daily.
+                            There is no app, no website, no centralized database of routes. Sawari is the first system
+                            that maps, tracks, and routes Nepal's entire public transit network — built from the ground up
+                            with real hardware on real buses.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="need-card reveal">
+                    <div class="need-icon need-icon--accent">
+                        <i data-feather="globe"></i>
+                    </div>
+                    <h3>Tourists Left Stranded</h3>
+                    <p>
+                        Visitors can't read Nepali signs or ask conductors in the local language. Sawari provides
+                        exact boarding phrases, fare estimates, and visual route maps — making public transit
+                        accessible to everyone regardless of language.
+                    </p>
+                </div>
+
+                <div class="need-card reveal">
+                    <div class="need-icon need-icon--green">
+                        <i data-feather="wind"></i>
+                    </div>
+                    <h3>Environmental Necessity</h3>
+                    <p>
+                        Every ride diverted from a private car to a public bus saves 0.121 kg of CO₂ per kilometer.
+                        With Sawari making buses easier to use, we reduce emissions while saving commuters money.
+                    </p>
+                    <div class="carbon-badge">
+                        <span class="carbon-stat">57%</span>
+                        <span class="carbon-label">less CO₂ per km vs. cars</span>
+                    </div>
+                </div>
+
+                <div class="need-card reveal">
+                    <div class="need-icon need-icon--warm">
+                        <i data-feather="shield"></i>
+                    </div>
+                    <h3>Safety &amp; Fair Pricing</h3>
+                    <p>
+                        Conductors sometimes overcharge tourists or unfamiliar riders. Sawari shows the
+                        government-regulated fare before you board — including student and elderly discounts,
+                        rounded to the nearest NPR 5 as per Nepal's transport rules.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         PERSPECTIVES — User vs Admin viewpoint
+         ================================================================ -->
+    <section class="section perspectives-section" id="perspectives">
+        <div class="perspectives-bg">
+            <img loading="lazy" src="../gallery/SajhaBus_20220707134627.jpg" alt="Sajha Yatayat fleet" width="1920" height="800">
+            <div class="perspectives-overlay"></div>
+        </div>
+
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="section-tag section-tag--light">Two Sides, One Platform</span>
+                <h2 class="section-title section-title--light">Built for Everyone</h2>
+                <p class="section-subtitle section-subtitle--light">
+                    Sawari works differently for those who ride and those who manage. Here's what each side experiences.
+                </p>
+            </div>
+
+            <div class="perspectives-grid">
+                <!-- User Perspective -->
+                <div class="perspective-card perspective-card--user reveal">
+                    <div class="perspective-header">
+                        <div class="perspective-avatar">
+                            <i data-feather="user"></i>
+                        </div>
+                        <div>
+                            <h3>What Users Think</h3>
+                            <span class="perspective-role">Commuters &amp; Tourists</span>
+                        </div>
+                    </div>
+                    <div class="perspective-body">
+                        <div class="thought">
+                            <div class="thought-icon"><i data-feather="help-circle"></i></div>
+                            <p>"Which bus goes to Buspark from Kalanki?"</p>
+                        </div>
+                        <div class="thought">
+                            <div class="thought-icon"><i data-feather="help-circle"></i></div>
+                            <p>"How much should I actually pay?"</p>
+                        </div>
+                        <div class="thought">
+                            <div class="thought-icon"><i data-feather="help-circle"></i></div>
+                            <p>"Is the bus close or should I wait?"</p>
+                        </div>
+                        <div class="thought">
+                            <div class="thought-icon"><i data-feather="help-circle"></i></div>
+                            <p>"What do I say to the conductor?"</p>
+                        </div>
+                    </div>
+                    <div class="perspective-answer">
+                        <i data-feather="check-circle"></i>
+                        <p><strong>Sawari answers all of these</strong> — route, fare, live position, boarding instructions, and conductor phrases in one search.</p>
+                    </div>
+                </div>
+
+                <!-- Admin Perspective -->
+                <div class="perspective-card perspective-card--admin reveal">
+                    <div class="perspective-header">
+                        <div class="perspective-avatar perspective-avatar--admin">
+                            <i data-feather="settings"></i>
+                        </div>
+                        <div>
+                            <h3>What Admins Think</h3>
+                            <span class="perspective-role">Operators &amp; Managers</span>
+                        </div>
+                    </div>
+                    <div class="perspective-body">
+                        <div class="thought">
+                            <div class="thought-icon thought-icon--admin"><i data-feather="activity"></i></div>
+                            <p>"Where are my buses right now?"</p>
+                        </div>
+                        <div class="thought">
+                            <div class="thought-icon thought-icon--admin"><i data-feather="activity"></i></div>
+                            <p>"Is the route data submitted by agents accurate?"</p>
+                        </div>
+                        <div class="thought">
+                            <div class="thought-icon thought-icon--admin"><i data-feather="activity"></i></div>
+                            <p>"Are there any disruptions I need to alert riders about?"</p>
+                        </div>
+                        <div class="thought">
+                            <div class="thought-icon thought-icon--admin"><i data-feather="activity"></i></div>
+                            <p>"How do I manage agents and approve contributions?"</p>
+                        </div>
+                    </div>
+                    <div class="perspective-answer perspective-answer--admin">
+                        <i data-feather="check-circle"></i>
+                        <p><strong>The admin dashboard provides</strong> — live fleet overview, contribution approval workflows, alert management, agent tracking, and suggestion inbox.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         GALLERY — Real fleet images
+         ================================================================ -->
+    <section class="section gallery-section" id="gallery">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="section-tag">The Fleet</span>
+                <h2 class="section-title">Nepal's Public Transport</h2>
+                <p class="section-subtitle">
+                    Real vehicles from Kathmandu Valley — the buses, microbuses, and tempos that Sawari tracks.
+                </p>
+            </div>
+
+            <div class="gallery-grid reveal">
+                <div class="gallery-item gallery-item--tall" data-caption="Sajha Yatayat — Nepal's first electric public bus fleet serving main corridors">
+                    <img loading="lazy" src="../gallery/sajha-bus-EV.jpg" alt="Sajha Yatayat electric bus" width="600" height="700">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Mahanagar Yatayat — Major public transit operator in the valley">
+                    <img loading="lazy" src="../gallery/mahanagar-yatayat.png" alt="Mahanagar Yatayat public bus" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Digo Yatayat — Eco-friendly green bus service">
+                    <img loading="lazy" src="../gallery/digo-yatayat.jpg" alt="Digo Yatayat green bus" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Kathmandu public transit — Daily commuters board a local bus">
+                    <img loading="lazy" src="../gallery/108638425_305582130808549_5592725951144085732_n.jpg" alt="Commuters at Kathmandu bus stop" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Nepal transit scene — Bus operations in the valley">
+                    <img loading="lazy" src="../gallery/1594641445.jpg" alt="Nepal bus transit" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item gallery-item--tall" data-caption="Samakhusi Yatayat — Serving northern Kathmandu corridor">
+                    <img loading="lazy" src="../gallery/samakhusi-yatayat-1729569860.jpg" alt="Samakhusi Yatayat bus" width="600" height="700">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Public bus service connecting Kathmandu communities">
+                    <img loading="lazy" src="../gallery/302216934_482557370551393_6475660738973236802_n.jpg" alt="Kathmandu public bus" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Nepal micro bus — Nimble transit through narrow city roads">
+                    <img loading="lazy" src="../gallery/39089002_214055306121394_3987346834723962880_n_mmZU29H7GE.jpg" alt="Nepal micro bus" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Hiace minibus — The workhorse of Nepal's semi-urban routes">
+                    <img loading="lazy" src="../gallery/hiace.webp" alt="Toyota Hiace minibus" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item gallery-item--wide" data-caption="Sajha Yatayat luxury service — Kathmandu–Narayangadh shuttle">
+                    <img loading="lazy" src="../gallery/sajha-yatayat-kathmandu-narayangadh-shuttle-service-1758693554.jpg" alt="Sajha Yatayat long-distance shuttle" width="800" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Bus fleet scene — Peak traffic operations in the valley">
+                    <img loading="lazy" src="../gallery/473749570_1355280112583010_593412764911101796_n.jpg" alt="Valley bus fleet" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Busy Kathmandu transit — Passengers during rush hour">
+                    <img loading="lazy" src="../gallery/473783154_1062778689195922_6904992953434292580_n.jpg" alt="Kathmandu rush hour bus" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item gallery-item--tall" data-caption="High-tech modern buses entering Nepal's transit fleet">
+                    <img loading="lazy" src="../gallery/high-tech-buses.jpg" alt="Modern high-tech bus" width="600" height="700">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Transit operations — End-of-day bus staging area">
+                    <img loading="lazy" src="../gallery/481820024_656265493582501_1243983797300762177_n.jpg" alt="Bus staging area" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Vintage Nepal bus — The backbone of public transit for decades">
+                    <img loading="lazy" src="../gallery/81038617_2710162452340155_22013957954863104_n.jpg" alt="Vintage Nepal bus" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Kathmandu streets — Buses navigating the bustling city center">
+                    <img loading="lazy" src="../gallery/image1.jpg" alt="Kathmandu bus street scene" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Local microbus — Connecting suburbs to the city core">
+                    <img loading="lazy" src="../gallery/image2.jpg" alt="Local microbus" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item gallery-item--wide" data-caption="Mahanagar Yatayat bus — Panoramic view of a fleet vehicle on route">
+                    <img loading="lazy" src="../gallery/mahanagar.jpg" alt="Mahanagar Yatayat on route" width="800" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Transit riders — The everyday bus journey experience in Nepal">
+                    <img loading="lazy" src="../gallery/image3.jpg" alt="Bus journey in Nepal" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Roadside bus stop — Where commuters wait without schedules">
+                    <img loading="lazy" src="../gallery/image4.jpg" alt="Nepali bus stop" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Valley transit corridor — Buses lining a major Kathmandu route">
+                    <img loading="lazy" src="../gallery/image5.jpg" alt="Kathmandu bus corridor" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item gallery-item--tall" data-caption="Sajha Yatayat — Modern fleet vehicle in service">
+                    <img loading="lazy" src="../gallery/sajha.jpg" alt="Sajha Yatayat bus" width="600" height="700">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Nepal evening commute — Golden hour on busy streets">
+                    <img loading="lazy" src="../gallery/image6.jpg" alt="Nepal evening commute" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Conductor and passengers — The human side of Nepal's transit">
+                    <img loading="lazy" src="../gallery/image7.jpg" alt="Conductor and passengers" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Nepal bus scene — A candid look at daily operations">
+                    <img loading="lazy" src="../gallery/IMG-1.jpeg" alt="Nepal bus scene" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Manangar Yatayat — Another view of the valley fleet">
+                    <img loading="lazy" src="../gallery/manangar-yatayat.jpg" alt="Manangar Yatayat bus" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item gallery-item--wide" data-caption="Sajha Yatayat modern fleet — Lined up at the depot ready for service">
+                    <img loading="lazy" src="../gallery/SajhaBus_20220707134627.jpg" alt="Sajha Yatayat fleet" width="800" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Mayur Yatayat — Connecting outer ring road communities">
+                    <img loading="lazy" src="../gallery/mayur.jpg" alt="Mayur Yatayat bus" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Mayur Yatayat — Another angle of the blue fleet bus">
+                    <img loading="lazy" src="../gallery/mayur_yatayat_XWhLImWBJm.jpg" alt="Mayur Yatayat fleet" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Sajha Yatayat fleet — Multiple vehicles at the main depot">
+                    <img loading="lazy" src="../gallery/sajha1.jpg" alt="Sajha Yatayat fleet at depot" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Nilo Micro — Blue microbus serving Kathmandu inner routes">
+                    <img loading="lazy" src="../gallery/nilo-micro.jpg" alt="Nilo Micro bus" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Nepal cityscape — The valley where Sawari navigates transit">
+                    <img loading="lazy" src="../gallery/nepal.jpg" alt="Kathmandu Valley cityscape" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item gallery-item--wide" data-caption="Route map — Visualizing the bus network across Kathmandu Valley">
+                    <img loading="lazy" src="../gallery/routes.jpg" alt="Bus route map" width="800" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+                <div class="gallery-item" data-caption="Electric three-wheeler tempo — Zero emission local transit">
+                    <img loading="lazy" src="../gallery/tempo.jpg" alt="Electric tempo in Kathmandu" width="600" height="400">
+                    <div class="gallery-hover"><i data-feather="maximize-2"></i></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer" hidden>
+        <button class="lb-close" aria-label="Close"><i data-feather="x"></i></button>
+        <button class="lb-prev" aria-label="Previous"><i data-feather="chevron-left"></i></button>
+        <button class="lb-next" aria-label="Next"><i data-feather="chevron-right"></i></button>
+        <div class="lb-body">
+            <img src="" alt="" class="lb-img" id="lbImg">
+            <p class="lb-caption" id="lbCaption"></p>
+        </div>
+    </div>
+
+    <!-- ================================================================
+         CTA — Final call to action
+         ================================================================ -->
+    <section class="section cta-section" id="cta">
+        <div class="cta-bg">
+            <img loading="lazy" src="../gallery/nepal.jpg" alt="Nepal cityscape" width="1920" height="700">
+            <div class="cta-overlay"></div>
+        </div>
+        <div class="container cta-content reveal">
+            <h2>Start Navigating Smarter</h2>
+            <p>
+                Whether you're a daily commuter, a tourist, or someone who wants to help map Nepal's transit —
+                Sawari is ready.
+            </p>
+            <div class="cta-actions">
+                <a href="pages/map.php" class="btn btn-accent btn-lg">
+                    <i data-feather="map-pin"></i>
+                    Open the Map
+                </a>
+                <a href="pages/agent/login.php" class="btn btn-glass btn-lg">
+                    <i data-feather="users"></i>
+                    Become an Agent
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         FOOTER
+         ================================================================ -->
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="#hero" class="footer-logo">
+                        <div class="footer-logo-mark">S</div>
+                        <span>Sawari</span>
+                    </a>
+                    <p>Navigate Nepal's public transport with confidence. Real-time tracking, smart routing, and community-powered data.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Platform</h4>
+                    <ul>
+                        <li><a href="pages/map.php">Route Finder</a></li>
+                        <li><a href="pages/agent/login.php">Agent Portal</a></li>
+                        <li><a href="pages/admin/login.php">Admin Panel</a></li>
+                        <li><a href="setup.php">Setup Wizard</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Learn</h4>
+                    <ul>
+                        <li><a href="#why">Why Sawari</a></li>
+                        <li><a href="#what">What We Do</a></li>
+                        <li><a href="#how">How It Works</a></li>
+                        <li><a href="#perspectives">User &amp; Admin</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Built With</h4>
+                    <ul>
+                        <li>PHP 8+ / MySQL 8+</li>
+                        <li>Leaflet.js + OSM</li>
+                        <li>ESP32 Hardware</li>
+                        <li>NEO-6M GPS</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Sawari — Built with purpose for Nepal's commuters.</p>
+                <p class="footer-credits">Inter &middot; Feather Icons &middot; OpenStreetMap</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
