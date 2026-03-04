@@ -7,7 +7,7 @@ Sawari is a web-based public transport navigation system for Kathmandu Valley, N
 - **Route Finding** — Dijkstra-based pathfinding with transfer optimization
 - **Fare Estimation** — Per-km fare calculation with student/elderly discounts
 - **Walking Directions** — OSRM-powered walking guidance to/from bus stops
-- **Multi-Bus Transfers** — Smart routing when no direct bus is available
+- **Multi-Bus Transfers** — Smart routing when no direct bus is available 
 - **Tourist Help Mode** — Nepali phrases and tips for visitors
 - **Emergency Alerts** — Real-time alerts for route disruptions
 - **Carbon Comparison** — CO₂ savings from choosing public transport
