@@ -117,7 +117,7 @@ CCRC/
 │   ├── validation.php   # Input validation
 │   ├── admin-sidebar.php
 │   └── agent-sidebar.php
-├── pages/
+├── pages/ 
 │   ├── admin/           # Admin dashboard pages
 │   ├── agent/           # Agent dashboard pages
 │   ├── auth/            # Login, register, logout pages
